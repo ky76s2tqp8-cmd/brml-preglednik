@@ -178,7 +178,7 @@
     <div class="toolbar">
       <div class="seg" id="scaleSeg"><button data-s="lin" class="on">Lin</button><button data-s="sqrt">√I</button><button data-s="log">log</button></div>
       <div class="seg" id="xSeg"><button data-x="tth" class="on">2θ</button><button data-x="d">d</button><button data-x="q">Q</button></div>
-      <button class="btn" id="snapBtn" title="Očitanje prianja uz lokalni maksimum (parabolična interpolacija)">⌃ Vrh</button>
+      <button class="btn" id="snapBtn" title="Očitanje prianja uz lokalni maksimum (parabolična interpolacija)">⌃ Maksimum</button>
       <button class="btn" id="markBtn" disabled>+ Oznaka</button>
       <button class="btn" id="resetBtn">Početni prikaz</button>
       <span class="sp"></span>
@@ -212,27 +212,27 @@
         <div class="frow"><span>Pozadina (SNIP)</span>
           <div class="seg" id="bgSeg"><button data-b="none" class="on">Ne</button><button data-b="show">Prikaži</button><button data-b="sub">Oduzmi</button></div></div>
         <div class="frow"><label>Širina prozora <input type="range" id="bgW" min="0.3" max="8" step="0.1" value="1.5" style="width:180px"><span id="bgWVal" class="muted">1.5°</span></label></div>
-        <p class="note">Obrada se primjenjuje na prikaz svih difraktograma. Pretraga vrhova i prilagodba vrha uvijek koriste izvorne podatke.</p>
+        <p class="note">Obrada se primjenjuje na prikaz svih difraktograma. Pretraga maksimuma i prilagodba maksimuma uvijek koriste izvorne podatke.</p>
       </div>
     </details>
 
     <details class="card tool" id="tPeaks">
-      <summary>Vrhovi <small>pretraga, prilagodba, Scherrer, Williamson–Hall</small></summary>
+      <summary>Maksimumi <small>pretraga, prilagodba, Scherrer, Williamson–Hall</small></summary>
       <div class="tbody">
-        <h4>Pretraga vrhova</h4>
+        <h4>Pretraga maksimuma</h4>
         <div class="frow">
           <label>Osjetljivost <select id="pkSens"><option value="3">visoka (3σ)</option><option value="5" selected>srednja (5σ)</option><option value="8">niska (8σ)</option></select></label>
           <label>min. I<sub>rel</sub> <input type="number" id="pkMin" value="1" min="0" max="50" step="0.5"> %</label>
-          <button class="btn primary" id="pkBtn">Traži vrhove</button>
-          <button class="btn" id="pkEdit">✎ Uredi vrhove</button>
+          <button class="btn primary" id="pkBtn">Traži maksimume</button>
+          <button class="btn" id="pkEdit">✎ Uredi maksimume</button>
         </div>
         <p class="note" id="pkNote">Pretraga se provodi na odabranom difraktogramu.</p>
-        <p class="note">„Uredi vrhove”: dodir na grafu dodaje vrh na najvišu točku u blizini mjesta dodira, a dodir na postojeći vrh (▼) ga uklanja. Vrhovi se mogu ukloniti i u tablici (×).</p>
-        <h4>Prilagodba vrha (pseudo-Voigt)</h4>
-        <p class="note">Tri načina: (1) dodirnite vrh na grafu i zatim „Prilagodi označeni vrh”; (2) u tablici vrhova dodirnite ⌁ uz željeni vrh; (3) zumirajte na vrh i dodirnite „Prilagodi vrh u prikazu” (ako je prikazan raspon širi od 3°, prilagođava se najjači vrh u prikazu s automatski određenim rasponom). Raspon prilagodbe u (1) i (2) određuje se automatski (±2,5 FWHM, uz Kα2 dublet). Svi vrhovi unutar raspona (iz tablice vrhova ili pronađeni na 3σ), uključujući susjedne vrhove koji se preklapaju s odabranim, prilagođavaju se istovremeno sa zajedničkom linearnom pozadinom.</p>
+        <p class="note">„Uredi maksimume”: dodir na grafu dodaje maksimum na najvišu točku u blizini mjesta dodira, a dodir na postojeći maksimum (▼) ga uklanja. Maksimumi se mogu ukloniti i u tablici (×).</p>
+        <h4>Prilagodba maksimuma (pseudo-Voigt)</h4>
+        <p class="note">Tri načina: (1) dodirnite maksimum na grafu i zatim „Prilagodi označeni maksimum”; (2) u tablici maksimuma dodirnite ⌁ uz željeni maksimum; (3) zumirajte na maksimum i dodirnite „Prilagodi maksimum u prikazu” (ako je prikazan raspon širi od 3°, prilagođava se najjači maksimum u prikazu s automatski određenim rasponom). Raspon prilagodbe u (1) i (2) određuje se automatski (±2,5 FWHM, uz Kα2 dublet). Svi maksimumi unutar raspona (iz tablice maksimuma ili pronađeni na 3σ), uključujući susjedne maksimume koji se preklapaju s odabranim, prilagođavaju se istovremeno sa zajedničkom linearnom pozadinom.</p>
         <div class="frow">
-          <button class="btn primary" id="fitSel" disabled>Prilagodi označeni vrh</button>
-          <button class="btn" id="fitBtn">Prilagodi vrh u prikazu</button>
+          <button class="btn primary" id="fitSel" disabled>Prilagodi označeni maksimum</button>
+          <button class="btn" id="fitBtn">Prilagodi maksimum u prikazu</button>
           <label><input type="checkbox" id="fitKa2" checked> Kα2 dublet</label>
         </div>
         <div class="frow">
@@ -257,7 +257,7 @@
           <span class="muted" id="corrR"></span>
         </div>
         <h4>Utočnjavanje parametara ćelije</h4>
-        <p class="note">Koristi položaje iz pretrage vrhova odabranog difraktograma (ili oznake, ako pretraga nije provedena), pridružene najbližim refleksima odabrane faze.</p>
+        <p class="note">Koristi položaje iz pretrage maksimuma odabranog difraktograma (ili oznake, ako pretraga nije provedena), pridružene najbližim refleksima odabrane faze.</p>
         <div class="frow">
           <label>tolerancija <input type="number" id="refTol" value="0.12" step="0.01" min="0.01" style="width:5.5em"> °</label>
           <label><input type="checkbox" id="refZero"> pomak nule</label>
@@ -297,14 +297,14 @@
     </details>
 
     <div class="card sect" id="peakSect" hidden>
-      <div class="secthead"><h2 id="peakTitle">Vrhovi</h2>
+      <div class="secthead"><h2 id="peakTitle">Maksimumi</h2>
         <div class="btnrow"><button class="btn sm" id="pkEdit2">✎ Uredi</button><button class="btn sm" id="pkToMarks">U oznake</button><button class="btn sm" id="pkCopy">Kopiraj</button><button class="btn sm" id="pkSave">Spremi</button><button class="btn sm" id="pkClear">Ukloni</button></div>
       </div>
       <div class="scroll"><table><thead><tr><th>#</th><th>2θ (°)</th><th>d (Å)</th><th>I<sub>net</sub></th><th>I<sub>rel</sub></th><th>FWHM (°)</th><th></th></tr></thead><tbody id="peakBody"></tbody></table></div>
     </div>
 
     <div class="card sect" id="fitSect" hidden>
-      <div class="secthead"><h2>Prilagođeni vrhovi</h2>
+      <div class="secthead"><h2>Prilagođeni maksimumi</h2>
         <div class="btnrow"><button class="btn sm" id="fitCopy">Kopiraj</button><button class="btn sm" id="fitClear">Ukloni sve</button></div>
       </div>
       <div class="scroll"><table><thead><tr><th>W–H</th><th>2θ (°)</th><th>d (Å)</th><th>FWHM (°)</th><th>β (°)</th><th>η</th><th>D (nm)</th><th>R<sub>wp</sub></th><th></th></tr></thead><tbody id="fitBody"></tbody></table></div>
@@ -1920,7 +1920,7 @@ let fitGroupSeq = 0;
 function fitPeaks(ds, t0, t1, seeds) {
   let best = null;
   ds.ranges.forEach((r, ri) => { const a = lowerBound(r.xs, t0), b = lowerBound(r.xs, t1); if (!best || b - a > best.n) best = { r, ri, a, b, n: b - a }; });
-  if (!best || best.n < 8) throw new Error("U rasponu ima premalo točaka (zumirajte na vrh tako da bude vidljiv cijeli, s ponešto pozadine).");
+  if (!best || best.n < 8) throw new Error("U rasponu ima premalo točaka (zumirajte na maksimum tako da bude vidljiv cijeli, s ponešto pozadine).");
   const { r, ri, a, b } = best, xs = r.xs.subarray(a, b), ys = r.ys.subarray(a, b), n = xs.length, st = stepOf(r);
   const K = ka2Of(ds), useKa2 = S.fitOpt.ka2 && isNum(K.a2) && isTT(ds), R2 = useKa2 ? K.ratio : 0;
   const xc = (xs[0] + xs[n - 1]) / 2;
@@ -2014,14 +2014,14 @@ function williamsonHall() {
    ===================================================================== */
 function observedPositions() {
   const ds = S.selected;
-  if (S.peaks && S.peaks.ds === ds && S.peaks.list.length) return { src: "pretraga vrhova", list: S.peaks.list.map(q => q.tth) };
+  if (S.peaks && S.peaks.ds === ds && S.peaks.list.length) return { src: "pretraga maksimuma", list: S.peaks.list.map(q => q.tth) };
   const ms = S.markers.filter(m => m.ds === ds).map(m => m.x);
   return { src: "oznake", list: ms };
 }
 function refineCell(ph) {
   if (!S.selected) throw new Error("Za utočnjavanje treba učitati izmjereni difraktogram.");
   const obs = observedPositions();
-  if (obs.list.length < 3) throw new Error("Potrebna su barem tri izmjerena položaja: pokrenite pretragu vrhova ili postavite oznake.");
+  if (obs.list.length < 3) throw new Error("Potrebna su barem tri izmjerena položaja: pokrenite pretragu maksimuma ili postavite oznake.");
   const sys = crystalSystem(ph.cell), free = sys.free.slice(), lam = lambdaOf(S.selected), R = radiusOf(S.selected);
   const useZ = $("refZero").checked, useD = $("refDisp").checked, tol = +$("refTol").value || 0.12;
   const names = [...free, ...(useZ ? ["zero"] : []), ...(useD ? ["disp"] : [])];
@@ -2154,7 +2154,7 @@ function updateReadout() {
   const c = S.cursor, el = $("readout");
   $("markBtn").disabled = !c || !c.ds; $("fitSel").disabled = !c || !c.ds;
   if (S.peakEdit && S.selected) {
-    el.innerHTML = `<span class="hint" style="color:var(--marker)">✎ Uređivanje vrhova — ${esc(S.selected.name)}: dodir dodaje vrh na najvišu točku u blizini, dodir na postojeći vrh ▼ ga uklanja.</span>` +
+    el.innerHTML = `<span class="hint" style="color:var(--marker)">✎ Uređivanje maksimuma — ${esc(S.selected.name)}: dodir dodaje maksimum na najvišu točku u blizini, dodir na postojeći maksimum ▼ ga uklanja.</span>` +
       `<button class="btn sm primary" data-act="end-edit" style="margin-left:auto">Gotovo</button>`;
     return;
   }
@@ -2168,7 +2168,7 @@ function updateReadout() {
       `<span><span class="k">I<sub>rel</sub> </span><span class="v">${g.I.toFixed(1)}</span></span><span class="k">m = ${g.m}, izračunato iz CIF-a${S.corr.zero || S.corr.disp ? ", s korekcijama" : ""}</span>` + CLR_BTN;
     return;
   }
-  if (!c) { el.innerHTML = `<span class="hint">Dodirnite graf za očitanje položaja; ponovni dodir na crtu ili „✕ Ukloni” briše oznaku.${S.snap ? " Uključeno prianjanje uz vrh." : ""}</span>`; return; }
+  if (!c) { el.innerHTML = `<span class="hint">Dodirnite graf za očitanje položaja; ponovni dodir na crtu ili „✕ Ukloni” briše oznaku.${S.snap ? " Uključeno prianjanje uz maksimum." : ""}</span>`; return; }
   const ds = c.ds, lam = lambdaOf(ds), tt = isTT(ds);
   const t = tempOf(ds);
   el.innerHTML =
@@ -2176,7 +2176,7 @@ function updateReadout() {
     `<span><span class="k">${esc(ds.ranges[c.ri].xAxis.name)} </span><span class="v">${c.x.toFixed(4)}°</span></span>` +
     (tt ? `<span><span class="k">d </span><span class="v">${dOfTth(c.x, lam).toFixed(4)} Å</span></span><span><span class="k">Q </span><span class="v">${qOfTth(c.x, lam).toFixed(4)}</span></span>` : "") +
     `<span><span class="k">I${S.proc.bg === "sub" ? "<sub>net</sub>" : ""} </span><span class="v">${fmtN(c.y, 1)}</span>${S.norm ? ` <span class="k">(${fmtN(100 * c.y / ds.ymax, 1)} %)</span>` : ""}</span>` +
-    `<span class="k">${c.peak ? "vrh, parabolična interpolacija" : "najbliža mjerna točka"}</span>` + CLR_BTN;
+    `<span class="k">${c.peak ? "maksimum, parabolična interpolacija" : "najbliža mjerna točka"}</span>` + CLR_BTN;
 }
 function pickAt(px, py) {
   const pr = plotRect(), ty = S.view.y0 + (pr.y + pr.h - py) / pr.h * (S.view.y1 - S.view.y0);
@@ -2252,7 +2252,7 @@ function editPeakAt(px, py) {
     const ddx = Math.abs(X - px), ddy = Math.abs(Y - py);
     if (ddx < 10 && ddy < 45 && ddx + ddy / 4 < bd) { bd = ddx + ddy / 4; k = j; }
   });
-  if (k >= 0) { list.splice(k, 1); relPeaks(list); toast("Vrh uklonjen"); }
+  if (k >= 0) { list.splice(k, 1); relPeaks(list); toast("Maksimum uklonjen"); }
   else {
     const t = unmapU(dx(px), lam), ta = unmapU(dx(px - 14), lam), tb = unmapU(dx(px + 14), lam);
     if (!isNum(t)) return;
@@ -2260,8 +2260,8 @@ function editPeakAt(px, py) {
     const q = manualPeak(ds, t, half);
     if (!q) { toast("Na tom mjestu nema izmjerenih točaka."); return; }
     const st = stepOf(ds.ranges[q.ri]);
-    if (list.some(o => o.ri === q.ri && Math.abs(o.tth - q.tth) < 1.5 * st)) { toast("Taj vrh je već na popisu."); return; }
-    list.push(q); relPeaks(list); toast(`Dodan vrh: 2θ = ${q.tth.toFixed(4)}°`);
+    if (list.some(o => o.ri === q.ri && Math.abs(o.tth - q.tth) < 1.5 * st)) { toast("Taj maksimum je već na popisu."); return; }
+    list.push(q); relPeaks(list); toast(`Dodan maksimum: 2θ = ${q.tth.toFixed(4)}°`);
   }
   renderPeaks(); requestDraw(); scheduleSave();
 }
@@ -2571,7 +2571,7 @@ function renderSimRes() {
   const sim = simulate();
   if (!sim) { el.innerHTML = `<span class="muted">Nema vidljivih faza.</span>`; return; }
   el.innerHTML = sim.ds ? `Faktori skale: ${sim.phs.map((p, a) => `<span style="color:${p.color}">■</span> ${esc(p.title)}: ${sim.scales[a].toExponential(3)}`).join("; ")}` +
-    ` · R<sub>wp</sub> = ${(100 * sim.rwp).toFixed(1)} % <span class="muted">(bez utočnjavanja profila)</span>` : `<span class="muted">Bez izmjerenog difraktograma profil je normiran na najjači vrh.</span>`;
+    ` · R<sub>wp</sub> = ${(100 * sim.rwp).toFixed(1)} % <span class="muted">(bez utočnjavanja profila)</span>` : `<span class="muted">Bez izmjerenog difraktograma profil je normiran na najjači maksimum.</span>`;
 }
 $("phSel").addEventListener("change", e => { S.phSel = S.phases.find(p => p.id === +e.target.value) || S.phSel; renderPhaseTools(); });
 $("cellBox").addEventListener("input", e => {
@@ -2646,15 +2646,15 @@ $("pkBtn").addEventListener("click", () => {
   S.peakOpt.sens = +$("pkSens").value; S.peakOpt.minRel = Math.max(0, +$("pkMin").value || 0);
   S.peaks = { ds, list: findPeaks(ds) };
   renderPeaks(); requestDraw(); scheduleSave();
-  toast(`Pronađeno vrhova: ${S.peaks.list.length}`);
+  toast(`Pronađeno maksimuma: ${S.peaks.list.length}`);
 });
 function renderPeaks() {
   const pk = S.peaks; $("peakSect").hidden = !pk; if (!pk) return;
-  $("peakTitle").textContent = `Vrhovi: ${pk.ds.name} (${pk.list.length})`;
+  $("peakTitle").textContent = `Maksimumi: ${pk.ds.name} (${pk.list.length})`;
   $("peakBody").innerHTML = pk.list.map((q, k) => `<tr><td>${k + 1}${q.manual ? " ✎" : ""}</td><td>${q.tth.toFixed(4)}</td><td>${isNum(q.d) ? q.d.toFixed(4) : "—"}</td><td>${fmtN(q.I, 1)}</td><td>${q.Irel.toFixed(1)}</td><td>${isNum(q.fwhm) ? q.fwhm.toFixed(4) : "—"}</td>` +
-    `<td style="white-space:nowrap"><button class="x" data-fit="${k}" title="Prilagodi ovaj vrh" aria-label="Prilagodi ovaj vrh" style="font-size:17px">⌁</button><button class="x" data-rm="${k}" aria-label="Ukloni vrh">×</button></td></tr>`).join("");
+    `<td style="white-space:nowrap"><button class="x" data-fit="${k}" title="Prilagodi ovaj maksimum" aria-label="Prilagodi ovaj maksimum" style="font-size:17px">⌁</button><button class="x" data-rm="${k}" aria-label="Ukloni maksimum">×</button></td></tr>`).join("");
 }
-const peaksText = () => { const pk = S.peaks; return [`# ${pk.ds.name}; vrhovi (osjetljivost ${S.peakOpt.sens} sigma, min I_rel ${S.peakOpt.minRel} %)`, "#\t2theta(deg)\td(A)\tI_net\tI_rel\tFWHM(deg)", ...pk.list.map((q, k) => [k + 1, q.tth.toFixed(4), isNum(q.d) ? q.d.toFixed(5) : "", q.I.toFixed(1), q.Irel.toFixed(2), isNum(q.fwhm) ? q.fwhm.toFixed(4) : ""].join("\t"))].join("\n"); };
+const peaksText = () => { const pk = S.peaks; return [`# ${pk.ds.name}; maksimumi (osjetljivost ${S.peakOpt.sens} sigma, min I_rel ${S.peakOpt.minRel} %)`, "#\t2theta(deg)\td(A)\tI_net\tI_rel\tFWHM(deg)", ...pk.list.map((q, k) => [k + 1, q.tth.toFixed(4), isNum(q.d) ? q.d.toFixed(5) : "", q.I.toFixed(1), q.Irel.toFixed(2), isNum(q.fwhm) ? q.fwhm.toFixed(4) : ""].join("\t"))].join("\n"); };
 $("peakBody").addEventListener("click", e => {
   const pk = S.peaks; if (!pk) return;
   const rm = e.target.closest("[data-rm]");
@@ -2662,8 +2662,8 @@ $("peakBody").addEventListener("click", e => {
   const fb = e.target.closest("[data-fit]");
   if (fb) doFit(() => fitAround(pk.ds, pk.list[+fb.dataset.fit].tth));
 });
-$("pkCopy").addEventListener("click", () => S.peaks && copyText(peaksText(), "Popis vrhova"));
-$("pkSave").addEventListener("click", () => S.peaks && saveText(S.peaks.ds.name.replace(/\.[^.]+$/, "") + "_vrhovi.txt", peaksText()));
+$("pkCopy").addEventListener("click", () => S.peaks && copyText(peaksText(), "Popis maksimuma"));
+$("pkSave").addEventListener("click", () => S.peaks && saveText(S.peaks.ds.name.replace(/\.[^.]+$/, "") + "_maksimumi.txt", peaksText()));
 $("pkClear").addEventListener("click", () => { S.peaks = null; renderPeaks(); requestDraw(); scheduleSave(); });
 $("pkToMarks").addEventListener("click", () => {
   const pk = S.peaks; if (!pk) return;
@@ -2680,7 +2680,7 @@ function doFit(make) {
     S.fits = S.fits.filter(o => !fits.some(f => f.ds === o.ds && Math.abs(f.tth - o.tth) < Math.max(0.3 * f.fwhm, 0.01)));
     S.fits.push(...fits); S.fits.sort((a, b) => a.tth - b.tth);
     renderFits(); requestDraw(); scheduleSave();
-    const nv = n => (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)) ? "vrha" : "vrhova";
+    const nv = () => "maksimuma";
     toast(fits.length > 1 ? `Istovremeno prilagođeno ${fits.length} ${nv(fits.length)} (R_wp = ${(100 * main.rwp).toFixed(1)} %); 2θ = ${main.tth.toFixed(4)}°, FWHM = ${main.fwhm.toFixed(4)}°`
                           : `2θ = ${main.tth.toFixed(4)}°, FWHM = ${main.fwhm.toFixed(4)}° (R_wp = ${(100 * main.rwp).toFixed(1)} %)`);
   } catch (err) { toast(err.message); }
@@ -2698,10 +2698,10 @@ $("fitBtn").addEventListener("click", () => {
   });
   if (!best) { toast("U prikazu nema izmjerenih točaka."); return; }
   doFit(() => fitAround(ds, best.t));
-  toast(`Prikazan je širok raspon: prilagođen je najjači vrh u prikazu (2θ ≈ ${best.t.toFixed(2)}°).`);
+  toast(`Prikazan je širok raspon: prilagođen je najjači maksimum u prikazu (2θ ≈ ${best.t.toFixed(2)}°).`);
 });
 $("fitSel").addEventListener("click", () => {
-  const c = S.cursor; if (!c || !c.ds) { toast("Najprije dodirnite vrh na grafu."); return; }
+  const c = S.cursor; if (!c || !c.ds) { toast("Najprije dodirnite maksimum na grafu."); return; }
   doFit(() => fitAround(c.ds, c.x));
 });
 for (const id of ["whWidth", "whK", "whInst"]) $(id).addEventListener("input", () => {
@@ -2722,7 +2722,7 @@ function renderFits() {
     const wname = S.fitOpt.width === "beta" ? "β" : "FWHM";
     $("whAxis").textContent = `${wname}·cosθ prema 4·sinθ`;
     $("whRes").innerHTML = `D = <b>${isNum(wh.D) ? fmtEsd(wh.D, wh.eD) : "—"}</b> nm · ε = <b>${fmtEsd(wh.eps * 100, wh.eEps * 100)}</b> % ` +
-      `<span class="muted">(${wh.pts.length} vrhova; K = ${S.fitOpt.K}; instrumentalna širina ${S.fitOpt.inst}° oduzeta kvadratno)</span>`;
+      `<span class="muted">(${wh.pts.length} maksimuma; K = ${S.fitOpt.K}; instrumentalna širina ${S.fitOpt.inst}° oduzeta kvadratno)</span>`;
     drawWH(wh);
   }
 }
