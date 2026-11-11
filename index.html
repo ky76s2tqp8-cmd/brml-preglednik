@@ -121,7 +121,7 @@
 <body>
 <header>
   <div class="brand">BRML <span>preglednik difraktograma</span></div>
-  <label class="btn primary">+ Dodaj datoteke<input type="file" id="file" multiple hidden></label>
+  <label class="btn primary" id="hdrAdd" hidden>+ Dodaj datoteke<input type="file" id="file" multiple hidden></label>
 </header>
 
 <main>
@@ -190,7 +190,7 @@
     </div>
   </section>
 
-  <footer>U Safariju: Dijeli → „Dodaj na početni zaslon” za pokretanje kao aplikacija.</footer>
+  <footer id="a2hs">U Safariju: Dijeli → „Dodaj na početni zaslon” za pokretanje kao aplikacija.</footer>
 </main>
 
 <div class="toast" id="toast"></div>
@@ -1020,14 +1020,14 @@ async function loadFiles(fileList) {
   }
   $("msg").innerHTML = errs.map(e => `<div class="banner err">Greška — ${e}</div>`).join("");
   if (!addedData && !addedPh) return;
-  $("empty").hidden = true; $("app").hidden = false;
+  $("empty").hidden = true; $("app").hidden = false; $("hdrAdd").hidden = false;
   computeFull();
   if (addedData || !S.view) { S.cursor = null; resetView(); }
   refreshAll();
 }
 function clearAllItems() {
   S.datasets = []; S.phases = []; S.markers = []; S.cursor = null; S.selected = null; S.metaItem = null; S.nextColor = 0; S.view = null;
-  $("app").hidden = true; $("empty").hidden = false; $("warn").innerHTML = "";
+  $("app").hidden = true; $("empty").hidden = false; $("hdrAdd").hidden = true; $("warn").innerHTML = "";
 }
 function removeItem(it) {
   if (it.kind === "phase") {
@@ -1610,6 +1610,8 @@ document.addEventListener("drop", e => { const fl = e.dataTransfer?.files; if (f
 new ResizeObserver(() => { if (hasContent() && S.view) { if (S.autoY) autoscaleY(); draw(); } }).observe($("plotwrap"));
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => requestDraw());
 updateReadout();
+// already running from the home screen: the "add to home screen" hint is not needed
+if (navigator.standalone || matchMedia("(display-mode: standalone)").matches) $("a2hs").hidden = true;
 </script>
 <script>
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost"))
