@@ -2629,9 +2629,16 @@ $("bgW").addEventListener("input", e => { S.proc.bgWidth = +e.target.value; $("b
 /* =====================================================================
    Export (images, text) and clipboard
    ===================================================================== */
-const inFrame = (() => { try { return window.self !== window.top; } catch { return true; } })();
-if (inFrame) $("expNote").textContent += " U ugrađenom prikazu (Claude) preuzimanje datoteka nije dopušteno; koristite verziju s GitHuba.";
+// inside the Claude artifact viewer, files are offered through its "downloads" capability
+let claudeDl = null;
+if (window.claude && typeof window.claude.use === "function") window.claude.use("downloads").then(d => { claudeDl = d; }).catch(() => {});
 async function saveBlob(name, blob) {
+  if (claudeDl) {
+    const fname = /\.(png|svg|txt|csv|json|md)$/i.test(name) ? name : name + ".txt";
+    try { await claudeDl.save({ filename: fname, data: blob }); }
+    catch (e) { if (!e || e.code !== "declined") toast("Spremanje nije uspjelo" + (e && e.code ? ` (${e.code})` : "")); }
+    return;
+  }
   const file = new File([blob], name, { type: blob.type });
   if (matchMedia("(pointer: coarse)").matches && navigator.canShare && navigator.canShare({ files: [file] })) {
     try { await navigator.share({ files: [file] }); return; } catch (e) { if (e && e.name === "AbortError") return; }
