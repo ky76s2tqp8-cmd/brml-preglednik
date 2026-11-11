@@ -230,11 +230,12 @@
         <p class="note" id="pkNote">Pretraga se provodi na odabranom difraktogramu.</p>
         <p class="note">„Uredi maksimume”: dodir na grafu dodaje maksimum na najvišu točku u blizini mjesta dodira, a dodir na postojeći maksimum (▼) ga uklanja. Maksimumi se mogu ukloniti i u tablici (×).</p>
         <h4>Prilagodba maksimuma (pseudo-Voigt)</h4>
-        <p class="note">Tri načina: (1) dodirnite maksimum na grafu i zatim „Prilagodi označeni maksimum”; (2) u tablici maksimuma dodirnite ⌁ uz željeni maksimum; (3) zumirajte na maksimum i dodirnite „Prilagodi maksimum u prikazu” (ako je prikazan raspon širi od 3°, prilagođava se najjači maksimum u prikazu s automatski određenim rasponom). Raspon prilagodbe u (1) i (2) određuje se automatski (±2,5 FWHM, uz Kα2 dublet). Svi maksimumi unutar raspona (iz tablice maksimuma ili pronađeni na 3σ), uključujući susjedne maksimume koji se preklapaju s odabranim, prilagođavaju se istovremeno sa zajedničkom linearnom pozadinom.</p>
+        <p class="note">Tri načina: (1) dodirnite maksimum na grafu i zatim „Prilagodi označeni maksimum”; (2) u tablici maksimuma dodirnite ⌁ uz željeni maksimum; (3) zumirajte na maksimum i dodirnite „Prilagodi maksimum u prikazu” (ako je prikazan raspon širi od 3°, prilagođava se najjači maksimum u prikazu s automatski određenim rasponom). Raspon prilagodbe u (1) i (2) određuje se automatski (±2,5 FWHM, uz Kα2 dublet). Svi maksimumi unutar raspona (iz tablice maksimuma ili pronađeni na 3σ), uključujući susjedne maksimume koji se preklapaju s odabranim, prilagođavaju se istovremeno sa zajedničkom linearnom pozadinom. Uz „asimetrični profil” svaki maksimum ima različite poluširine s niskokutne (H<sub>L</sub>) i visokokutne (H<sub>R</sub>) strane (split pseudo-Voigt); to opisuje asimetriju zbog aksijalne divergencije, izraženu pri malim kutovima. Položaj je tada položaj vrha profila, a FWHM = (H<sub>L</sub> + H<sub>R</sub>)/2.</p>
         <div class="frow">
           <button class="btn primary" id="fitSel" disabled>Prilagodi označeni maksimum</button>
           <button class="btn" id="fitBtn">Prilagodi maksimum u prikazu</button>
           <label><input type="checkbox" id="fitKa2" checked> Kα2 dublet</label>
+          <label title="split pseudo-Voigt: različite poluširine s niskokutne i visokokutne strane (aksijalna divergencija)"><input type="checkbox" id="fitAsym" checked> asimetrični profil</label>
         </div>
         <div class="frow">
           <label>Scherrer: širina <select id="whWidth"><option value="fwhm">FWHM</option><option value="beta">integralna β</option></select></label>
@@ -308,7 +309,7 @@
       <div class="secthead"><h2>Prilagođeni maksimumi</h2>
         <div class="btnrow"><button class="btn sm" id="fitCopy">Kopiraj</button><button class="btn sm" id="fitClear">Ukloni sve</button></div>
       </div>
-      <div class="scroll"><table><thead><tr><th>W–H</th><th>2θ (°)</th><th>d (Å)</th><th>FWHM (°)</th><th>β (°)</th><th>η</th><th>D (nm)</th><th>R<sub>wp</sub></th><th></th></tr></thead><tbody id="fitBody"></tbody></table></div>
+      <div class="scroll"><table><thead><tr><th>W–H</th><th>2θ (°)</th><th>d (Å)</th><th>FWHM (°)</th><th>β (°)</th><th>η</th><th title="H_L/H_R: omjer niskokutne i visokokutne poluširine">H<sub>L</sub>/H<sub>R</sub></th><th>D (nm)</th><th>R<sub>wp</sub></th><th></th></tr></thead><tbody id="fitBody"></tbody></table></div>
       <div id="whBox" hidden>
         <h4>Williamson–Hall: <span id="whAxis"></span></h4>
         <canvas id="whCv" class="small"></canvas>
@@ -1246,7 +1247,7 @@ const S = {
   cursor: null, markers: [], snap: false, lambdaMode: "a1", offset: 0, norm: false, nextColor: 0,
   proc: { smooth: 0, bg: "none", bgWidth: 1.5 },
   peaks: null, peakOpt: { sens: 5, minRel: 1 },
-  fits: [], fitOpt: { ka2: true, width: "fwhm", K: 0.9, inst: 0 },
+  fits: [], fitOpt: { ka2: true, asym: true, width: "fwhm", K: 0.9, inst: 0 },
   corr: { zero: 0, disp: 0 },
   sim: { on: false, ka2: true, U: 0.004, V: -0.002, W: 0.004, eta: 0.5 },
   refine: null, phSel: null, autoSave: true, peakEdit: false
@@ -1971,6 +1972,12 @@ function manualPeak(ds, tth, halfTth) {
    ===================================================================== */
 const C_G = 2 * Math.sqrt(Math.LN2 / Math.PI), C_L = 2 / Math.PI;
 function pvoigt(x, x0, H, eta) { const t = (x - x0) / H, t2 = 4 * t * t; return eta * C_L / H / (1 + t2) + (1 - eta) * C_G / H * Math.exp(-Math.LN2 * t2); }
+// split pseudo-Voigt: half-widths H(1+a) below and H(1−a) above the maximum x0; normalised to unit area
+// (each half is a pseudo-Voigt half normalised with the mean width H), so FWHM = H and β = H/(ηC_L+(1−η)C_G)
+function spvoigt(x, x0, H, eta, a) {
+  const Hs = x < x0 ? H * (1 + a) : H * (1 - a), t = (x - x0) / Hs, t2 = 4 * t * t;
+  return eta * C_L / H / (1 + t2) + (1 - eta) * C_G / H * Math.exp(-Math.LN2 * t2);
+}
 const tthKa2 = (t, a1, a2) => { const s = a2 / a1 * Math.sin(t * D2R / 2); return s < 1 ? 2 * Math.asin(s) / D2R : NaN; };
 // candidate peaks (seeds) inside a window: from the peak list of the data set, otherwise detected at 3σ
 function seedsIn(ds, ri, t0, t1) {
@@ -1995,11 +2002,23 @@ function seedsIn(ds, ri, t0, t1) {
   // a weaker seed at the Kα2 position of a stronger one is the Kα2 component, not a separate peak
   const K = ka2Of(ds), useKa2 = S.fitOpt.ka2 && isNum(K.a2) && isTT(ds);
   seeds.sort((p_, q_) => (q_.own ? 1e30 : 0) + q_.I - (p_.own ? 1e30 : 0) - p_.I);
+  // two maxima separated by a significant valley (≥ 2σ below the lower of the two) are resolved,
+  // whatever their estimated widths (width estimates of weak maxima on a broad hump are unreliable)
+  const sgm = i => Math.max(Math.sqrt(Math.max(P.b[i], 1) * P.sc2), P.sigS * Math.sqrt(Math.max(P.b[i], 1) / P.bmed));
+  const ix = t => Math.min(P.n - 1, Math.max(0, lowerBound(r.xs, t)));
+  const resolved = (ta, tb) => {
+    let i = ix(Math.min(ta, tb)), j = ix(Math.max(ta, tb)); if (j - i < 2) return false;
+    let m = i; for (let k = i; k <= j; k++) if (P.y[k] < P.y[m]) m = k;
+    return Math.min(P.y[i], P.y[j]) - P.y[m] >= 2 * sgm(m);
+  };
   const out = [];
   for (const sd of seeds) {
     const dup = out.some(o => {
-      const H = isNum(o.fwhm) && o.fwhm > 0 ? o.fwhm : 0.1;
-      if (Math.abs(sd.tth - o.tth) < Math.max(0.6 * H, 3 * st)) return true;   // unresolvable: same peak
+      // maxima in the user's list are never merged with each other (only exact duplicates); otherwise the
+      // narrower of the two widths decides, so a broad weak maximum cannot swallow a resolved neighbour
+      if (sd.own && o.own) return Math.abs(sd.tth - o.tth) < 3 * st;
+      const w_ = [o.fwhm, sd.fwhm].filter(v => isNum(v) && v > 0), H = w_.length ? Math.min(...w_) : 0.1;
+      if (Math.abs(sd.tth - o.tth) < Math.max(0.6 * H, 3 * st) && !(Math.abs(sd.tth - o.tth) >= 3 * st && resolved(sd.tth, o.tth))) return true;   // unresolvable: same peak
       if (useKa2) { const x2 = tthKa2(o.tth, K.a1, K.a2); if (isNum(x2) && Math.abs(sd.tth - x2) < Math.max(0.5 * H, 2 * st) && sd.I < 0.8 * o.I) return true; }
       return false;
     });
@@ -2061,7 +2080,7 @@ function fitPeak(ds, t0, t1) {
 /* Simultaneous fit of N pseudo-Voigt peaks (each Kα1 + Kα2) on a common linear background.
    Returns one result object per peak; all share the group object (model, window, Rwp). */
 let fitGroupSeq = 0;
-function fitPeaks(ds, t0, t1, seeds) {
+function fitPeaks(ds, t0, t1, seeds, pass = 0) {
   let best = null;
   ds.ranges.forEach((r, ri) => { const a = lowerBound(r.xs, t0), b = lowerBound(r.xs, t1); if (!best || b - a > best.n) best = { r, ri, a, b, n: b - a }; });
   if (!best || best.n < 8) throw new Error("U rasponu ima premalo točaka (zumirajte na maksimum tako da bude vidljiv cijeli, s ponešto pozadine).");
@@ -2077,39 +2096,52 @@ function fitPeaks(ds, t0, t1, seeds) {
     let im = 0; for (let i = 0; i < n; i++) if (ys[i] - bgAt0(xs[i]) > ys[im] - bgAt0(xs[im])) im = i;
     seeds = [{ tth: xs[im], I: ys[im] - bgAt0(xs[im]), fwhm: NaN }];
   }
-  const N = seeds.length, span = xs[n - 1] - xs[0];
+  const N = seeds.length, span = xs[n - 1] - xs[0], AS = !!S.fitOpt.asym, NP = 4, IA = 4 * N, IB = IA + (AS ? 1 : 0);
   const p0 = [], lo = [], hi = [];
   for (const sd of seeds) {
     const H0 = isNum(sd.fwhm) && sd.fwhm > 0 ? Math.min(Math.max(sd.fwhm, 2 * st), span / 2) : Math.min(0.1, span / 4);
     const hgt = Math.max(interpAt(xs, ys, sd.tth) - bgAt0(sd.tth), 1);
-    const dxl = Math.max(0.5 * H0, 3 * st);
+    const dxl = Math.min(Math.max(0.5 * H0, 3 * st), 0.15);
     p0.push(sd.tth, hgt * H0 * 1.06 / (1 + R2 * 0.8), H0, 0.5);
     // width bounded to 3× the estimate so that a peak cannot absorb the background
-    lo.push(sd.tth - dxl, 0, 1.5 * st, 0); hi.push(sd.tth + dxl, Infinity, isNum(sd.fwhm) && sd.fwhm > 0 ? Math.min(span, Math.max(3 * H0, 0.05)) : span / 3, 1);
+    lo.push(Math.max(sd.tth - dxl, xs[0]), 0, 1.5 * st, 0); hi.push(Math.min(sd.tth + dxl, xs[n - 1]), Infinity, isNum(sd.fwhm) && sd.fwhm > 0 ? Math.min(span, Math.max(3 * H0, 0.05)) : span / 3, 1);
   }
+  // asymmetry (axial divergence) is instrumental and varies slowly with 2θ: one parameter common to the group;
+  // a > 0 widens the low-angle side; |a| ≤ 0.6, i.e. H_L/H_R ≤ 4
+  if (AS) { p0.push(0.1); lo.push(-0.6); hi.push(0.6); }
   p0.push(b0, b1); lo.push(-Infinity, -Infinity); hi.push(Infinity, Infinity);
   const comp = (x, p, j) => {
-    const x0 = p[4 * j], A = p[4 * j + 1], H = p[4 * j + 2], et = p[4 * j + 3];
-    let v = A * pvoigt(x, x0, H, et);
-    if (R2) { const x2 = tthKa2(x0, K.a1, K.a2); if (isNum(x2)) v += A * R2 * pvoigt(x, x2, H, et); }
+    const o = NP * j, x0 = p[o], A = p[o + 1], H = p[o + 2], et = p[o + 3], as = AS ? p[IA] : 0;
+    let v = A * spvoigt(x, x0, H, et, as);
+    if (R2) { const x2 = tthKa2(x0, K.a1, K.a2); if (isNum(x2)) v += A * R2 * spvoigt(x, x2, H, et, as); }
     return v;
   };
-  const modelX = (x, p) => { let v = p[4 * N] + p[4 * N + 1] * (x - xc); for (let j = 0; j < N; j++) v += comp(x, p, j); return v; };
+  const modelX = (x, p) => { let v = p[IB] + p[IB + 1] * (x - xc); for (let j = 0; j < N; j++) v += comp(x, p, j); return v; };
   const wts = Array.from(ys, v => 1 / Math.max(v, 1));
   const fr = lmFit((i, p) => modelX(xs[i], p), p0, ys, wts, lo, hi, 300);
   let num = 0, den = 0; for (let i = 0; i < n; i++) { const d = ys[i] - modelX(xs[i], fr.p); num += wts[i] * d * d; den += wts[i] * ys[i] * ys[i]; }
   const P = fr.p.slice(), rwp = Math.sqrt(num / den);
-  const grp = { id: ++fitGroupSeq, ds, ri, t0: xs[0], t1: xs[n - 1], N, ka2: R2 ? { a1: K.a1, a2: K.a2, R: R2 } : null, rwp, seeds: seeds.map(sd => sd.tth),
-    model: x => modelX(x, P), bg: x => P[4 * N] + P[4 * N + 1] * (x - xc) };
+  // degenerate components (width at the lower bound — a fitted noise spike — or < 1 % of the largest area)
+  // make the covariance matrix ill-conditioned: remove them and fit once more
+  if (pass === 0 && N > 1) {
+    let Amax = 0; for (let j = 0; j < N; j++) Amax = Math.max(Amax, P[NP * j + 1]);
+    const keep = seeds.filter((sd, j) => P[NP * j + 1] >= 0.01 * Amax && P[NP * j + 2] > 1.05 * lo[NP * j + 2]);
+    if (keep.length && keep.length < N) return fitPeaks(ds, t0, t1, keep, 1);
+  }
+  const grp = { id: ++fitGroupSeq, ds, ri, t0: xs[0], t1: xs[n - 1], N, ka2: R2 ? { a1: K.a1, a2: K.a2, R: R2 } : null, asym: AS, rwp, seeds: seeds.map(sd => sd.tth),
+    model: x => modelX(x, P), bg: x => P[IB] + P[IB + 1] * (x - xc) };
   const out = [];
   for (let j = 0; j < N; j++) {
-    const x0 = P[4 * j], A = P[4 * j + 1], H = P[4 * j + 2], eta = P[4 * j + 3], ex = fr.err;
+    if (!(P[NP * j + 1] > 0)) continue;   // a component that collapsed to zero area is not reported
+    const o = NP * j, x0 = P[o], A = P[o + 1], H = P[o + 2], eta = P[o + 3], asym = AS ? P[IA] : 0, ex = fr.err;
     const beta = H / (eta * C_L + (1 - eta) * C_G);
     let eBeta = NaN;
-    if (fr.cov) { const s_ = eta * C_L + (1 - eta) * C_G, dH = 1 / s_, dE = -H * (C_L - C_G) / (s_ * s_), cv_ = fr.cov; eBeta = Math.sqrt(Math.max(0, dH * dH * cv_[4 * j + 2][4 * j + 2] + dE * dE * cv_[4 * j + 3][4 * j + 3] + 2 * dH * dE * cv_[4 * j + 2][4 * j + 3])); }
-    out.push({ ds, ri, grp, t0: grp.t0, t1: grp.t1, ka2: grp.ka2, tth: x0, eTth: ex[4 * j], fwhm: H, eFwhm: ex[4 * j + 2], beta, eBeta, eta, eEta: ex[4 * j + 3],
+    if (fr.cov) { const s_ = eta * C_L + (1 - eta) * C_G, dH = 1 / s_, dE = -H * (C_L - C_G) / (s_ * s_), cv_ = fr.cov; eBeta = Math.sqrt(Math.max(0, dH * dH * cv_[o + 2][o + 2] + dE * dE * cv_[o + 3][o + 3] + 2 * dH * dE * cv_[o + 2][o + 3])); }
+    out.push({ ds, ri, grp, t0: grp.t0, t1: grp.t1, ka2: grp.ka2, tth: x0, eTth: ex[o], fwhm: H, eFwhm: ex[o + 2], beta, eBeta, eta, eEta: ex[o + 3],
+      asym, eAsym: AS ? ex[IA] : NaN, hL: H * (1 + asym), hR: H * (1 - asym),
       area: A, rwp, include: true, comp: x => comp(x, P, j) + grp.bg(x), model: grp.model });
   }
+  if (!out.length) throw new Error("Prilagodba nije uspjela: u rasponu nije pronađen maksimum iznad pozadine.");
   return out;
 }
 // size broadening from a fit (Scherrer), using the chosen width, instrumental correction (quadratic)
@@ -2823,7 +2855,7 @@ $("pkToMarks").addEventListener("click", () => {
 
 /* ---------- peak fitting ---------- */
 function doFit(make) {
-  S.fitOpt.ka2 = $("fitKa2").checked;
+  S.fitOpt.ka2 = $("fitKa2").checked; S.fitOpt.asym = $("fitAsym").checked;
   try {
     const fits = make(), main = fits[0];
     // a peak fitted again replaces its earlier result
@@ -2859,12 +2891,13 @@ for (const id of ["whWidth", "whK", "whInst"]) $(id).addEventListener("input", (
   renderFits(); scheduleSave();
 });
 $("fitKa2").addEventListener("change", () => { S.fitOpt.ka2 = $("fitKa2").checked; scheduleSave(); });
+$("fitAsym").addEventListener("change", () => { S.fitOpt.asym = $("fitAsym").checked; scheduleSave(); });
 function renderFits() {
   $("fitSect").hidden = !S.fits.length; if (!S.fits.length) return;
   const gnum = new Map(); for (const f of S.fits) if (f.grp.N > 1 && !gnum.has(f.grp)) gnum.set(f.grp, gnum.size + 1);
   $("fitBody").innerHTML = S.fits.map((f, k) => {
     const sz = sizeOf(f), lam = ka2Of(f.ds).a1, gl = gnum.has(f.grp) ? ` <sup class="muted" title="istovremeno prilagođena skupina">g${gnum.get(f.grp)}</sup>` : "";
-    return `<tr class="${f.include ? "" : "off"}"><td><input type="checkbox" data-k="${k}" ${f.include ? "checked" : ""}></td><td>${fmtEsd(f.tth, f.eTth)}${gl}</td><td>${dOfTth(f.tth, lam).toFixed(4)}</td><td>${fmtEsd(f.fwhm, f.eFwhm)}</td><td>${f.beta.toFixed(4)}</td><td>${f.eta.toFixed(2)}</td><td>${isNum(sz.D) ? sz.D.toFixed(1) : "—"}</td><td>${(100 * f.rwp).toFixed(1)} %</td><td><button class="x" data-rm="${k}" aria-label="Ukloni">×</button></td></tr>`;
+    return `<tr class="${f.include ? "" : "off"}"><td><input type="checkbox" data-k="${k}" ${f.include ? "checked" : ""}></td><td>${fmtEsd(f.tth, f.eTth)}${gl}</td><td>${dOfTth(f.tth, lam).toFixed(4)}</td><td>${fmtEsd(f.fwhm, f.eFwhm)}</td><td>${f.beta.toFixed(4)}</td><td>${f.eta.toFixed(2)}</td><td>${f.grp.asym ? (f.hL / f.hR).toFixed(2) : "—"}</td><td>${isNum(sz.D) ? sz.D.toFixed(1) : "—"}</td><td>${(100 * f.rwp).toFixed(1)} %</td><td><button class="x" data-rm="${k}" aria-label="Ukloni">×</button></td></tr>`;
   }).join("");
   const wh = williamsonHall();
   $("whBox").hidden = !wh.ok;
@@ -2882,9 +2915,9 @@ $("fitBody").addEventListener("click", e => {
 });
 $("fitClear").addEventListener("click", () => { S.fits = []; renderFits(); requestDraw(); scheduleSave(); });
 $("fitCopy").addEventListener("click", () => {
-  const lines = [`# Prilagodba pseudo-Voigt (${S.fits.some(f => f.ka2) ? "Kα1+Kα2" : "Kα1"}), linearna pozadina; Scherrer K=${S.fitOpt.K}, širina=${S.fitOpt.width}, instr.=${S.fitOpt.inst} deg`,
-    "# datoteka\tskupina\t2theta\tesd\td(A)\tFWHM\tesd\tbeta\teta\tpovrsina\tD(nm)\tRwp"];
-  for (const f of S.fits) { const sz = sizeOf(f); lines.push([f.ds.name, f.grp.N > 1 ? "g" + f.grp.id : "", f.tth.toFixed(5), f.eTth.toExponential(2), dOfTth(f.tth, ka2Of(f.ds).a1).toFixed(5), f.fwhm.toFixed(5), f.eFwhm.toExponential(2), f.beta.toFixed(5), f.eta.toFixed(3), f.area.toFixed(2), isNum(sz.D) ? sz.D.toFixed(2) : "", f.rwp.toFixed(4)].join("\t")); }
+  const lines = [`# Prilagodba ${S.fits.some(f => f.grp.asym) ? "split " : ""}pseudo-Voigt (${S.fits.some(f => f.ka2) ? "Kα1+Kα2" : "Kα1"}), linearna pozadina; Scherrer K=${S.fitOpt.K}, širina=${S.fitOpt.width}, instr.=${S.fitOpt.inst} deg`,
+    "# datoteka\tskupina\t2theta\tesd\td(A)\tFWHM\tesd\tbeta\teta\tH_L\tH_R\tpovrsina\tD(nm)\tRwp"];
+  for (const f of S.fits) { const sz = sizeOf(f); lines.push([f.ds.name, f.grp.N > 1 ? "g" + f.grp.id : "", f.tth.toFixed(5), f.eTth.toExponential(2), dOfTth(f.tth, ka2Of(f.ds).a1).toFixed(5), f.fwhm.toFixed(5), f.eFwhm.toExponential(2), f.beta.toFixed(5), f.eta.toFixed(3), f.grp.asym ? f.hL.toFixed(5) : "", f.grp.asym ? f.hR.toFixed(5) : "", f.area.toFixed(2), isNum(sz.D) ? sz.D.toFixed(2) : "", f.rwp.toFixed(4)].join("\t")); }
   const wh = williamsonHall(); if (wh.ok) lines.push(`# Williamson-Hall: D = ${wh.D} nm (${wh.eD}), strain = ${wh.eps} (${wh.eEps})`);
   copyText(lines.join("\n"), "Rezultati prilagodbe");
 });
@@ -3087,7 +3120,7 @@ async function saveSession() {
       view: S.view, autoY: S.autoY,
       markers: S.markers.map(m => ({ ds: ix(m.ds), ri: m.ri, i: m.i, x: m.x, y: m.y, peak: m.peak })),
       peaks: S.peaks ? ix(S.peaks.ds) : -1, peakList: S.peaks ? S.peaks.list.map(q => ({ ri: q.ri, i: q.i, manual: !!q.manual })) : null, peakRemoved: S.peaks ? S.peaks.removed || [] : [],
-      fits: [...new Set(S.fits.map(f => f.grp))].map(g => ({ ds: ix(g.ds), t0: g.t0, t1: g.t1, ka2: !!g.ka2, seeds: g.seeds,
+      fits: [...new Set(S.fits.map(f => f.grp))].map(g => ({ ds: ix(g.ds), t0: g.t0, t1: g.t1, ka2: !!g.ka2, asym: !!g.asym, seeds: g.seeds,
         keep: S.fits.filter(f => f.grp === g).map(f => ({ tth: f.tth, include: f.include })) })),
       open: [...document.querySelectorAll("details.tool")].filter(d => d.open).map(d => d.id)
     });
@@ -3128,16 +3161,16 @@ async function restoreSession() {
       relPeaks(list); S.peaks = { ds, list, removed: st.peakRemoved || [] };
     } else S.peaks = null;
     S.fits = [];
-    const ka2Saved = S.fitOpt.ka2;
+    const ka2Saved = S.fitOpt.ka2, asymSaved = S.fitOpt.asym;
     for (const g of st.fits) {
-      if (!all[g.ds]) continue; S.fitOpt.ka2 = g.ka2;
+      if (!all[g.ds]) continue; S.fitOpt.ka2 = g.ka2; S.fitOpt.asym = !!g.asym;
       try {
         const fits = g.seeds ? fitPeaks(all[g.ds], g.t0, g.t1, g.seeds.map(t => ({ tth: t, I: 1, fwhm: NaN }))) : fitPeak(all[g.ds], g.t0, g.t1);
         for (const f of fits) { const kp = (g.keep || []).find(q => Math.abs(q.tth - f.tth) < 0.02); if (g.keep && !kp) continue; if (kp) f.include = kp.include; S.fits.push(f); }
       } catch {}
     }
     S.fits.sort((a, b) => a.tth - b.tth);
-    S.fitOpt.ka2 = ka2Saved;
+    S.fitOpt.ka2 = ka2Saved; S.fitOpt.asym = asymSaved;
     for (const id of st.open || []) if ($(id)) $(id).open = true;
     syncControls(); showApp(); refreshAll();
   } catch (e) { console.error(e); toast("Sesiju nije moguće vratiti: " + e.message); }
@@ -3150,7 +3183,7 @@ function syncControls() {
   $("offset").value = Math.round(S.offset * 100); $("offsetVal").textContent = Math.round(S.offset * 100) + " %";
   $("normBtn").classList.toggle("on", S.norm); $("snapBtn").classList.toggle("on", S.snap);
   $("pkSens").value = String(S.peakOpt.sens); $("pkMin").value = S.peakOpt.minRel;
-  $("fitKa2").checked = S.fitOpt.ka2; $("whWidth").value = S.fitOpt.width; $("whK").value = S.fitOpt.K; $("whInst").value = S.fitOpt.inst;
+  $("fitKa2").checked = S.fitOpt.ka2; $("fitAsym").checked = S.fitOpt.asym !== false; $("whWidth").value = S.fitOpt.width; $("whK").value = S.fitOpt.K; $("whInst").value = S.fitOpt.inst;
   $("simOn").checked = S.sim.on; $("simKa2").checked = S.sim.ka2; $("simU").value = S.sim.U; $("simV").value = S.sim.V; $("simW").value = S.sim.W; $("simEta").value = S.sim.eta; $("simEtaVal").textContent = (+S.sim.eta).toFixed(2);
   $("autoSave").checked = S.autoSave;
   $("procSum").textContent = [S.proc.smooth ? `glađenje ${S.proc.smooth} t.` : "", S.proc.bg === "show" ? "pozadina prikazana" : S.proc.bg === "sub" ? "pozadina oduzeta" : ""].filter(Boolean).join(", ") || "pozadina i glađenje";
