@@ -1013,6 +1013,8 @@ async function loadFiles(fileList) {
         }
         res = readText(buf);
       }
+      // DIFFRAC.COMMANDER default "Sample ID" (also exported into .raw) is not a real sample name
+      if (/^\s*commander sample id\s*$/i.test(res.meta.sample || "")) res.meta.sample = "";
       const ymax = Math.max(...res.ranges.map(r => r.ys.reduce((a, v) => Math.max(a, v), -Infinity)));
       const ds = { kind: "data", id: ++dsSeq, name: f.name, ranges: res.ranges, meta: res.meta, color: PALETTE[S.nextColor++ % PALETTE.length], visible: true, ymax };
       S.datasets.push(ds); S.selected = ds; S.metaItem = ds; addedData++;
