@@ -1124,7 +1124,11 @@ function renderInfo() {
     ];
     return { title: ds.ranges.length > 1 ? `Sken ${i + 1}${r.file ? " (" + r.file + ")" : ""}` : "Parametri skena", rows };
   });
-  const groups = [M.groups[0], ...scanCards, ...M.groups.slice(1)].filter(Boolean);
+  // "Uzorak" card: file name first; the sample name only when one was actually entered
+  const g0 = M.groups.find(g => g.title === "Uzorak") || { title: "Uzorak", rows: [] };
+  const sampleCard = { title: "Uzorak", rows: [["Ime datoteke", ds.name], ...(M.sample ? [["Naziv uzorka", M.sample]] : []),
+    ...g0.rows.filter(([k]) => k !== "Naziv uzorka")] };
+  const groups = [sampleCard, ...scanCards, ...M.groups.filter(g => g !== g0)].filter(Boolean);
   $("meta").innerHTML = groups.map(metaCard).join("");
   const n = ds.ranges.reduce((a, r) => a + r.xs.length, 0);
   $("xyInfo").textContent = `${many ? ds.name + ": " : ""}${n} točaka, stupci: ${ds.ranges[0].xAxis.name} (${ds.ranges[0].xAxis.unit}), intenzitet`;
