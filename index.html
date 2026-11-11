@@ -212,6 +212,7 @@
         <div class="frow"><span>Pozadina (SNIP)</span>
           <div class="seg" id="bgSeg"><button data-b="none" class="on">Ne</button><button data-b="show">Prikaži</button><button data-b="sub">Oduzmi</button></div></div>
         <div class="frow"><label>Širina prozora <input type="range" id="bgW" min="0.3" max="8" step="0.1" value="1.5" style="width:180px"><span id="bgWVal" class="muted">1.5°</span></label></div>
+        <p class="banner warn" id="smoothWarn" hidden></p>
         <p class="note">Obrada se primjenjuje na prikaz svih difraktograma. Pretraga maksimuma i prilagodba maksimuma uvijek koriste izvorne podatke.</p>
       </div>
     </details>
@@ -1460,6 +1461,7 @@ function autoscaleY() {
   for (const ds of visible()) for (const r of ds.ranges) {
     const i0 = Math.max(0, lowerBound(r.us, v.x0) - 1), i1 = Math.min(r.us.length, lowerBound(r.us, v.x1) + 1);
     for (let i = i0; i < i1; i++) { const t = PY(ds, r.yp[i]); if (t < lo) lo = t; if (t > hi) hi = t; }
+    if (S.proc.smooth && S.viewMode !== "map") for (let i = i0; i < i1; i++) { const t = PY(ds, r.ys[i] - bgAt(r, i)); if (t > hi) hi = t; }
   }
   if (!isNum(lo)) { lo = 0; hi = 1; }
   if (hi - lo < 1e-9) hi = lo + 1;
@@ -1589,10 +1591,10 @@ function drawLayers() {
   c.fillText(base + (!isMap && S.scale === "sqrt" ? ", √ skala" : !isMap && S.scale === "log" ? ", log skala" : "") + (offsetOn ? ", s pomakom" : ""), 0, 0); c.restore();
 
   c.save(); c.beginPath(); c.rect(p.x, p.y, p.w, p.h); c.clip();
+  if (!isMap) drawFits(p);   // under the data, so that the measured curve stays visible on top
   if (isMap) drawMap(p, vis);
   else drawCurves(p, vis);
   drawSim(p, vis, isMap);
-  if (!isMap) drawFits(p);
   drawSticks(p, isMap);
   if (offsetOn) {
     c.font = font(11, 600); c.textAlign = "right"; c.textBaseline = "bottom";
@@ -1622,6 +1624,12 @@ function drawCurves(p, vis) {
       const stp = Math.max(1, Math.floor(n / p.w));
       for (let i = i0; i < i1; i += stp) { const X = sx(r.us[i]), Y = sy(PY(ds, r.bg[i])); i === i0 ? c.moveTo(X, Y) : c.lineTo(X, Y); }
       c.stroke(); c.setLineDash([]); c.globalAlpha = 1;
+    }
+    // with smoothing on, the unsmoothed data are shown faintly (smoothing lowers and broadens sharp maxima)
+    if (S.proc.smooth) {
+      c.strokeStyle = ds.color; c.globalAlpha = 0.45; c.lineWidth = 1 * f; c.beginPath();
+      for (let i = i0; i < i1; i++) { const X = sx(r.us[i]), Y = sy(PY(ds, r.ys[i] - bgAt(r, i))); i === i0 ? c.moveTo(X, Y) : c.lineTo(X, Y); }
+      c.stroke(); c.globalAlpha = 1;
     }
     c.strokeStyle = ds.color; c.lineWidth = (vis.length > 1 ? 1.2 : 1.25) * f; c.lineJoin = "round"; c.beginPath();
     if (n > p.w * 3 && !G.exp) {
@@ -1967,10 +1975,12 @@ const tthKa2 = (t, a1, a2) => { const s = a2 / a1 * Math.sin(t * D2R / 2); retur
 // candidate peaks (seeds) inside a window: from the peak list of the data set, otherwise detected at 3σ
 function seedsIn(ds, ri, t0, t1) {
   const r = ds.ranges[ri], P = peakCtx(r), st = P.st;
-  let seeds;
-  if (S.peaks && S.peaks.ds === ds) seeds = S.peaks.list.filter(q => q.ri === ri && q.tth >= t0 && q.tth <= t1).map(q => ({ tth: q.tth, I: q.I, fwhm: q.fwhm }));
-  else {
-    seeds = [];
+  // the user's list (if any) has priority; automatically detected maxima complete it, except at positions
+  // the user removed from the list
+  const own = (S.peaks && S.peaks.ds === ds) ? S.peaks.list.filter(q => q.ri === ri && q.tth >= t0 && q.tth <= t1).map(q => ({ tth: q.tth, I: q.I, fwhm: q.fwhm, own: true })) : [];
+  const removed = (S.peaks && S.peaks.ds === ds && S.peaks.removed) || [];
+  let seeds = own;
+  {
     const half = Math.max(2, Math.round(0.03 / st)), a = Math.max(half, lowerBound(r.xs, t0)), b = Math.min(P.n - half - 1, lowerBound(r.xs, t1));
     for (let i = a; i <= b; i++) {
       let ok = true; for (let k = i - half; k <= i + half; k++) if (P.y[k] > P.y[i] || (P.y[k] === P.y[i] && k < i)) { ok = false; break; }
@@ -1978,12 +1988,13 @@ function seedsIn(ds, ri, t0, t1) {
       const sig = Math.max(Math.sqrt(Math.max(P.b[i], 1) * P.sc2), P.sigS * Math.sqrt(Math.max(P.b[i], 1) / P.bmed));
       if (P.net[i] < 3 * sig) continue;
       const q = peakAt(ds, ri, i); if (isNum(q.fwhm) && q.fwhm < 1.5 * st) continue;
+      if (removed.some(t_ => Math.abs(t_ - q.tth) < Math.max(3 * st, 0.02))) continue;
       seeds.push({ tth: q.tth, I: q.I, fwhm: q.fwhm });
     }
   }
   // a weaker seed at the Kα2 position of a stronger one is the Kα2 component, not a separate peak
   const K = ka2Of(ds), useKa2 = S.fitOpt.ka2 && isNum(K.a2) && isTT(ds);
-  seeds.sort((p_, q_) => q_.I - p_.I);
+  seeds.sort((p_, q_) => (q_.own ? 1e30 : 0) + q_.I - (p_.own ? 1e30 : 0) - p_.I);
   const out = [];
   for (const sd of seeds) {
     const dup = out.some(o => {
@@ -2016,6 +2027,7 @@ function fitAround(ds, tth) {
     }
     return { m, rose: false };
   };
+  const crossed = [];
   const side = (startT, dir) => {
     let k = idx(startT), edge = startT + dir * w;
     for (let hop = 0; hop < 4; hop++) {
@@ -2024,12 +2036,15 @@ function fitAround(ds, tth) {
       let j = wk.k; while (j + dir >= 0 && j + dir < P.n && P.y[j + dir] >= P.y[j]) j += dir;   // neighbour maximum
       const nb = Math.max(P.net[j], 1), vNet = Math.max(P.net[wk.m], 0);
       if (nb < 0.1 * mainNet || vNet < 0.1 * Math.min(nb, mainNet)) return r.xs[wk.m];
-      k = j; edge = r.xs[j] + dir * w;
+      crossed.push(j); k = j; edge = r.xs[j] + dir * w;
     }
     return r.xs[k];
   };
   let t0 = Math.min(side(q.tth, -1), q.tth - H), t1 = Math.max(side(q.tth + dk, +1), q.tth + dk + H);
-  let seeds = seedsIn(ds, q.ri, t0, t1).filter(sd => sd.I >= 0.1 * q.I);
+  // every maximum inside the window that is not negligible (≥ 5 % of the chosen one) is fitted, in particular
+  // the neighbours the window was extended over; otherwise their intensity distorts the background and tails
+  let seeds = seedsIn(ds, q.ri, t0, t1).filter(sd => sd.own || sd.I >= 0.1 * q.I);
+  for (const j of crossed) { const nq = peakAt(ds, q.ri, j); if (!seeds.some(sd => Math.abs(sd.tth - nq.tth) < 0.6 * H)) seeds.push({ tth: nq.tth, I: nq.I, fwhm: nq.fwhm }); }
   if (!seeds.some(sd => Math.abs(sd.tth - q.tth) < 0.4 * H)) seeds.push({ tth: q.tth, I: q.I, fwhm: q.fwhm });
   seeds = seeds.sort((a_, b_) => Math.abs(a_.tth - q.tth) - Math.abs(b_.tth - q.tth)).slice(0, 5).sort((a_, b_) => a_.tth - b_.tth);
   const fits = fitPeaks(ds, t0, t1, seeds);
@@ -2115,7 +2130,7 @@ function drawFits(p) {
     if (!done.has(g)) {
       done.add(g);
       const pts = []; for (let k = 0; k <= NP; k++) { const x = xsOf(k); pts.push([sx(mapTth(x, lam)), sy(PY(ds, g.model(x) - sub(x)))]); }
-      line(pts, 2, false);
+      line(pts, 2.5, false);
     }
     if (g.N > 1 || g.ka2) {   // individual peak (Kα1 + Kα2 on the background), dashed
       const pts = []; for (let k = 0; k <= NP; k++) { const x = xsOf(k); pts.push([sx(mapTth(x, lam)), sy(PY(ds, ft.comp(x) - sub(x)))]); }
@@ -2381,7 +2396,7 @@ function editPeakAt(px, py) {
     const ddx = Math.abs(X - px), ddy = Math.abs(Y - py);
     if (ddx < 10 && ddy < 45 && ddx + ddy / 4 < bd) { bd = ddx + ddy / 4; k = j; }
   });
-  if (k >= 0) { list.splice(k, 1); relPeaks(list); toast("Maksimum uklonjen"); }
+  if (k >= 0) { (S.peaks.removed = S.peaks.removed || []).push(list[k].tth); list.splice(k, 1); relPeaks(list); toast("Maksimum uklonjen"); }
   else {
     const t = unmapU(dx(px), lam), ta = unmapU(dx(px - 14), lam), tb = unmapU(dx(px + 14), lam);
     if (!isNum(t)) return;
@@ -2793,7 +2808,7 @@ const peaksText = () => { const pk = S.peaks; return [`# ${pk.ds.name}; maksimum
 $("peakBody").addEventListener("click", e => {
   const pk = S.peaks; if (!pk) return;
   const rm = e.target.closest("[data-rm]");
-  if (rm) { pk.list.splice(+rm.dataset.rm, 1); relPeaks(pk.list); renderPeaks(); requestDraw(); scheduleSave(); return; }
+  if (rm) { (pk.removed = pk.removed || []).push(pk.list[+rm.dataset.rm].tth); pk.list.splice(+rm.dataset.rm, 1); relPeaks(pk.list); renderPeaks(); requestDraw(); scheduleSave(); return; }
   const fb = e.target.closest("[data-fit]");
   if (fb) doFit(() => fitAround(pk.ds, pk.list[+fb.dataset.fit].tth));
 });
@@ -2962,6 +2977,16 @@ $("viewSeg").addEventListener("click", e => { const b = e.target.closest("button
 $("mapOrder").addEventListener("change", e => { S.mapOrder = e.target.value; requestDraw(); scheduleSave(); });
 function reprocess() {
   for (const ds of S.datasets) processDs(ds);
+  // warn when the smoothing window is too wide for the sharpest maxima (their height drops noticeably)
+  let worst = 0;
+  if (S.proc.smooth) for (const ds of S.datasets) for (const r of ds.ranges) {
+    const sm = sgSmooth(r.ys, S.proc.smooth); let a = -Infinity, b = -Infinity;
+    for (let i = 0; i < r.ys.length; i++) { if (r.ys[i] > a) a = r.ys[i]; if (sm[i] > b) b = sm[i]; }
+    const bg = backgroundOf(r, S.proc.bgWidth), base = Math.min(...Array.from(bg));
+    if (a > base) worst = Math.max(worst, 1 - (b - base) / (a - base));
+  }
+  $("smoothWarn").hidden = worst < 0.1;
+  $("smoothWarn").textContent = `Glađenje s ${S.proc.smooth} točaka snižava najoštriji maksimum za oko ${Math.round(100 * worst)} % i širi ga; za oštre maksimume odaberite manji prozor (prozor ne bi smio biti širi od FWHM). Neizglađeni podaci prikazani su blijedo; prilagodba i pretraga maksimuma uvijek koriste neizglađene podatke.`;
   offCache = null; S.autoY = true; autoscaleY();
   $("procSum").textContent = [S.proc.smooth ? `glađenje ${S.proc.smooth} t.` : "", S.proc.bg === "show" ? "pozadina prikazana" : S.proc.bg === "sub" ? "pozadina oduzeta" : ""].filter(Boolean).join(", ") || "pozadina i glađenje";
   updateReadout(); renderSimRes(); requestDraw(); scheduleSave();
@@ -3061,7 +3086,7 @@ async function saveSession() {
         proc: S.proc, peakOpt: S.peakOpt, fitOpt: S.fitOpt, corr: S.corr, sim: S.sim },
       view: S.view, autoY: S.autoY,
       markers: S.markers.map(m => ({ ds: ix(m.ds), ri: m.ri, i: m.i, x: m.x, y: m.y, peak: m.peak })),
-      peaks: S.peaks ? ix(S.peaks.ds) : -1, peakList: S.peaks ? S.peaks.list.map(q => ({ ri: q.ri, i: q.i, manual: !!q.manual })) : null,
+      peaks: S.peaks ? ix(S.peaks.ds) : -1, peakList: S.peaks ? S.peaks.list.map(q => ({ ri: q.ri, i: q.i, manual: !!q.manual })) : null, peakRemoved: S.peaks ? S.peaks.removed || [] : [],
       fits: [...new Set(S.fits.map(f => f.grp))].map(g => ({ ds: ix(g.ds), t0: g.t0, t1: g.t1, ka2: !!g.ka2, seeds: g.seeds,
         keep: S.fits.filter(f => f.grp === g).map(f => ({ tth: f.tth, include: f.include })) })),
       open: [...document.querySelectorAll("details.tool")].filter(d => d.open).map(d => d.id)
@@ -3100,7 +3125,7 @@ async function restoreSession() {
     if (all[st.peaks]) {
       const ds = all[st.peaks];
       const list = st.peakList ? st.peakList.filter(q => ds.ranges[q.ri]).map(q => Object.assign(peakAt(ds, q.ri, q.i), q.manual ? { manual: true } : {})) : findPeaks(ds);
-      relPeaks(list); S.peaks = { ds, list };
+      relPeaks(list); S.peaks = { ds, list, removed: st.peakRemoved || [] };
     } else S.peaks = null;
     S.fits = [];
     const ka2Saved = S.fitOpt.ka2;
