@@ -1376,6 +1376,11 @@ function requestDraw() { if (rafPending) return; rafPending = true; requestAnima
    ===================================================================== */
 const isTT = ds => ds.ranges[0].xAxis.id === "TwoTheta";
 const dSpacing = (ds, x) => isTT(ds) && x > 0 ? lambdaOf(ds) / (2 * Math.sin(x * Math.PI / 360)) : NaN;
+const CLR_BTN = `<button class="btn" data-act="clear-cursor" style="margin-left:auto;min-height:30px;padding:4px 10px">✕ Ukloni</button>`;
+$("readout").addEventListener("click", e => {
+  if (e.target.closest("[data-act=clear-cursor]")) { S.cursor = null; updateReadout(); requestDraw(); }
+});
+const cursorX = c => c.ph ? tthOf(c.refl.d) : c.x;
 function updateReadout() {
   const c = S.cursor, el = $("readout");
   $("markBtn").disabled = !c || !c.ds;
@@ -1385,17 +1390,17 @@ function updateReadout() {
       `<span class="v hkl">(${r.fam.slice(0, 3).map(f => hklStr(f.hkl)).join("), (")})</span>` +
       `<span><span class="k">2θ </span><span class="v">${tth.toFixed(4)}°</span></span>` +
       `<span><span class="k">d </span><span class="v">${r.d.toFixed(4)} Å</span></span>` +
-      `<span><span class="k">I<sub>rel</sub> </span><span class="v">${r.I.toFixed(1)}</span></span><span class="k">m = ${r.m}, izračunato iz CIF-a</span>`;
+      `<span><span class="k">I<sub>rel</sub> </span><span class="v">${r.I.toFixed(1)}</span></span><span class="k">m = ${r.m}, izračunato iz CIF-a</span>` + CLR_BTN;
     return;
   }
-  if (!c) { el.innerHTML = `<span class="hint">Dodirnite graf za očitanje položaja.${S.snap ? " Uključeno prianjanje uz vrh." : ""}</span>`; return; }
+  if (!c) { el.innerHTML = `<span class="hint">Dodirnite graf za očitanje položaja; ponovni dodir na crtu ili „✕ Ukloni” briše oznaku.${S.snap ? " Uključeno prianjanje uz vrh." : ""}</span>`; return; }
   const ds = c.ds, ax = ds.ranges[c.ri].xAxis, d = dSpacing(ds, c.x);
   el.innerHTML =
     (S.datasets.length > 1 ? `<span style="display:inline-flex;align-items:center;max-width:100%"><i class="dot" style="background:${ds.color}"></i><span class="k" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(ds.name)}</span></span>` : "") +
     `<span><span class="k">${esc(ax.name)} </span><span class="v">${c.x.toFixed(4)}°</span></span>` +
     (isNum(d) ? `<span><span class="k">d </span><span class="v">${d.toFixed(4)} Å</span></span>` : "") +
     `<span><span class="k">I </span><span class="v">${fmtN(c.y, 1)}</span>${S.norm ? ` <span class="k">(${fmtN(100 * c.y / ds.ymax, 1)} %)</span>` : ""}</span>` +
-    `<span class="k">${c.peak ? "vrh, parabolična interpolacija" : "najbliža mjerna točka"}</span>`;
+    `<span class="k">${c.peak ? "vrh, parabolična interpolacija" : "najbliža mjerna točka"}</span>` + CLR_BTN;
 }
 function pickAt(px, py) {
   const pr = plotRect(), ty = S.view.y0 + (pr.y + pr.h - py) / pr.h * (S.view.y1 - S.view.y0);
@@ -1491,7 +1496,11 @@ function endPointer(e) {
   if (tap && !tap.moved && pointers.size === 0 && performance.now() - tap.t < 450) {
     const now = performance.now();
     if (now - lastTap.t < 320 && Math.hypot(tap.x - lastTap.x, tap.y - lastTap.y) < 30) { resetView(); lastTap.t = 0; }
-    else { S.cursor = pickAt(tap.x, tap.y); updateReadout(); lastTap = { t: now, x: tap.x, y: tap.y }; }
+    else {
+      if (S.cursor && Math.abs(sx(cursorX(S.cursor)) - tap.x) < 10) S.cursor = null;   // tap on the cursor line removes it
+      else S.cursor = pickAt(tap.x, tap.y);
+      updateReadout(); lastTap = { t: now, x: tap.x, y: tap.y };
+    }
     requestDraw();
   }
   tap = null;
