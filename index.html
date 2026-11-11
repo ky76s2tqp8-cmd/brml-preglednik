@@ -224,12 +224,15 @@
           <label>Osjetljivost <select id="pkSens"><option value="3">visoka (3σ)</option><option value="5" selected>srednja (5σ)</option><option value="8">niska (8σ)</option></select></label>
           <label>min. I<sub>rel</sub> <input type="number" id="pkMin" value="1" min="0" max="50" step="0.5"> %</label>
           <button class="btn primary" id="pkBtn">Traži vrhove</button>
+          <button class="btn" id="pkEdit">✎ Uredi vrhove</button>
         </div>
         <p class="note" id="pkNote">Pretraga se provodi na odabranom difraktogramu.</p>
+        <p class="note">„Uredi vrhove”: dodir na grafu dodaje vrh na najvišu točku u blizini mjesta dodira, a dodir na postojeći vrh (▼) ga uklanja. Vrhovi se mogu ukloniti i u tablici (×).</p>
         <h4>Prilagodba vrha (pseudo-Voigt)</h4>
-        <p class="note">Zumirajte na jedan vrh (ili nekoliko bliskih) i dodirnite „Prilagodi”. Prilagođava se odabrani difraktogram unutar prikazanog raspona, uz linearnu pozadinu.</p>
+        <p class="note">Tri načina: (1) dodirnite vrh na grafu i zatim „Prilagodi označeni vrh”; (2) u tablici vrhova dodirnite ⌁ uz željeni vrh; (3) zumirajte na vrh i dodirnite „Prilagodi vrh u prikazu”. Raspon prilagodbe u (1) i (2) određuje se automatski (±2,5 FWHM, uz Kα2 dublet), uz linearnu pozadinu.</p>
         <div class="frow">
-          <button class="btn primary" id="fitBtn">Prilagodi vrh u prikazu</button>
+          <button class="btn primary" id="fitSel" disabled>Prilagodi označeni vrh</button>
+          <button class="btn" id="fitBtn">Prilagodi vrh u prikazu</button>
           <label><input type="checkbox" id="fitKa2" checked> Kα2 dublet</label>
         </div>
         <div class="frow">
@@ -295,9 +298,9 @@
 
     <div class="card sect" id="peakSect" hidden>
       <div class="secthead"><h2 id="peakTitle">Vrhovi</h2>
-        <div class="btnrow"><button class="btn sm" id="pkToMarks">U oznake</button><button class="btn sm" id="pkCopy">Kopiraj</button><button class="btn sm" id="pkSave">Spremi</button><button class="btn sm" id="pkClear">Ukloni</button></div>
+        <div class="btnrow"><button class="btn sm" id="pkEdit2">✎ Uredi</button><button class="btn sm" id="pkToMarks">U oznake</button><button class="btn sm" id="pkCopy">Kopiraj</button><button class="btn sm" id="pkSave">Spremi</button><button class="btn sm" id="pkClear">Ukloni</button></div>
       </div>
-      <div class="scroll"><table><thead><tr><th>#</th><th>2θ (°)</th><th>d (Å)</th><th>I<sub>net</sub></th><th>I<sub>rel</sub></th><th>FWHM (°)</th></tr></thead><tbody id="peakBody"></tbody></table></div>
+      <div class="scroll"><table><thead><tr><th>#</th><th>2θ (°)</th><th>d (Å)</th><th>I<sub>net</sub></th><th>I<sub>rel</sub></th><th>FWHM (°)</th><th></th></tr></thead><tbody id="peakBody"></tbody></table></div>
     </div>
 
     <div class="card sect" id="fitSect" hidden>
@@ -1116,7 +1119,7 @@ const S = {
   fits: [], fitOpt: { ka2: true, width: "fwhm", K: 0.9, inst: 0 },
   corr: { zero: 0, disp: 0 },
   sim: { on: false, ka2: true, U: 0.004, V: -0.002, W: 0.004, eta: 0.5 },
-  refine: null, phSel: null, autoSave: true
+  refine: null, phSel: null, autoSave: true, peakEdit: false
 };
 let dsSeq = 0;
 const D2R = Math.PI / 180;
@@ -1593,11 +1596,13 @@ function drawSticks(p, isMap) {
 function drawPeakMarks(p) {
   const pk = S.peaks; if (!pk || !pk.ds.visible) return;
   const c = G.ctx, f = G.fs, ds = pk.ds, lam = lambdaOf(ds);
-  c.fillStyle = col("--marker");
+  c.fillStyle = col("--marker"); c.strokeStyle = col("--marker"); c.lineWidth = 1.5 * f;
+  const big = S.peakEdit && !G.exp ? 1.5 : 1;
   for (const q of pk.list) {
     const u = mapTth(q.tth, lam); if (u < S.view.x0 || u > S.view.x1) continue;
     const r = ds.ranges[q.ri], X = sx(u), Y = sy(PY(ds, interpAt(r.xs, r.yp, q.tth))) - 5 * f;
-    c.beginPath(); c.moveTo(X - 4 * f, Y - 7 * f); c.lineTo(X + 4 * f, Y - 7 * f); c.lineTo(X, Y); c.fill();
+    c.beginPath(); c.moveTo(X - 4 * f * big, Y - 7 * f * big); c.lineTo(X + 4 * f * big, Y - 7 * f * big); c.lineTo(X, Y); c.closePath();
+    if (q.manual) c.stroke(); else c.fill();   // manually added peaks: outlined
   }
 }
 function drawMarkers(p, isMap) {
@@ -1757,46 +1762,95 @@ function fmtEsd(v, e) {
 /* =====================================================================
    Peak search (on raw data of the selected data set)
    ===================================================================== */
+// smoothed data, background and noise level of one range (shared by automatic and manual peak picking)
+function peakCtx(r) {
+  const key = S.proc.bgWidth + "|" + r.xs.length;
+  if (r._pk && r._pk.key === key) return r._pk;
+  const st = stepOf(r), n = r.xs.length;
+  const ws = Math.max(5, (Math.round(0.06 / st) | 1)), y = sgSmooth(r.ys, Math.min(ws, 21));
+  const b = backgroundOf(r, S.proc.bgWidth), net = y.map((v, i) => v - b[i]);
+  // noise of the smoothed signal: robust scatter (MAD) of (smoothed − background), which also captures the
+  // short-range correlated noise of position-sensitive detectors; floor: counting statistics
+  const bs = Array.from(b).sort((p_, q_) => p_ - q_), bmed = Math.max(bs[bs.length >> 1], 1);
+  const dev = Array.from(net, (v, k) => v / Math.sqrt(Math.max(b[k], 1) / bmed)).sort((p_, q_) => p_ - q_);
+  const med = dev[dev.length >> 1], ad = dev.map(v => Math.abs(v - med)).sort((p_, q_) => p_ - q_);
+  const sigS = 1.4826 * ad[ad.length >> 1];
+  const m_ = (Math.min(ws, 21) - 1) >> 1; let sc2 = 0;
+  { const den = (2 * m_ + 3) * (2 * m_ + 1) * (2 * m_ - 1); for (let k = -m_; k <= m_; k++) sc2 += ((3 * (3 * m_ * m_ + 3 * m_ - 1) - 15 * k * k) / den) ** 2; }
+  let maxNet = 0; for (let i = 0; i < n; i++) if (net[i] > maxNet) maxNet = net[i];
+  r._pk = { key, st, n, y, b, net, sigS, sc2, bmed, maxNet };
+  return r._pk;
+}
+// peak description at index i: parabolic position, net height and FWHM
+function peakAt(ds, ri, i) {
+  const r = ds.ranges[ri], P = peakCtx(r), { y, net, st, n } = P;
+  i = Math.min(n - 2, Math.max(1, i));
+  let x = r.xs[i];
+  const den = y[i - 1] - 2 * y[i] + y[i + 1];
+  if (den < 0) { const off = 0.5 * (y[i - 1] - y[i + 1]) / den; if (Math.abs(off) <= 1) x = r.xs[i] + off * st; }
+  const hm = net[i] / 2; let L = NaN, R = NaN;
+  for (let k = i; k > 0; k--) if (net[k - 1] <= hm) { L = r.xs[k - 1] + (hm - net[k - 1]) / (net[k] - net[k - 1]) * (r.xs[k] - r.xs[k - 1]); break; }
+  for (let k = i; k < n - 1; k++) if (net[k + 1] <= hm) { R = r.xs[k] + (net[k] - hm) / (net[k] - net[k + 1]) * (r.xs[k + 1] - r.xs[k]); break; }
+  return { tth: x, d: isTT(ds) ? dOfTth(x, lambdaOf(ds)) : NaN, I: net[i], fwhm: R - L, ri, i };
+}
 function findPeaks(ds) {
-  const out = [], lam = lambdaOf(ds), thr = S.peakOpt.sens, minRel = S.peakOpt.minRel / 100;
+  const out = [], thr = S.peakOpt.sens, minRel = S.peakOpt.minRel / 100;
   ds.ranges.forEach((r, ri) => {
-    const st = stepOf(r), n = r.xs.length;
-    const ws = Math.max(5, (Math.round(0.06 / st) | 1)), y = sgSmooth(r.ys, Math.min(ws, 21));
-    const b = backgroundOf(r, S.proc.bgWidth), net = y.map((v, i) => v - b[i]);
+    const P = peakCtx(r), { y, b, net, st, n, sigS, sc2, bmed, maxNet } = P;
     const half = Math.max(2, Math.round(0.03 / st));
-    let maxNet = 0; for (let i = 0; i < n; i++) if (net[i] > maxNet) maxNet = net[i];
-    // noise of the smoothed signal: robust scatter (MAD) of (smoothed − background), which also captures the
-    // short-range correlated noise of position-sensitive detectors; floor: counting statistics
-    const bs = Array.from(b).sort((p_, q_) => p_ - q_), bmed = Math.max(bs[bs.length >> 1], 1);
-    const dev = Array.from(net, (v, k) => v / Math.sqrt(Math.max(b[k], 1) / bmed)).sort((p_, q_) => p_ - q_);
-    const med = dev[dev.length >> 1], ad = dev.map(v => Math.abs(v - med)).sort((p_, q_) => p_ - q_);
-    const sigS = 1.4826 * ad[ad.length >> 1];
-    const m_ = (Math.min(ws, 21) - 1) >> 1; let sc2 = 0;
-    { const den = (2 * m_ + 3) * (2 * m_ + 1) * (2 * m_ - 1); for (let k = -m_; k <= m_; k++) sc2 += ((3 * (3 * m_ * m_ + 3 * m_ - 1) - 15 * k * k) / den) ** 2; }
     for (let i = half; i < n - half; i++) {
       const v = y[i]; let ok = true;
       for (let k = i - half; k <= i + half; k++) if (y[k] > v || (y[k] === v && k < i)) { ok = false; break; }
       if (!ok) continue;
-      // counting statistics (√background) or the empirical scatter, whichever is larger; neighbouring
-      // points of position-sensitive detectors are correlated, so the empirical estimate alone is too small
+      // counting statistics or the empirical scatter, whichever is larger
       const sig = Math.max(Math.sqrt(Math.max(b[i], 1) * sc2), sigS * Math.sqrt(Math.max(b[i], 1) / bmed));
       if (net[i] < thr * sig || net[i] < minRel * maxNet) continue;
-      // parabolic refinement of the position
-      let x = r.xs[i];
-      const den = y[i - 1] - 2 * y[i] + y[i + 1];
-      if (den < 0) { const off = 0.5 * (y[i - 1] - y[i + 1]) / den; if (Math.abs(off) <= 1) x = r.xs[i] + off * st; }
-      // FWHM from the net profile
-      const hm = net[i] / 2; let L = NaN, R = NaN;
-      for (let k = i; k > 0; k--) if (net[k - 1] <= hm) { L = r.xs[k - 1] + (hm - net[k - 1]) / (net[k] - net[k - 1]) * (r.xs[k] - r.xs[k - 1]); break; }
-      for (let k = i; k < n - 1; k++) if (net[k + 1] <= hm) { R = r.xs[k] + (net[k] - hm) / (net[k] - net[k + 1]) * (r.xs[k + 1] - r.xs[k]); break; }
-      if (isNum(R - L) && R - L < 1.5 * st) continue;   // narrower than the sampling: a spike, not a peak
-      out.push({ tth: x, d: isTT(ds) ? dOfTth(x, lam) : NaN, I: net[i], fwhm: R - L, ri, i });
+      const q = peakAt(ds, ri, i);
+      if (isNum(q.fwhm) && q.fwhm < 1.5 * st) continue;   // narrower than the sampling: a spike, not a peak
+      out.push(q);
     }
   });
-  const mx = out.reduce((a, q) => Math.max(a, q.I), 0) || 1;
-  out.forEach(q => q.Irel = 100 * q.I / mx);
-  out.sort((a, b) => a.tth - b.tth);
+  relPeaks(out);
   return out;
+}
+function relPeaks(list) {
+  const mx = list.reduce((a, q) => Math.max(a, q.I), 0) || 1;
+  list.forEach(q => q.Irel = 100 * q.I / mx);
+  list.sort((a, b) => a.tth - b.tth);
+}
+// manual peak: highest point of the smoothed data within ±halfTth of the given position
+function manualPeak(ds, tth, halfTth) {
+  let best = null;
+  ds.ranges.forEach((r, ri) => {
+    if (tth < r.xs[0] - halfTth || tth > r.xs[r.xs.length - 1] + halfTth) return;
+    const P = peakCtx(r), a = Math.max(1, lowerBound(r.xs, tth - halfTth)), b = Math.min(P.n - 2, lowerBound(r.xs, tth + halfTth));
+    for (let i = a; i <= b; i++) if (!best || P.y[i] > best.v) best = { ri, i, v: P.y[i] };
+  });
+  if (!best) return null;
+  const q = peakAt(ds, best.ri, best.i); q.manual = true; return q;
+}
+// fitting window around a chosen peak: ±max(2.5·FWHM, 0.15°), extended by the Kα2 separation
+function fitAround(ds, tth) {
+  const q = manualPeak(ds, tth, 0.08); if (!q) throw new Error("Na tom mjestu nema izmjerenih točaka.");
+  const H = isNum(q.fwhm) && q.fwhm > 0 ? Math.min(q.fwhm, 1.5) : 0.1, w = Math.max(2.5 * H, 0.15);
+  const K = ka2Of(ds); let dk = 0;
+  if (S.fitOpt.ka2 && isNum(K.a2) && isTT(ds)) { const x2 = tthKa2(q.tth, K.a1, K.a2); if (isNum(x2)) dk = x2 - q.tth; }
+  // stop at the valleys towards neighbouring peaks (minimum of the smoothed data on each side),
+  // but keep at least ±1 FWHM around the peak
+  const r = ds.ranges[q.ri], P = peakCtx(r);
+  // walk outwards from the peak; stop where the smoothed data rise clearly (3σ) above the running minimum
+  const valley = (tStart, dir, tLimit) => {
+    let k = Math.min(P.n - 1, Math.max(0, lowerBound(r.xs, tStart))), m = k;
+    for (; k >= 0 && k < P.n && (dir > 0 ? r.xs[k] <= tLimit : r.xs[k] >= tLimit); k += dir) {
+      if (P.y[k] < P.y[m]) m = k;
+      const sig = Math.max(Math.sqrt(Math.max(P.b[m], 1) * P.sc2), P.sigS * Math.sqrt(Math.max(P.b[m], 1) / P.bmed));
+      if (P.y[k] > P.y[m] + 3 * sig) break;
+    }
+    return r.xs[m];
+  };
+  const left = Math.min(valley(q.tth, -1, q.tth - w), q.tth - H);
+  const right = Math.max(valley(q.tth + dk, +1, q.tth + dk + w), q.tth + dk + H);
+  return fitPeak(ds, left, right);
 }
 
 /* =====================================================================
@@ -2019,11 +2073,17 @@ function drawSim(p, vis, isMap) {
 const CLR_BTN = `<button class="btn sm" data-act="clear-cursor" style="margin-left:auto">✕ Ukloni</button>`;
 $("readout").addEventListener("click", e => {
   if (e.target.closest("[data-act=clear-cursor]")) { S.cursor = null; updateReadout(); requestDraw(); }
+  if (e.target.closest("[data-act=end-edit]")) setPeakEdit(false);
 });
 const cursorU = c => c.ph ? c.g.u : mapTth(c.x, lambdaOf(c.ds));
 function updateReadout() {
   const c = S.cursor, el = $("readout");
-  $("markBtn").disabled = !c || !c.ds;
+  $("markBtn").disabled = !c || !c.ds; $("fitSel").disabled = !c || !c.ds;
+  if (S.peakEdit && S.selected) {
+    el.innerHTML = `<span class="hint" style="color:var(--marker)">✎ Uređivanje vrhova — ${esc(S.selected.name)}: dodir dodaje vrh na najvišu točku u blizini, dodir na postojeći vrh ▼ ga uklanja.</span>` +
+      `<button class="btn sm primary" data-act="end-edit" style="margin-left:auto">Gotovo</button>`;
+    return;
+  }
   if (c && c.ph) {
     const g = c.g, lam = currentLambda();
     el.innerHTML = `<span style="display:inline-flex;align-items:center;max-width:100%"><i class="dot" style="background:${c.ph.color}"></i><span class="k" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.ph.title)}</span></span>` +
@@ -2103,6 +2163,36 @@ function pickData(px, py) {
 }
 
 /* =====================================================================
+   Manual editing of the peak list (tap = add at the local maximum, tap on ▼ = remove)
+   ===================================================================== */
+function editPeakAt(px, py) {
+  const ds = S.selected;
+  if (!ds.visible) { toast("Odabrani difraktogram je skriven."); return; }
+  if (!S.peaks || S.peaks.ds !== ds) S.peaks = { ds, list: [] };
+  const lam = lambdaOf(ds), list = S.peaks.list;
+  // remove: a peak marker within 10 px horizontally and near it vertically
+  let k = -1, bd = Infinity;
+  list.forEach((q, j) => {
+    const u = mapTth(q.tth, lam); if (u < S.view.x0 || u > S.view.x1) return;
+    const r = ds.ranges[q.ri], X = sx(u), Y = sy(PY(ds, interpAt(r.xs, r.yp, q.tth))) - 10;
+    const ddx = Math.abs(X - px), ddy = Math.abs(Y - py);
+    if (ddx < 10 && ddy < 45 && ddx + ddy / 4 < bd) { bd = ddx + ddy / 4; k = j; }
+  });
+  if (k >= 0) { list.splice(k, 1); relPeaks(list); toast("Vrh uklonjen"); }
+  else {
+    const t = unmapU(dx(px), lam), ta = unmapU(dx(px - 14), lam), tb = unmapU(dx(px + 14), lam);
+    if (!isNum(t)) return;
+    const half = Math.max(Math.abs(tb - ta) / 2, 0.01);
+    const q = manualPeak(ds, t, half);
+    if (!q) { toast("Na tom mjestu nema izmjerenih točaka."); return; }
+    const st = stepOf(ds.ranges[q.ri]);
+    if (list.some(o => o.ri === q.ri && Math.abs(o.tth - q.tth) < 1.5 * st)) { toast("Taj vrh je već na popisu."); return; }
+    list.push(q); relPeaks(list); toast(`Dodan vrh: 2θ = ${q.tth.toFixed(4)}°`);
+  }
+  renderPeaks(); requestDraw(); scheduleSave();
+}
+
+/* =====================================================================
    Pointer interaction
    ===================================================================== */
 const pointers = new Map(); let gs = null, tap = null, lastTap = { t: 0, x: 0, y: 0 };
@@ -2151,6 +2241,7 @@ function endPointer(e) {
     if (tap && !tap.moved && pointers.size === 0 && performance.now() - tap.t < 450) {
       const now = performance.now();
       if (now - lastTap.t < 320 && Math.hypot(tap.x - lastTap.x, tap.y - lastTap.y) < 30) { resetView(); lastTap.t = 0; }
+      else if (S.peakEdit && S.selected) { editPeakAt(tap.x, tap.y); lastTap = { t: now, x: tap.x, y: tap.y }; }
       else {
         if (S.cursor && Math.abs(sx(cursorU(S.cursor)) - tap.x) < 10) S.cursor = null;
         else S.cursor = pickAt(tap.x, tap.y);
@@ -2305,6 +2396,7 @@ $("dslist").addEventListener("click", e => {
   if (act === "sel") selectItem(it);
 });
 function selectItem(it) {
+  if (S.peakEdit && it.kind !== "phase" && it !== S.selected) setPeakEdit(false);
   S.metaItem = it;
   if (it.kind === "phase") S.phSel = it; else S.selected = it;
   refreshAll();
@@ -2462,6 +2554,19 @@ function readSim() {
 for (const id of ["simOn", "simKa2", "simU", "simV", "simW", "simEta"]) $(id).addEventListener("input", readSim);
 
 /* ---------- peaks ---------- */
+function setPeakEdit(on) {
+  if (on && !S.selected) { toast("Nema izmjerenog difraktograma."); return; }
+  S.peakEdit = !!on;
+  for (const id of ["pkEdit", "pkEdit2"]) $(id).classList.toggle("on", S.peakEdit);
+  if (S.peakEdit) {
+    S.cursor = null;
+    if (!S.peaks || S.peaks.ds !== S.selected) S.peaks = { ds: S.selected, list: [] };
+    $("plotwrap").scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  renderPeaks(); updateReadout(); requestDraw();
+}
+$("pkEdit").addEventListener("click", () => setPeakEdit(!S.peakEdit));
+$("pkEdit2").addEventListener("click", () => setPeakEdit(!S.peakEdit));
 $("pkBtn").addEventListener("click", () => {
   const ds = S.selected; if (!ds) { toast("Nema izmjerenog difraktograma."); return; }
   S.peakOpt.sens = +$("pkSens").value; S.peakOpt.minRel = Math.max(0, +$("pkMin").value || 0);
@@ -2472,9 +2577,17 @@ $("pkBtn").addEventListener("click", () => {
 function renderPeaks() {
   const pk = S.peaks; $("peakSect").hidden = !pk; if (!pk) return;
   $("peakTitle").textContent = `Vrhovi: ${pk.ds.name} (${pk.list.length})`;
-  $("peakBody").innerHTML = pk.list.map((q, k) => `<tr><td>${k + 1}</td><td>${q.tth.toFixed(4)}</td><td>${isNum(q.d) ? q.d.toFixed(4) : "—"}</td><td>${fmtN(q.I, 1)}</td><td>${q.Irel.toFixed(1)}</td><td>${isNum(q.fwhm) ? q.fwhm.toFixed(4) : "—"}</td></tr>`).join("");
+  $("peakBody").innerHTML = pk.list.map((q, k) => `<tr><td>${k + 1}${q.manual ? " ✎" : ""}</td><td>${q.tth.toFixed(4)}</td><td>${isNum(q.d) ? q.d.toFixed(4) : "—"}</td><td>${fmtN(q.I, 1)}</td><td>${q.Irel.toFixed(1)}</td><td>${isNum(q.fwhm) ? q.fwhm.toFixed(4) : "—"}</td>` +
+    `<td style="white-space:nowrap"><button class="x" data-fit="${k}" title="Prilagodi ovaj vrh" aria-label="Prilagodi ovaj vrh" style="font-size:17px">⌁</button><button class="x" data-rm="${k}" aria-label="Ukloni vrh">×</button></td></tr>`).join("");
 }
 const peaksText = () => { const pk = S.peaks; return [`# ${pk.ds.name}; vrhovi (osjetljivost ${S.peakOpt.sens} sigma, min I_rel ${S.peakOpt.minRel} %)`, "#\t2theta(deg)\td(A)\tI_net\tI_rel\tFWHM(deg)", ...pk.list.map((q, k) => [k + 1, q.tth.toFixed(4), isNum(q.d) ? q.d.toFixed(5) : "", q.I.toFixed(1), q.Irel.toFixed(2), isNum(q.fwhm) ? q.fwhm.toFixed(4) : ""].join("\t"))].join("\n"); };
+$("peakBody").addEventListener("click", e => {
+  const pk = S.peaks; if (!pk) return;
+  const rm = e.target.closest("[data-rm]");
+  if (rm) { pk.list.splice(+rm.dataset.rm, 1); relPeaks(pk.list); renderPeaks(); requestDraw(); scheduleSave(); return; }
+  const fb = e.target.closest("[data-fit]");
+  if (fb) doFit(() => fitAround(pk.ds, pk.list[+fb.dataset.fit].tth));
+});
 $("pkCopy").addEventListener("click", () => S.peaks && copyText(peaksText(), "Popis vrhova"));
 $("pkSave").addEventListener("click", () => S.peaks && saveText(S.peaks.ds.name.replace(/\.[^.]+$/, "") + "_vrhovi.txt", peaksText()));
 $("pkClear").addEventListener("click", () => { S.peaks = null; renderPeaks(); requestDraw(); scheduleSave(); });
@@ -2485,16 +2598,22 @@ $("pkToMarks").addEventListener("click", () => {
 });
 
 /* ---------- peak fitting ---------- */
-$("fitBtn").addEventListener("click", () => {
-  const ds = S.selected; if (!ds) { toast("Nema izmjerenog difraktograma."); return; }
+function doFit(make) {
   S.fitOpt.ka2 = $("fitKa2").checked;
   try {
-    const [t0, t1] = viewTth();
-    const ft = fitPeak(ds, t0, t1);
+    const ft = make();
     S.fits.push(ft); S.fits.sort((a, b) => a.tth - b.tth);
     renderFits(); requestDraw(); scheduleSave();
     toast(`2θ = ${ft.tth.toFixed(4)}°, FWHM = ${ft.fwhm.toFixed(4)}°`);
   } catch (err) { toast(err.message); }
+}
+$("fitBtn").addEventListener("click", () => {
+  const ds = S.selected; if (!ds) { toast("Nema izmjerenog difraktograma."); return; }
+  doFit(() => { const [t0, t1] = viewTth(); return fitPeak(ds, t0, t1); });
+});
+$("fitSel").addEventListener("click", () => {
+  const c = S.cursor; if (!c || !c.ds) { toast("Najprije dodirnite vrh na grafu."); return; }
+  doFit(() => fitAround(c.ds, c.x));
 });
 for (const id of ["whWidth", "whK", "whInst"]) $(id).addEventListener("input", () => {
   S.fitOpt.width = $("whWidth").value; S.fitOpt.K = +$("whK").value || 0.9; S.fitOpt.inst = Math.max(0, +$("whInst").value || 0);
@@ -2717,7 +2836,7 @@ async function saveSession() {
         proc: S.proc, peakOpt: S.peakOpt, fitOpt: S.fitOpt, corr: S.corr, sim: S.sim },
       view: S.view, autoY: S.autoY,
       markers: S.markers.map(m => ({ ds: ix(m.ds), ri: m.ri, i: m.i, x: m.x, y: m.y, peak: m.peak })),
-      peaks: S.peaks ? ix(S.peaks.ds) : -1,
+      peaks: S.peaks ? ix(S.peaks.ds) : -1, peakList: S.peaks ? S.peaks.list.map(q => ({ ri: q.ri, i: q.i, manual: !!q.manual })) : null,
       fits: S.fits.map(f => ({ ds: ix(f.ds), t0: f.t0, t1: f.t1, include: f.include, ka2: !!f.ka2 })),
       open: [...document.querySelectorAll("details.tool")].filter(d => d.open).map(d => d.id)
     });
@@ -2752,7 +2871,11 @@ async function restoreSession() {
     computeFull();
     if (st.view) { S.view = st.view; S.autoY = st.autoY; clampView(); } else resetView();
     S.markers = st.markers.filter(m => all[m.ds]).map(m => ({ ...m, ds: all[m.ds] }));
-    S.peaks = all[st.peaks] ? { ds: all[st.peaks], list: findPeaks(all[st.peaks]) } : null;
+    if (all[st.peaks]) {
+      const ds = all[st.peaks];
+      const list = st.peakList ? st.peakList.filter(q => ds.ranges[q.ri]).map(q => Object.assign(peakAt(ds, q.ri, q.i), q.manual ? { manual: true } : {})) : findPeaks(ds);
+      relPeaks(list); S.peaks = { ds, list };
+    } else S.peaks = null;
     S.fits = [];
     const ka2Saved = S.fitOpt.ka2;
     for (const f of st.fits) { if (!all[f.ds]) continue; S.fitOpt.ka2 = f.ka2; try { const ft = fitPeak(all[f.ds], f.t0, f.t1); ft.include = f.include; S.fits.push(ft); } catch {} }
