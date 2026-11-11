@@ -15,13 +15,13 @@
   :root {
     --bg: #f5f6f8; --panel: #ffffff; --ink: #16191f; --muted: #667085; --line: #e3e6eb;
     --grid: #eceef2; --axis: #9aa1ad; --accent: #1f5fbf; --accent-soft: #e6eefb;
-    --cursor: #d1495b; --marker: #2a9d8f; --warn-bg: #fff6e0; --warn-ink: #7a5300; --err-bg: #fdecee; --err-ink: #9b1c2c;
+    --cursor: #d1495b; --marker: #2a9d8f; --fit: #e07a00; --warn-bg: #fff6e0; --warn-ink: #7a5300; --err-bg: #fdecee; --err-ink: #9b1c2c;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #0f1115; --panel: #171a21; --ink: #e8eaee; --muted: #9098a6; --line: #2a2f39;
       --grid: #20242d; --axis: #5d6574; --accent: #6ea1ff; --accent-soft: #1d2a42;
-      --cursor: #ff6b7d; --marker: #4fd1bd; --warn-bg: #3a2f12; --warn-ink: #f4cf75; --err-bg: #3d1a20; --err-ink: #ffb3bd;
+      --cursor: #ff6b7d; --marker: #4fd1bd; --fit: #ffb04a; --warn-bg: #3a2f12; --warn-ink: #f4cf75; --err-bg: #3d1a20; --err-ink: #ffb3bd;
     }
   }
   * { box-sizing: border-box; }
@@ -44,26 +44,32 @@
   .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
   .btn.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
   .btn:disabled { opacity: .45; cursor: default; }
+  .btn.sm { min-height: 30px; padding: 4px 10px; font-size: 13.5px; }
+  .linkbtn { appearance: none; border: 0; background: none; color: var(--muted); font: inherit; font-size: 13px; text-decoration: underline; cursor: pointer; padding: 4px; }
   .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel); }
   .seg button { appearance: none; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: 14px;
     padding: 8px 12px; min-height: 36px; cursor: pointer; }
   .seg button + button { border-left: 1px solid var(--line); }
   .seg button.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
-  select { font: inherit; font-size: 14px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  select, input[type=number], input[type=text] { font: inherit; font-size: 14px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
     border-radius: 10px; padding: 7px 8px; min-height: 36px; max-width: 100%; }
+  input[type=number] { width: 7.5em; font-variant-numeric: tabular-nums; }
+  input[type=range] { accent-color: var(--accent); }
+  input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); vertical-align: middle; }
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; }
   #empty { padding: 34px 22px; text-align: center; margin-top: 18px; }
   #empty h1 { font-size: 21px; margin: 0 0 8px; }
   #empty p { color: var(--muted); margin: 6px auto; max-width: 540px; }
-  #empty .btn { margin-top: 16px; font-size: 16px; padding: 12px 18px; }
+  #empty .btn.big { margin-top: 16px; font-size: 16px; padding: 12px 18px; }
   #empty.drag { outline: 2px dashed var(--accent); outline-offset: -8px; }
+  #resumeBox { margin-top: 14px; }
   .banner { border-radius: 12px; padding: 9px 12px; margin-bottom: 10px; font-size: 13.5px; }
   .banner.warn { background: var(--warn-bg); color: var(--warn-ink); }
   .banner.err { background: var(--err-bg); color: var(--err-ink); }
   .plotcard { padding: 6px 6px 4px; }
   .plotwrap { position: relative; height: clamp(260px, 56vh, 620px); }
   @media (orientation: landscape) and (max-height: 520px) { .plotwrap { height: 78vh; } }
-  canvas { display: block; width: 100%; height: 100%; touch-action: none; user-select: none; -webkit-user-select: none;
+  canvas.plot { display: block; width: 100%; height: 100%; touch-action: none; user-select: none; -webkit-user-select: none;
     -webkit-touch-callout: none; cursor: crosshair; }
   .readout { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; padding: 8px 10px 6px;
     font-variant-numeric: tabular-nums; min-height: 38px; border-top: 1px solid var(--line); margin-top: 4px; }
@@ -74,8 +80,24 @@
   .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 12px; }
   .toolbar .sp { flex: 1; }
   h2 { font-size: 15px; margin: 0; font-weight: 650; }
+  h4 { font-size: 13px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin: 14px 0 8px; font-weight: 600; }
   .sect { padding: 12px 14px; margin-bottom: 12px; }
   .secthead { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .btnrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  /* tool panels */
+  details.tool { margin-bottom: 12px; }
+  details.tool > summary { list-style: none; cursor: pointer; padding: 12px 14px; font-weight: 650; display: flex; align-items: center; gap: 8px; }
+  details.tool > summary::-webkit-details-marker { display: none; }
+  details.tool > summary::before { content: "▸"; color: var(--muted); transition: transform .15s; display: inline-block; width: 12px; }
+  details.tool[open] > summary::before { transform: rotate(90deg); }
+  details.tool > summary small { font-weight: 400; color: var(--muted); font-size: 13px; }
+  .tbody { padding: 0 14px 14px; }
+  .tbody h4:first-child { margin-top: 2px; }
+  .frow { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin: 8px 0; font-size: 14px; }
+  .frow label { display: inline-flex; align-items: center; gap: 6px; }
+  .note { color: var(--muted); font-size: 13px; margin: 6px 0; }
+  .cellgrid { display: grid; grid-template-columns: auto 1fr auto; gap: 6px 10px; align-items: center; font-size: 14px; }
+  .cellgrid input[type=range] { width: 100%; }
   /* dataset list */
   .dslist { display: flex; flex-direction: column; gap: 2px; }
   .ds { display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-radius: 10px; }
@@ -89,31 +111,35 @@
   .ds .nm small { display: block; color: var(--muted); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .ds.off .nm { opacity: .5; }
   .ds.ph .sw span { width: 16px; height: 16px; border-radius: 0; background: none !important; }
+  .ds.sel .nm b { color: var(--accent); }
+  .x { appearance: none; border: 0; background: none; color: var(--muted); font-size: 20px; cursor: pointer; padding: 0 8px; line-height: 1; }
   .scroll { max-height: 340px; overflow: auto; -webkit-overflow-scrolling: touch; }
   .scroll table th { position: sticky; top: 0; background: var(--panel); }
   .hkl { font-variant-numeric: normal; white-space: nowrap; }
-  .ds.sel .nm b { color: var(--accent); }
-  .ds .x, td .x { appearance: none; border: 0; background: none; color: var(--muted); font-size: 20px; cursor: pointer; padding: 0 8px; line-height: 1; }
   .ovl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 14px; }
   .ovl label { display: inline-flex; align-items: center; gap: 8px; }
-  .ovl input[type=range] { width: 150px; accent-color: var(--accent); }
+  .ovl input[type=range] { width: 150px; }
   table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 14px; }
   th, td { text-align: right; padding: 6px 5px; border-bottom: 1px solid var(--line); }
   th { color: var(--muted); font-weight: 500; font-size: 12.5px; }
   th:first-child, td:first-child { text-align: left; }
+  tr.off td { opacity: .45; }
   .muted { color: var(--muted); font-size: 13.5px; }
+  .res { font-variant-numeric: tabular-nums; font-size: 14px; }
+  .res b { font-weight: 650; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
   .meta h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin: 0 0 6px; font-weight: 600; }
   .meta dl { margin: 0; display: grid; grid-template-columns: minmax(110px, 42%) 1fr; gap: 5px 10px; font-size: 14px; }
   .meta dt { color: var(--muted); }
   .meta dd { margin: 0; font-variant-numeric: tabular-nums; word-break: break-word; }
+  canvas.small { width: 100%; height: 220px; display: block; }
   .modal { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 20; padding: 16px; }
   .modal .card { width: min(640px, 100%); padding: 14px; }
   .modal textarea { width: 100%; height: 45vh; font: 12px/1.35 ui-monospace, Menlo, monospace; color: var(--ink);
     background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px; }
   .toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); transform: translateX(-50%);
     background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 999px; font-size: 14px; z-index: 30;
-    opacity: 0; transition: opacity .2s; pointer-events: none; }
+    opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 90vw; text-align: center; }
   .toast.show { opacity: .92; }
   footer { color: var(--muted); font-size: 12.5px; text-align: center; margin-top: 18px; }
 </style>
@@ -130,8 +156,13 @@
     <p>Podržani formati: Bruker <b>.brml</b> (DIFFRAC.SUITE), binarni Bruker <b>.raw</b> (verzije 1, 2, 3/RAW1.01 i 4) te tekstne datoteke s dva stupca (.xy, .txt, .csv…). Može se odabrati više datoteka odjednom radi preklapanja.</p>
     <p>Učitavanjem <b>.cif</b> datoteke izračunavaju se i iscrtavaju položaji i relativni intenziteti refleksa te faze.</p>
     <p>Zumiranje: dva prsta (vodoravno za 2θ, okomito za intenzitet). Pomicanje: jedan prst. Dodir: očitanje 2θ, d i I. Dvostruki dodir: početni prikaz.</p>
-    <label class="btn primary">Odaberi datoteke<input type="file" id="file2" multiple hidden></label>
-    <p class="muted" style="margin-top:16px">Datoteke se obrađuju isključivo lokalno u pregledniku i nigdje se ne šalju.</p>
+    <label class="btn primary big">Odaberi datoteke<input type="file" id="file2" multiple hidden></label>
+    <div id="resumeBox" hidden>
+      <button class="btn big" id="resumeBtn">↺ Nastavi zadnju sesiju</button>
+      <div class="muted" id="resumeInfo"></div>
+      <button class="linkbtn" id="forgetBtn">Zaboravi spremljenu sesiju</button>
+    </div>
+    <p class="muted" style="margin-top:16px">Datoteke se obrađuju isključivo lokalno na uređaju i nigdje se ne šalju.</p>
   </section>
 
   <div id="msg"></div>
@@ -140,40 +171,158 @@
     <div id="warn"></div>
 
     <div class="card plotcard">
-      <div class="plotwrap" id="plotwrap"><canvas id="cv"></canvas></div>
+      <div class="plotwrap" id="plotwrap"><canvas id="cv" class="plot"></canvas></div>
       <div class="readout" id="readout"></div>
     </div>
 
     <div class="toolbar">
-      <div class="seg" id="scaleSeg">
-        <button data-s="lin" class="on">Lin</button><button data-s="sqrt">√I</button><button data-s="log">log</button>
-      </div>
+      <div class="seg" id="scaleSeg"><button data-s="lin" class="on">Lin</button><button data-s="sqrt">√I</button><button data-s="log">log</button></div>
+      <div class="seg" id="xSeg"><button data-x="tth" class="on">2θ</button><button data-x="d">d</button><button data-x="q">Q</button></div>
       <button class="btn" id="snapBtn" title="Očitanje prianja uz lokalni maksimum (parabolična interpolacija)">⌃ Vrh</button>
       <button class="btn" id="markBtn" disabled>+ Oznaka</button>
       <button class="btn" id="resetBtn">Početni prikaz</button>
       <span class="sp"></span>
-      <select id="lambdaSel" aria-label="Valna duljina za d">
-        <option value="a1">d iz λ Kα1</option><option value="avg">d iz λ Kα (prosjek)</option>
+      <select id="lambdaSel" aria-label="Valna duljina za d i Q">
+        <option value="a1">λ Kα1</option><option value="avg">λ Kα (prosjek)</option>
       </select>
     </div>
 
     <div class="card sect">
       <div class="secthead"><h2 id="dsTitle">Difraktogrami</h2>
-        <div style="display:flex;gap:8px">
+        <div class="btnrow">
           <label class="btn">+ Dodaj<input type="file" id="file3" multiple hidden></label>
           <button class="btn" id="clearAll">Ukloni sve</button>
         </div>
       </div>
       <div class="dslist" id="dslist"></div>
       <div class="ovl" id="ovl">
-        <label>Pomak <input type="range" id="offset" min="0" max="100" value="0" step="1"><span id="offsetVal" class="muted">0 %</span></label>
+        <div class="seg" id="viewSeg"><button data-v="curves" class="on">Krivulje</button><button data-v="map">2D mapa</button></div>
+        <label id="offsetLbl">Pomak <input type="range" id="offset" min="0" max="100" value="0" step="1"><span id="offsetVal" class="muted">0 %</span></label>
         <button class="btn" id="normBtn" title="Svaki difraktogram skaliran na I/Imax = 100 %">Normiraj na 100 %</button>
+        <label id="mapOrderLbl" hidden>Redoslijed
+          <select id="mapOrder"><option value="load">učitavanja</option><option value="name">po imenu datoteke</option><option value="temp">po temperaturi</option></select></label>
       </div>
+    </div>
+
+    <details class="card tool" id="tProc">
+      <summary>Obrada <small id="procSum">pozadina i glađenje</small></summary>
+      <div class="tbody">
+        <div class="frow"><label>Glađenje (Savitzky–Golay, 2. red)
+          <select id="smoothSel"><option value="0">isključeno</option><option value="5">5 točaka</option><option value="7">7 točaka</option><option value="9">9 točaka</option><option value="11">11 točaka</option><option value="15">15 točaka</option><option value="21">21 točka</option></select></label></div>
+        <div class="frow"><span>Pozadina (SNIP)</span>
+          <div class="seg" id="bgSeg"><button data-b="none" class="on">Ne</button><button data-b="show">Prikaži</button><button data-b="sub">Oduzmi</button></div></div>
+        <div class="frow"><label>Širina prozora <input type="range" id="bgW" min="0.3" max="8" step="0.1" value="1.5" style="width:180px"><span id="bgWVal" class="muted">1.5°</span></label></div>
+        <p class="note">Obrada se primjenjuje na prikaz svih difraktograma. Pretraga vrhova i prilagodba vrha uvijek koriste izvorne podatke.</p>
+      </div>
+    </details>
+
+    <details class="card tool" id="tPeaks">
+      <summary>Vrhovi <small>pretraga, prilagodba, Scherrer, Williamson–Hall</small></summary>
+      <div class="tbody">
+        <h4>Pretraga vrhova</h4>
+        <div class="frow">
+          <label>Osjetljivost <select id="pkSens"><option value="3">visoka (3σ)</option><option value="5" selected>srednja (5σ)</option><option value="8">niska (8σ)</option></select></label>
+          <label>min. I<sub>rel</sub> <input type="number" id="pkMin" value="1" min="0" max="50" step="0.5"> %</label>
+          <button class="btn primary" id="pkBtn">Traži vrhove</button>
+        </div>
+        <p class="note" id="pkNote">Pretraga se provodi na odabranom difraktogramu.</p>
+        <h4>Prilagodba vrha (pseudo-Voigt)</h4>
+        <p class="note">Zumirajte na jedan vrh (ili nekoliko bliskih) i dodirnite „Prilagodi”. Prilagođava se odabrani difraktogram unutar prikazanog raspona, uz linearnu pozadinu.</p>
+        <div class="frow">
+          <button class="btn primary" id="fitBtn">Prilagodi vrh u prikazu</button>
+          <label><input type="checkbox" id="fitKa2" checked> Kα2 dublet</label>
+        </div>
+        <div class="frow">
+          <label>Scherrer: širina <select id="whWidth"><option value="fwhm">FWHM</option><option value="beta">integralna β</option></select></label>
+          <label>K <input type="number" id="whK" value="0.9" step="0.01" min="0.5" max="1.5" style="width:5.5em"></label>
+          <label>instrumentalna širina <input type="number" id="whInst" value="0" step="0.001" min="0" style="width:6.5em"> °</label>
+        </div>
+      </div>
+    </details>
+
+    <details class="card tool" id="tPhase" hidden>
+      <summary>Faze iz CIF-a <small>ćelija, korekcije, utočnjavanje, profil</small></summary>
+      <div class="tbody">
+        <div class="frow"><label>Faza <select id="phSel"></select></label><span class="muted" id="phSys"></span></div>
+        <h4>Parametri ćelije</h4>
+        <div class="cellgrid" id="cellBox"></div>
+        <div class="frow"><button class="btn sm" id="cellReset">Vrati vrijednosti iz CIF-a</button></div>
+        <h4>Korekcije položaja (sve faze)</h4>
+        <div class="frow">
+          <label>Pomak nule <input type="number" id="corrZero" value="0" step="0.001"> °</label>
+          <label>Pomak uzorka s <input type="number" id="corrDisp" value="0" step="1"> µm</label>
+          <span class="muted" id="corrR"></span>
+        </div>
+        <h4>Utočnjavanje parametara ćelije</h4>
+        <p class="note">Koristi položaje iz pretrage vrhova odabranog difraktograma (ili oznake, ako pretraga nije provedena), pridružene najbližim refleksima odabrane faze.</p>
+        <div class="frow">
+          <label>tolerancija <input type="number" id="refTol" value="0.12" step="0.01" min="0.01" style="width:5.5em"> °</label>
+          <label><input type="checkbox" id="refZero"> pomak nule</label>
+          <label><input type="checkbox" id="refDisp"> pomak uzorka</label>
+          <button class="btn primary" id="refBtn">Utočni</button>
+        </div>
+        <h4>Simulirani profil</h4>
+        <div class="frow">
+          <label><input type="checkbox" id="simOn"> Prikaži simulirani profil vidljivih faza</label>
+          <label><input type="checkbox" id="simKa2" checked> Kα2</label>
+        </div>
+        <div class="frow">
+          <label>U <input type="number" id="simU" value="0.004" step="0.001" style="width:6em"></label>
+          <label>V <input type="number" id="simV" value="-0.002" step="0.001" style="width:6em"></label>
+          <label>W <input type="number" id="simW" value="0.004" step="0.001" style="width:6em"></label>
+          <label>η <input type="range" id="simEta" min="0" max="1" step="0.05" value="0.5" style="width:110px"><span id="simEtaVal" class="muted">0.5</span></label>
+        </div>
+        <p class="note">FWHM² = U·tan²θ + V·tanθ + W (°²). Faktori skale prilagođavaju se izmjerenom difraktogramu (nakon oduzimanja pozadine) metodom najmanjih kvadrata.</p>
+        <div class="res" id="simRes"></div>
+      </div>
+    </details>
+
+    <details class="card tool" id="tExport">
+      <summary>Izvoz i sesija <small>slika grafa, spremanje stanja</small></summary>
+      <div class="tbody">
+        <div class="frow">
+          <label>Veličina <select id="expSize"><option value="screen">kao na zaslonu</option><option value="wide" selected>16:10 (1600 × 1000)</option><option value="square">kvadrat (1200 × 1200)</option></select></label>
+          <button class="btn" id="expPng">Slika PNG</button>
+          <button class="btn" id="expSvg">Slika SVG</button>
+        </div>
+        <p class="note" id="expNote">Slika se sprema u svijetloj temi, bez kursora očitanja. Na iPhoneu se otvara izbornik za dijeljenje (Spremi sliku, Datoteke, AirDrop).</p>
+        <div class="frow">
+          <label><input type="checkbox" id="autoSave" checked> Automatski spremaj sesiju na ovom uređaju</label>
+          <button class="linkbtn" id="forgetBtn2">Obriši spremljenu sesiju</button>
+        </div>
+      </div>
+    </details>
+
+    <div class="card sect" id="peakSect" hidden>
+      <div class="secthead"><h2 id="peakTitle">Vrhovi</h2>
+        <div class="btnrow"><button class="btn sm" id="pkToMarks">U oznake</button><button class="btn sm" id="pkCopy">Kopiraj</button><button class="btn sm" id="pkSave">Spremi</button><button class="btn sm" id="pkClear">Ukloni</button></div>
+      </div>
+      <div class="scroll"><table><thead><tr><th>#</th><th>2θ (°)</th><th>d (Å)</th><th>I<sub>net</sub></th><th>I<sub>rel</sub></th><th>FWHM (°)</th></tr></thead><tbody id="peakBody"></tbody></table></div>
+    </div>
+
+    <div class="card sect" id="fitSect" hidden>
+      <div class="secthead"><h2>Prilagođeni vrhovi</h2>
+        <div class="btnrow"><button class="btn sm" id="fitCopy">Kopiraj</button><button class="btn sm" id="fitClear">Ukloni sve</button></div>
+      </div>
+      <div class="scroll"><table><thead><tr><th>W–H</th><th>2θ (°)</th><th>d (Å)</th><th>FWHM (°)</th><th>β (°)</th><th>η</th><th>D (nm)</th><th>R<sub>wp</sub></th><th></th></tr></thead><tbody id="fitBody"></tbody></table></div>
+      <div id="whBox" hidden>
+        <h4>Williamson–Hall: <span id="whAxis"></span></h4>
+        <canvas id="whCv" class="small"></canvas>
+        <div class="res" id="whRes"></div>
+      </div>
+    </div>
+
+    <div class="card sect" id="refSect" hidden>
+      <div class="secthead"><h2 id="refTitle">Utočnjavanje ćelije</h2>
+        <div class="btnrow"><button class="btn sm primary" id="refApply">Primijeni na fazu</button><button class="btn sm" id="refCopy">Kopiraj</button><button class="btn sm" id="refClose">Zatvori</button></div>
+      </div>
+      <div class="res" id="refRes"></div>
+      <div class="scroll"><table><thead><tr><th>hkl</th><th>2θ<sub>obs</sub></th><th>2θ<sub>calc</sub></th><th>Δ (°)</th><th></th></tr></thead><tbody id="refBody"></tbody></table></div>
     </div>
 
     <div class="card sect" id="markSect" hidden>
       <div class="secthead"><h2>Oznake</h2>
-        <div style="display:flex;gap:8px"><button class="btn" id="copyMarks">Kopiraj</button><button class="btn" id="clearMarks">Obriši sve</button></div>
+        <div class="btnrow"><button class="btn sm" id="copyMarks">Kopiraj</button><button class="btn sm" id="saveMarks">Spremi</button><button class="btn sm" id="clearMarks">Obriši sve</button></div>
       </div>
       <table><thead><tr><th>#</th><th>2θ (°)</th><th>d (Å)</th><th>I</th><th>I/I<sub>max</sub> (%)</th><th></th></tr></thead><tbody id="markBody"></tbody></table>
     </div>
@@ -186,6 +335,7 @@
 
     <div class="toolbar" style="margin-top:14px">
       <button class="btn" id="copyXY">Kopiraj XY podatke</button>
+      <button class="btn" id="saveXY">Spremi</button>
       <span class="muted" id="xyInfo"></span>
     </div>
   </section>
@@ -406,9 +556,16 @@ function extractBrmlMeta(doc, dcDoc) {
     avg: num(pv(first(tube, "WaveLengthAverage"))?.v), beta: num(pv(first(tube, "WaveLengthBeta"))?.v),
     ratio: num(pv(first(tube, "WaveLengthRatio"))?.v), anode: txt(first(tube, "TubeMaterial"))
   };
+  for (const el of doc.getElementsByTagName("*")) {
+    if (!/temperature/i.test(el.localName)) continue;
+    const v = num(el.getAttribute("Value") ?? txt(el));
+    if (isNum(v)) { const u = el.getAttribute("Unit") || ""; M.temperature = { v, unit: u, tag: el.localName }; break; }
+  }
+  if (!M.temperature) for (const [k, v] of Object.entries(info)) if (/temp/i.test(k) && isNum(num(v))) { M.temperature = { v: num(v), unit: "", tag: k }; break; }
   const g = M.groups;
   g.push({ title: "Uzorak", rows: [["Naziv uzorka", sampleDefault ? "nije upisan (u COMMANDER-u ostala zadana vrijednost „Sample ID”)" : info.SampleName], ["Korisnik", info.User], ["Pozicija", info.SamplePosition], ["Komentar", info.Comment]] });
   const dur = (tsDate(M.finished) - tsDate(M.started)) / 1000;
+  if (M.temperature) g.push({ title: "Temperatura", rows: [["T", fmtN(M.temperature.v, 2) + " " + M.temperature.unit], ["Zapis", M.temperature.tag]] });
   g.push({ title: "Vrijeme mjerenja", rows: [["Početak", tsFmt(M.started)], ["Kraj", tsFmt(M.finished)], ["Trajanje", durFmt(dur)],
     ["Status", M.status === "Measured" ? "dovršeno" : (M.status || "")]] });
   if (tube) {
@@ -436,6 +593,7 @@ function extractBrmlMeta(doc, dcDoc) {
     if (dcDoc) { rows.push(["Uređaj", txt(first(dcDoc, "InstrumentName"))]); rows.push(["Tip", txt(first(dcDoc, "DeviceTypeDesc"))]); }
     rows.push(["Goniometar", [txt(kid(instr, "GoniometerType")).replace("_", "/"), txt(kid(instr, "Orientation")) === "Vertical" ? "vertikalni" : txt(kid(instr, "Orientation"))].filter(Boolean).join(", ")]);
     const rP = first(first(instr, "PrimaryTracks"), "Radius"), rS = first(first(instr, "SecondaryTracks"), "Radius");
+    if (rP) M.radius = num(pv(rP).v);
     rows.push(["Radijus prim. / sek.", [rP && fmtN(num(pv(rP).v), 1), rS && fmtN(num(pv(rS).v), 1)].filter(Boolean).join(" / ") + " mm"]);
     const stage = first(instr, "Stage"); if (stage) rows.push(["Nosač uzorka", stage.getAttribute("LogicName")]);
     for (const [tag, label] of [["PrimaryTracks", "Primarna optika"], ["SecondaryTracks", "Sekundarna optika"]]) {
@@ -557,6 +715,7 @@ function readBrukerRaw(buf) {
     M.sample = str(326, 60);
     M.lambda = { anode: str(608, 4), avg: f64(616), a1: f64(624), a2: f64(632), beta: f64(640), ratio: f64(648) };
     const radius = f32(564);
+    if (isNum(radius) && radius > 50 && radius < 2000) M.radius = radius;
     let pos = 712, kvFirst = "";
     for (let k = 0; k < nr && pos + 304 <= n; k++) {
       const hl = u32(pos), steps = u32(pos + 4), start = f64(pos + 16), step = f64(pos + 176), tps = f32(pos + 192);
@@ -945,268 +1104,230 @@ const hklStr = ([h, k, l]) => (Math.abs(h) > 9 || Math.abs(k) > 9 || Math.abs(l)
 
 
 /* =====================================================================
-   Datasets (overlay)
+   Application state
    ===================================================================== */
 const PALETTE = ["#1f5fbf", "#d1495b", "#2a9d8f", "#e9a03b", "#7b5ea7", "#3f8f3a", "#c2557a", "#5a6b7d", "#b5651d", "#0e8fa6"];
 const S = {
-  datasets: [], phases: [], selected: null, metaItem: null, view: null, full: null, autoY: true, scale: "lin",
-  cursor: null, markers: [], snap: false, lambdaMode: "a1", offset: 0, norm: false, nextColor: 0
+  datasets: [], phases: [], selected: null, metaItem: null,
+  view: null, full: null, fullTth: null, autoY: true, scale: "lin", xMode: "tth", viewMode: "curves", mapOrder: "load",
+  cursor: null, markers: [], snap: false, lambdaMode: "a1", offset: 0, norm: false, nextColor: 0,
+  proc: { smooth: 0, bg: "none", bgWidth: 1.5 },
+  peaks: null, peakOpt: { sens: 5, minRel: 1 },
+  fits: [], fitOpt: { ka2: true, width: "fwhm", K: 0.9, inst: 0 },
+  corr: { zero: 0, disp: 0 },
+  sim: { on: false, ka2: true, U: 0.004, V: -0.002, W: 0.004, eta: 0.5 },
+  refine: null, phSel: null, autoSave: true
 };
 let dsSeq = 0;
+const D2R = Math.PI / 180;
 const visible = () => S.datasets.filter(d => d.visible);
 const hasContent = () => S.datasets.length + S.phases.length > 0;
+const isTT = ds => ds.ranges[0].xAxis.id === "TwoTheta";
 const lambdaOf = ds => {
   const L = ds.meta.lambda || {};
   const v = S.lambdaMode === "avg" ? (isNum(L.avg) && L.avg > 0 ? L.avg : L.a1) : L.a1;
   return isNum(v) && v > 0.1 && v < 10 ? v : 1.5406;
 };
+// Kα2/Kα1 wavelength and intensity ratio for a dataset (defaults: Cu)
+const ka2Of = ds => {
+  const L = (ds && ds.meta.lambda) || {};
+  const a1 = isNum(L.a1) && L.a1 > 0 ? L.a1 : 1.5406, a2 = isNum(L.a2) && L.a2 > a1 ? L.a2 : (ds ? NaN : 1.54439);
+  return { a1, a2, ratio: isNum(L.ratio) && L.ratio > 0 ? L.ratio : 0.5 };
+};
 const currentLambda = () => S.selected ? lambdaOf(S.selected) : (S.lambdaMode === "avg" ? 1.54184 : 1.5406);
-const tthOf = d => { const s = currentLambda() / (2 * d); return s <= 1 ? 360 / Math.PI * Math.asin(s) : NaN; };
+const radiusOf = ds => (ds && isNum(ds.meta.radius) && ds.meta.radius > 50) ? ds.meta.radius : 280;
+const tthOfD = (d, lam) => { const s = lam / (2 * d); return s <= 1 ? 360 / Math.PI * Math.asin(s) : NaN; };
+const dOfTth = (t, lam) => lam / (2 * Math.sin(t * D2R / 2));
+const qOfTth = (t, lam) => 4 * Math.PI * Math.sin(t * D2R / 2) / lam;
 
-/* reflection list of a phase for the current wavelength and 2θ range (recomputed lazily) */
-function phaseRefl(ph) {
-  const lam = currentLambda(), tmax = Math.max(90, (S.full ? S.full.x1 : 90) + 3);
-  if (!ph.calc || Math.abs(ph.calc.lambda - lam) > 1e-6 || ph.calc.tmax < tmax) {
-    const c = computeReflections(ph, lam, tmax); c.tmax = tmax;
-    c.refl = c.list.map(g => { const tth = tthOf(g.d); return { tth, d: g.d, Iabs: g.F2m * LP(tth), fam: g.fam, m: g.fam.reduce((a, f) => a + f.m, 0) }; })
-      .filter(r => isNum(r.tth));
-    ph.calc = c; ph.normKey = null;
-  }
-  const key = S.full.x0 + "|" + S.full.x1;
-  if (ph.normKey !== key) {
-    let mx = 0; for (const r of ph.calc.refl) if (r.tth >= S.full.x0 && r.tth <= S.full.x1 && r.Iabs > mx) mx = r.Iabs;
-    if (!mx) mx = ph.calc.refl.reduce((a, r) => Math.max(a, r.Iabs), 0) || 1;
-    for (const r of ph.calc.refl) r.I = 100 * r.Iabs / mx;
-    ph.normKey = key;
-  }
-  return ph.calc.refl;
+/* =====================================================================
+   x-axis mapping: data are stored in 2θ; the view works in "u" units
+   (2θ in degrees, Q in 1/Å, or −d in Å so that u increases with 2θ)
+   ===================================================================== */
+function mapTth(t, lam) {
+  if (S.xMode === "tth") return t;
+  if (S.xMode === "q") return qOfTth(t, lam);
+  return -dOfTth(t, lam);
 }
-const inRange = r => r.tth >= S.full.x0 && r.tth <= S.full.x1;
-function cellTxt(ph) {
-  const c = ph.cell, f = v => fmtN(v, 4);
-  const ang = [["α", c.al], ["β", c.be], ["γ", c.ga]].filter(([, v]) => Math.abs(v - 90) > 1e-3).map(([n, v]) => `${n} ${fmtN(v, 2)}°`);
-  const cubic = Math.abs(c.a - c.b) < 1e-4 && Math.abs(c.a - c.c) < 1e-4 && !ang.length;
-  return (cubic ? `a ${f(c.a)} Å` : `a ${f(c.a)}, b ${f(c.b)}, c ${f(c.c)} Å`) + (ang.length ? ", " + ang.join(", ") : "");
+function unmapU(u, lam) {
+  if (S.xMode === "tth") return u;
+  if (S.xMode === "q") { const s = u * lam / (4 * Math.PI); return Math.abs(s) <= 1 ? 2 * Math.asin(s) / D2R : NaN; }
+  const s = lam / (2 * -u); return s > 0 && s <= 1 ? 2 * Math.asin(s) / D2R : NaN;
 }
-
-async function loadFiles(fileList) {
-  const files = Array.from(fileList); if (!files.length) return;
-  const errs = [];
-  $("msg").innerHTML = `<div class="banner warn">Učitavam ${files.length > 1 ? files.length + " datoteke" : esc(files[0].name)} …</div>`;
-  let addedData = 0, addedPh = 0;
-  for (const f of files) {
-    try {
-      const buf = await f.arrayBuffer();
-      const b = new Uint8Array(buf, 0, Math.min(8, buf.byteLength));
-      const sig = String.fromCharCode(...b);
-      let res;
-      if (sig.startsWith("PK")) res = await readBrml(buf);
-      else if (/^RAW[ 124]/.test(sig)) res = readBrukerRaw(buf);
-      else {
-        const text = new TextDecoder("utf-8").decode(buf);
-        if (/\.cif$/i.test(f.name) || (/(^|\n)\s*data_/i.test(text) && /_cell_length_a/i.test(text))) {
-          for (const ph of readCif(text, f.name)) {
-            ph.id = ++dsSeq; ph.color = PALETTE[S.nextColor++ % PALETTE.length]; ph.visible = true;
-            S.phases.push(ph); S.metaItem = ph; addedPh++;
-          }
-          continue;
-        }
-        res = readText(buf);
-      }
-      // DIFFRAC.COMMANDER default "Sample ID" (also exported into .raw) is not a real sample name
-      if (/^\s*commander sample id\s*$/i.test(res.meta.sample || "")) res.meta.sample = "";
-      const ymax = Math.max(...res.ranges.map(r => r.ys.reduce((a, v) => Math.max(a, v), -Infinity)));
-      const ds = { kind: "data", id: ++dsSeq, name: f.name, ranges: res.ranges, meta: res.meta, color: PALETTE[S.nextColor++ % PALETTE.length], visible: true, ymax };
-      S.datasets.push(ds); S.selected = ds; S.metaItem = ds; addedData++;
-    } catch (err) {
-      console.error(err); errs.push(`${esc(f.name)}: ${esc(err.message || String(err))}`);
-    }
-  }
-  $("msg").innerHTML = errs.map(e => `<div class="banner err">Greška — ${e}</div>`).join("");
-  if (!addedData && !addedPh) return;
-  $("empty").hidden = true; $("app").hidden = false; $("hdrAdd").hidden = false;
-  computeFull();
-  if (addedData || !S.view) { S.cursor = null; resetView(); }
-  refreshAll();
-}
-function clearAllItems() {
-  S.datasets = []; S.phases = []; S.markers = []; S.cursor = null; S.selected = null; S.metaItem = null; S.nextColor = 0; S.view = null;
-  $("app").hidden = true; $("empty").hidden = false; $("hdrAdd").hidden = true; $("warn").innerHTML = "";
-}
-function removeItem(it) {
-  if (it.kind === "phase") {
-    S.phases = S.phases.filter(p => p !== it);
-    if (S.cursor && S.cursor.ph === it) S.cursor = null;
-  } else {
-    S.datasets = S.datasets.filter(d => d !== it);
-    S.markers = S.markers.filter(m => m.ds !== it);
-    if (S.cursor && S.cursor.ds === it) S.cursor = null;
-    if (S.selected === it) S.selected = S.datasets[S.datasets.length - 1] || null;
-  }
-  if (S.metaItem === it) S.metaItem = S.selected || S.phases[S.phases.length - 1] || null;
-  if (!hasContent()) { clearAllItems(); return; }
-  computeFull(); if (it.kind !== "phase") resetView(); refreshAll();
-}
-function refreshAll() { S.phases.forEach(phaseRefl); renderDatasets(); renderInfo(); renderMarkers(); updateReadout(); requestDraw(); }
-
-function renderDatasets() {
-  const nD = S.datasets.length, nP = S.phases.length, many = nD + nP > 1;
-  $("dsTitle").textContent = nP ? (nD ? "Difraktogrami i faze" : (nP > 1 ? `Faze iz CIF-a (${nP})` : "Faza iz CIF-a")) : (nD > 1 ? `Difraktogrami (${nD})` : "Difraktogram");
-  const rowD = ds => {
-    const r0 = ds.ranges[0];
-    const sub = [ds.meta.sample, ds.meta.dateShort, `${fmtN(r0.xAxis.start, 2)}–${fmtN(r0.xAxis.stop, 2)}°`, ds.ranges.length > 1 ? ds.ranges.length + " raspona" : ""].filter(Boolean).join(" · ");
-    return `<div class="ds${ds.visible ? "" : " off"}${ds === S.metaItem && many ? " sel" : ""}" data-kind="d" data-id="${ds.id}">
-      <button class="sw" data-act="vis" style="border-color:${ds.color}" aria-label="Prikaži/sakrij"><span style="background:${ds.color}"></span></button>
-      <div class="nm" data-act="sel"><b>${esc(ds.name)}</b><small>${esc(sub)}</small></div>
-      <button class="x" data-act="rm" aria-label="Ukloni">×</button></div>`;
-  };
-  const rowP = ph => {
-    const n = ph.calc ? ph.calc.refl.filter(inRange).length : 0;
-    const sub = ["CIF", ph.sg, cellTxt(ph), n ? n + " refleksa" : ""].filter(Boolean).join(" · ");
-    return `<div class="ds ph${ph.visible ? "" : " off"}${ph === S.metaItem && many ? " sel" : ""}" data-kind="p" data-id="${ph.id}">
-      <button class="sw" data-act="vis" style="border-color:${ph.color}" aria-label="Prikaži/sakrij"><span style="background:repeating-linear-gradient(90deg, ${ph.color} 0 2px, transparent 2px 5px) !important"></span></button>
-      <div class="nm" data-act="sel"><b>${esc(ph.title)}</b><small>${esc(sub)}</small></div>
-      <button class="x" data-act="copy" aria-label="Kopiraj popis refleksa" title="Kopiraj popis refleksa" style="font-size:16px">⧉</button>
-      <button class="x" data-act="rm" aria-label="Ukloni">×</button></div>`;
-  };
-  $("dslist").innerHTML = S.datasets.map(rowD).join("") + S.phases.map(rowP).join("");
-  $("ovl").style.display = nD > 1 ? "" : "none";
-  $("clearAll").hidden = !many;
-  const sel = $("metaSel");
-  sel.innerHTML = S.datasets.map(ds => `<option value="d:${ds.id}"${ds === S.metaItem ? " selected" : ""}>${esc(ds.name)}</option>`).join("") +
-                  S.phases.map(ph => `<option value="p:${ph.id}"${ph === S.metaItem ? " selected" : ""}>CIF: ${esc(ph.title)}</option>`).join("");
-  sel.hidden = !many;
-}
-const findItem = (kind, id) => (kind === "p" ? S.phases : S.datasets).find(d => d.id === id);
-$("dslist").addEventListener("click", e => {
-  const row = e.target.closest(".ds"); if (!row) return;
-  const it = findItem(row.dataset.kind, +row.dataset.id); if (!it) return;
-  const act = e.target.closest("[data-act]")?.dataset.act;
-  if (act === "rm") { removeItem(it); return; }
-  if (act === "copy") { copyText(reflText(it), "Popis refleksa"); return; }
-  if (act === "vis") {
-    it.visible = !it.visible;
-    if (!it.visible && S.cursor && (S.cursor.ds === it || S.cursor.ph === it)) S.cursor = null;
-    if (S.autoY) autoscaleY(); renderDatasets(); updateReadout(); requestDraw(); return;
-  }
-  if (act === "sel") selectItem(it);
-});
-function selectItem(it) {
-  S.metaItem = it;
-  if (it.kind !== "phase") S.selected = it;   // its wavelength is used for d and for the CIF reflections
-  refreshAll();
-}
-$("metaSel").addEventListener("change", e => { const [k, id] = e.target.value.split(":"); const it = findItem(k, +id); if (it) selectItem(it); });
-$("clearAll").addEventListener("click", clearAllItems);
-
-function renderInfo() {
-  const many = S.datasets.length + S.phases.length > 1;
-  const w = [];
-  for (const d of S.datasets) for (const t of d.meta.warnings || []) w.push((many ? `<b>${esc(d.name)}:</b> ` : "") + esc(t));
-  for (const ph of S.phases) for (const t of ph.warnings || []) w.push(`<b>${esc(ph.file)}:</b> ` + esc(t));
-  $("warn").innerHTML = w.map(t => `<div class="banner warn">${t}</div>`).join("");
-  const it = S.metaItem;
-  if (!it) { $("meta").innerHTML = ""; return; }
-  if (it.kind === "phase") { renderPhaseInfo(it); return; }
-  $("copyXY").textContent = "Kopiraj XY podatke";
-  const ds = it, M = ds.meta;
-  const scanCards = ds.ranges.map((r, i) => {
-    const ax = r.xAxis;
-    const ymin = r.ys.reduce((a, v) => Math.min(a, v), Infinity), ymax = r.ys.reduce((a, v) => Math.max(a, v), -Infinity);
-    const rows = [
-      ["Format", i === 0 ? M.format : ""],
-      ["Tip skena", r.scanName], ["Način", r.scanMode],
-      [`${ax.name} početak – kraj`, `${fmtN(ax.start, 4)} – ${fmtN(ax.stop, 4)} ${ax.unit}`],
-      ["Korak", `${fmtN(ax.inc, 5)} ${ax.unit}`],
-      ["Vrijeme po koraku", isNum(r.timePerStep) ? `${fmtN(r.timePerStep, 3)} s` + (isNum(r.timeEff) && r.timeEff !== r.timePerStep ? ` (efektivno ${fmtN(r.timeEff, 1)} s)` : "") : ""],
-      ["Broj točaka", `${r.xs.length}` + (r.plannedSteps && r.plannedSteps !== r.xs.length ? ` od planiranih ${r.plannedSteps}` : "")],
-      ["Izmjereni raspon", `${fmtN(r.xs[0], 4)} – ${fmtN(r.xs[r.xs.length - 1], 4)} ${ax.unit}`],
-      ["I min / max", `${fmtN(ymin, 1)} / ${fmtN(ymax, 1)}`],
-      ["Kanal intenziteta", r.intLabel], ...(r.extra || [])
-    ];
-    return { title: ds.ranges.length > 1 ? `Sken ${i + 1}${r.file ? " (" + r.file + ")" : ""}` : "Parametri skena", rows };
-  });
-  // "Uzorak" card: file name first; the sample name only when one was actually entered
-  const g0 = M.groups.find(g => g.title === "Uzorak") || { title: "Uzorak", rows: [] };
-  const sampleCard = { title: "Uzorak", rows: [["Ime datoteke", ds.name], ...(M.sample ? [["Naziv uzorka", M.sample]] : []),
-    ...g0.rows.filter(([k]) => k !== "Naziv uzorka")] };
-  const groups = [sampleCard, ...scanCards, ...M.groups.filter(g => g !== g0)].filter(Boolean);
-  $("meta").innerHTML = groups.map(metaCard).join("");
-  const n = ds.ranges.reduce((a, r) => a + r.xs.length, 0);
-  $("xyInfo").textContent = `${many ? ds.name + ": " : ""}${n} točaka, stupci: ${ds.ranges[0].xAxis.name} (${ds.ranges[0].xAxis.unit}), intenzitet`;
-}
-function metaCard(gr) {
-  const rows = gr.rows.filter(([, v]) => v && !/^\s*(—|NaN)/.test(String(v)) && !/^—\s/.test(v));
-  if (!rows.length) return "";
-  return `<div class="card sect"><h3>${esc(gr.title)}</h3><dl>${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl></div>`;
-}
-function renderPhaseInfo(ph) {
-  const refl = phaseRefl(ph), c = ph.cell, calc = ph.calc;
-  const g1 = { title: "Kristalna struktura (CIF)", rows: [
-    ["Datoteka", ph.file], ["Naziv / formula", ph.title], ["Prostorna grupa", ph.sg], ["Operacija simetrije", String(ph.ops)],
-    ["a, b, c", `${fmtN(c.a, 5)}, ${fmtN(c.b, 5)}, ${fmtN(c.c, 5)} Å`], ["α, β, γ", `${fmtN(c.al, 3)}, ${fmtN(c.be, 3)}, ${fmtN(c.ga, 3)}°`],
-    ["V", fmtN(c.V, 2) + " Å³"], ["Z", isNum(ph.Z) ? String(ph.Z) : ""],
-    ["Položaja / atoma u ćeliji", `${ph.sites.length} / ${ph.atoms.length}`]] };
-  const g2 = { title: "Izračun refleksa", rows: [
-    ["λ", fmtN(calc.lambda, 5) + " Å" + (S.selected ? ` (iz ${S.selected.name})` : " (Cu, zadano)")],
-    ["Anomalna disperzija", calc.anode ? `f′, f″ za ${calc.anode} Kα (Chantler)` : "nije uključena"],
-    ["Atomski faktori", "Waasmaier–Kirfel; B iz CIF-a"],
-    ["LP faktor", "Bragg–Brentano, bez monokromatora"],
-    ["Nije uključeno", "preferirana orijentacija, apsorpcija, oblik linija"],
-    ["Visina štapića", "I/Imax unutar prikazanog raspona"]] };
-  const inR = refl.filter(inRange), LIM = 600;
-  const rowsHtml = inR.slice(0, LIM).map(r => `<tr><td class="hkl">${r.fam.map(f => hklStr(f.hkl)).join(", ")}</td><td>${r.tth.toFixed(3)}</td><td>${r.d.toFixed(4)}</td><td>${r.I.toFixed(1)}</td><td>${r.m}</td></tr>`).join("");
-  $("meta").innerHTML = metaCard(g1) + metaCard(g2) +
-    `<div class="card sect" style="grid-column:1/-1"><h3>Refleksi ${fmtN(S.full.x0, 1)}–${fmtN(S.full.x1, 1)}° <span style="text-transform:none">2θ</span> (${inR.length}${inR.length > LIM ? ", prikazano " + LIM : ""})</h3>
-     <div class="scroll"><table><thead><tr><th>hkl</th><th>2θ (°)</th><th>d (Å)</th><th>I<sub>rel</sub></th><th>m</th></tr></thead><tbody>${rowsHtml}</tbody></table></div></div>`;
-  $("copyXY").textContent = "Kopiraj popis refleksa";
-  $("xyInfo").textContent = `${ph.title}: ${inR.length} refleksa`;
-}
-function reflText(ph) {
-  const refl = phaseRefl(ph).filter(inRange), c = ph.cell;
-  const lines = [`# ${ph.title} (${ph.file})`, `# ${ph.sg}  a=${c.a} b=${c.b} c=${c.c} alpha=${c.al} beta=${c.be} gamma=${c.ga}`,
-    `# lambda = ${ph.calc.lambda} A; I rel. (Bragg-Brentano LP, bez pref. orijentacije)`, "# h k l\t2theta(deg)\td(A)\tI_rel\tm"];
-  for (const r of refl) lines.push([r.fam.map(f => f.hkl.join(" ")).join(" / "), r.tth.toFixed(4), r.d.toFixed(5), r.I.toFixed(2), r.m].join("\t"));
-  return lines.join("\n");
+const xAxisLabel = () => S.xMode === "tth" ? "2θ (°)" : S.xMode === "q" ? "Q (Å⁻¹)" : "d (Å)";
+function mapDs(ds) {
+  const lam = lambdaOf(ds), raw = S.xMode === "tth" || !isTT(ds);
+  for (const r of ds.ranges) r.us = raw ? r.xs : Float64Array.from(r.xs, t => mapTth(t, lam));
 }
 
 /* =====================================================================
-   View & transforms
+   Processing: Savitzky–Golay smoothing and SNIP background
+   ===================================================================== */
+function sgSmooth(y, w) {
+  const n = y.length; if (!w || w < 3 || n < w) return y;
+  const out = new Float64Array(n);
+  const coef = m => { const den = (2 * m + 3) * (2 * m + 1) * (2 * m - 1); const c = []; for (let i = -m; i <= m; i++) c.push((3 * (3 * m * m + 3 * m - 1) - 15 * i * i) / den); return c; };
+  const M = (w - 1) >> 1, cache = {};
+  for (let i = 0; i < n; i++) {
+    const m = Math.min(M, i, n - 1 - i);
+    if (m < 1) { out[i] = y[i]; continue; }
+    const c = cache[m] || (cache[m] = coef(m));
+    let s = 0; for (let k = -m; k <= m; k++) s += c[k + m] * y[i + k];
+    out[i] = s;
+  }
+  return out;
+}
+// SNIP (Ryan et al. 1988; Morháč) with LLS transform and decreasing clipping window
+function snip(y, m) {
+  const n = y.length; m = Math.max(1, Math.min(m | 0, (n >> 1) - 1));
+  let v = new Float64Array(n);
+  for (let i = 0; i < n; i++) v[i] = Math.log(Math.log(Math.sqrt(Math.max(y[i], 0) + 1) + 1) + 1);
+  let w = new Float64Array(n);
+  for (let p = m; p >= 1; p--) {
+    w.set(v);
+    for (let i = p; i < n - p; i++) { const a = (v[i - p] + v[i + p]) / 2; if (a < v[i]) w[i] = a; }
+    const t = v; v = w; w = t;
+  }
+  const out = new Float64Array(n);
+  for (let i = 0; i < n; i++) { const e = Math.exp(Math.exp(v[i]) - 1) - 1; out[i] = e * e - 1; }
+  return out;
+}
+const stepOf = r => r.xs.length > 1 ? Math.abs(r.xs[r.xs.length - 1] - r.xs[0]) / (r.xs.length - 1) : 0.02;
+function backgroundOf(r, widthDeg) {
+  const key = widthDeg + "|" + r.xs.length;
+  if (r._bgKey !== key) { r._bg = snip(sgSmooth(r.ys, 5), Math.round(widthDeg / stepOf(r))); r._bgKey = key; }
+  return r._bg;
+}
+function processDs(ds) {
+  const P = S.proc;
+  let ymax = -Infinity;
+  for (const r of ds.ranges) {
+    const ys = P.smooth ? sgSmooth(r.ys, P.smooth) : r.ys;
+    r.bg = P.bg !== "none" ? backgroundOf(r, P.bgWidth) : null;
+    if (P.bg === "sub") { const yp = new Float64Array(ys.length); for (let i = 0; i < ys.length; i++) yp[i] = ys[i] - r.bg[i]; r.yp = yp; }
+    else r.yp = ys;
+    for (let i = 0; i < r.yp.length; i++) if (r.yp[i] > ymax) ymax = r.yp[i];
+  }
+  ds.ymax = ymax > 0 ? ymax : 1;
+}
+const bgAt = (r, i) => (S.proc.bg === "sub" && r.bg) ? r.bg[i] : 0;
+function interpAt(xs, ys, x) {
+  let i = lowerBound(xs, x); if (i <= 0) return ys[0]; if (i >= xs.length) return ys[xs.length - 1];
+  const t = (x - xs[i - 1]) / (xs[i] - xs[i - 1]); return ys[i - 1] + t * (ys[i] - ys[i - 1]);
+}
+
+/* =====================================================================
+   CIF phases: cell, reflection positions (with corrections), intensities
+   ===================================================================== */
+function gsOfCell(c) {
+  const ca = Math.cos(c.al * D2R), cb = Math.cos(c.be * D2R), cg = Math.cos(c.ga * D2R);
+  const G = [[c.a * c.a, c.a * c.b * cg, c.a * c.c * cb], [c.a * c.b * cg, c.b * c.b, c.b * c.c * ca], [c.a * c.c * cb, c.b * c.c * ca, c.c * c.c]];
+  return inv3(G);
+}
+const volOfCell = c => { const ca = Math.cos(c.al * D2R), cb = Math.cos(c.be * D2R), cg = Math.cos(c.ga * D2R); return c.a * c.b * c.c * Math.sqrt(1 - ca * ca - cb * cb - cg * cg + 2 * ca * cb * cg); };
+const dOfHkl = (Gs, [h, k, l]) => 1 / Math.sqrt(h * h * Gs[0][0] + k * k * Gs[1][1] + l * l * Gs[2][2] + 2 * (h * k * Gs[0][1] + h * l * Gs[0][2] + k * l * Gs[1][2]));
+// observed 2θ = calculated 2θ + zero shift + specimen displacement (TOPAS convention, s in mm)
+function corrTth(t) {
+  const s = S.corr.disp / 1000, R = radiusOf(S.selected);
+  return t + S.corr.zero - (360 / Math.PI) * s * Math.cos(t * D2R / 2) / R;
+}
+function crystalSystem(c) {
+  const eq = (a, b) => Math.abs(a - b) < 1e-4 * Math.max(a, b), n90 = v => Math.abs(v - 90) < 1e-3, n120 = v => Math.abs(v - 120) < 1e-3;
+  if (eq(c.a, c.b) && eq(c.a, c.c) && n90(c.al) && n90(c.be) && n90(c.ga)) return { name: "kubični", free: ["a"], build: p => ({ a: p.a, b: p.a, c: p.a, al: 90, be: 90, ga: 90 }) };
+  if (eq(c.a, c.b) && n90(c.al) && n90(c.be) && n120(c.ga)) return { name: "heksagonski / trigonski", free: ["a", "c"], build: p => ({ a: p.a, b: p.a, c: p.c, al: 90, be: 90, ga: 120 }) };
+  if (eq(c.a, c.b) && eq(c.a, c.c) && eq(c.al, c.be) && eq(c.al, c.ga)) return { name: "romboedarski", free: ["a", "al"], build: p => ({ a: p.a, b: p.a, c: p.a, al: p.al, be: p.al, ga: p.al }) };
+  if (eq(c.a, c.b) && n90(c.al) && n90(c.be) && n90(c.ga)) return { name: "tetragonski", free: ["a", "c"], build: p => ({ a: p.a, b: p.a, c: p.c, al: 90, be: 90, ga: 90 }) };
+  if (n90(c.al) && n90(c.be) && n90(c.ga)) return { name: "rompski", free: ["a", "b", "c"], build: p => ({ a: p.a, b: p.b, c: p.c, al: 90, be: 90, ga: 90 }) };
+  if (n90(c.al) && n90(c.ga)) return { name: "monoklinski", free: ["a", "b", "c", "be"], build: p => ({ a: p.a, b: p.b, c: p.c, al: 90, be: p.be, ga: 90 }) };
+  if (n90(c.be) && n90(c.ga)) return { name: "monoklinski", free: ["a", "b", "c", "al"], build: p => ({ a: p.a, b: p.b, c: p.c, al: p.al, be: 90, ga: 90 }) };
+  if (n90(c.al) && n90(c.be)) return { name: "monoklinski", free: ["a", "b", "c", "ga"], build: p => ({ a: p.a, b: p.b, c: p.c, al: 90, be: 90, ga: p.ga }) };
+  return { name: "triklinski", free: ["a", "b", "c", "al", "be", "ga"], build: p => ({ a: p.a, b: p.b, c: p.c, al: p.al, be: p.be, ga: p.ga }) };
+}
+const CELL_LBL = { a: "a (Å)", b: "b (Å)", c: "c (Å)", al: "α (°)", be: "β (°)", ga: "γ (°)" };
+const cellKey = c => [c.a, c.b, c.c, c.al, c.be, c.ga].map(v => v.toFixed(6)).join(",");
+
+// structure-factor list (per hkl family), computed once per wavelength region
+function phaseBase(ph) {
+  const lam = currentLambda(), tmax = Math.min(170, Math.max(90, (S.fullTth ? S.fullTth.x1 : 90) + 8));
+  const ok = ph.calc && Math.abs(ph.calc.lambda - lam) < 0.02 && ph.calc.tmax >= tmax;
+  if (!ok) {
+    const c = computeReflections(ph, lam, tmax); c.tmax = tmax;
+    c.refl0 = [];
+    for (const g of c.list) for (const f of g.fam) c.refl0.push({ hkl: f.hkl, m: f.m, F2: f.F2 });
+    ph.calc = c; ph._posKey = null;
+  }
+  return ph.calc.refl0;
+}
+// positions and relative intensities, grouped by coincident d; cached
+function phaseRefl(ph) {
+  const base = phaseBase(ph), lam = currentLambda();
+  const key = [cellKey(ph.cellCur), lam, S.corr.zero, S.corr.disp, radiusOf(S.selected), S.xMode, S.fullTth.x0, S.fullTth.x1, ph.calc.lambda].join("|");
+  if (ph._posKey === key) return ph._groups;
+  const Gs = gsOfCell(ph.cellCur);
+  const items = base.map(r => {
+    const d = dOfHkl(Gs, r.hkl), t0 = tthOfD(d, lam);
+    return { hkl: r.hkl, m: r.m, F2: r.F2, d, tth0: t0, Iabs: isNum(t0) ? r.F2 * r.m * LP(t0) : 0 };
+  }).filter(r => isNum(r.tth0)).sort((a, b) => b.d - a.d);
+  const groups = [];
+  for (const r of items) {
+    const g = groups[groups.length - 1];
+    if (g && Math.abs(g.d - r.d) < 1e-5) { g.Iabs += r.Iabs; g.m += r.m; g.fam.push(r); }
+    else groups.push({ d: r.d, tth0: r.tth0, Iabs: r.Iabs, m: r.m, fam: [r] });
+  }
+  let mx = 0;
+  for (const g of groups) {
+    g.fam.sort((a, b) => b.F2 * b.m - a.F2 * a.m);
+    g.tth = corrTth(g.tth0); g.u = mapTth(g.tth, lam);
+    if (g.tth >= S.fullTth.x0 && g.tth <= S.fullTth.x1 && g.Iabs > mx) mx = g.Iabs;
+  }
+  if (!mx) mx = groups.reduce((a, g) => Math.max(a, g.Iabs), 0) || 1;
+  for (const g of groups) g.I = 100 * g.Iabs / mx;
+  ph._groups = groups.filter(g => g.I > 1e-4 || g.Iabs > 0); ph._posKey = key;
+  return ph._groups;
+}
+const inRangeT = g => g.tth >= S.fullTth.x0 && g.tth <= S.fullTth.x1;
+const famStr = g => g.fam.map(f => hklStr(f.hkl)).join(", ");
+
+/* =====================================================================
+   View: transforms, ranges, autoscale
    ===================================================================== */
 const T = y => S.scale === "lin" ? y : S.scale === "sqrt" ? Math.sign(y) * Math.sqrt(Math.abs(y)) : Math.log10(Math.max(y, 0.5));
 const Tinv = t => S.scale === "lin" ? t : S.scale === "sqrt" ? Math.sign(t) * t * t : Math.pow(10, t);
 const yN = (ds, y) => S.norm ? 100 * y / ds.ymax : y;
 let offCache = null;
 function offsetBase() {
-  const key = S.scale + "|" + S.norm + "|" + visible().map(d => d.id).join(",");
+  const key = S.scale + "|" + S.norm + "|" + S.proc.smooth + S.proc.bg + S.proc.bgWidth + "|" + visible().map(d => d.id).join(",");
   if (offCache && offCache.key === key) return offCache.v;
   let span = 0;
   for (const ds of visible()) {
     let lo = Infinity, hi = -Infinity;
-    for (const r of ds.ranges) for (let i = 0; i < r.ys.length; i++) { const t = T(yN(ds, r.ys[i])); if (t < lo) lo = t; if (t > hi) hi = t; }
+    for (const r of ds.ranges) for (let i = 0; i < r.yp.length; i++) { const t = T(yN(ds, r.yp[i])); if (t < lo) lo = t; if (t > hi) hi = t; }
     if (hi > lo) span = Math.max(span, hi - lo);
   }
   offCache = { key, v: span || 1 };
   return offCache.v;
 }
-// plotted (transformed + offset) ordinate of a raw intensity
 function PY(ds, y) {
   const k = visible().indexOf(ds);
-  return T(yN(ds, y)) + (S.offset > 0 && k > 0 ? k * S.offset * offsetBase() : 0);
+  return T(yN(ds, y)) + (S.offset > 0 && k > 0 && S.viewMode === "curves" ? k * S.offset * offsetBase() : 0);
 }
 function computeFull() {
-  let x0 = Infinity, x1 = -Infinity;
-  for (const ds of S.datasets) for (const r of ds.ranges) { x0 = Math.min(x0, r.xs[0]); x1 = Math.max(x1, r.xs[r.xs.length - 1]); }
-  if (!isNum(x0)) { x0 = 5; x1 = 90; }
-  S.full = { x0, x1 }; offCache = null;
+  let x0 = Infinity, x1 = -Infinity, t0 = Infinity, t1 = -Infinity;
+  for (const ds of S.datasets) for (const r of ds.ranges) {
+    x0 = Math.min(x0, r.us[0]); x1 = Math.max(x1, r.us[r.us.length - 1]);
+    t0 = Math.min(t0, r.xs[0]); t1 = Math.max(t1, r.xs[r.xs.length - 1]);
+  }
+  if (!isNum(t0)) { t0 = 5; t1 = 90; }
+  if (!isNum(x0)) { const lam = currentLambda(); x0 = mapTth(t0, lam); x1 = mapTth(t1, lam); }
+  S.full = { x0, x1 }; S.fullTth = { x0: t0, x1: t1 }; offCache = null;
 }
 function resetView() { S.view = { x0: S.full.x0, x1: S.full.x1, y0: 0, y1: 1 }; S.autoY = true; autoscaleY(); }
 function lowerBound(a, x) { let lo = 0, hi = a.length; while (lo < hi) { const m = (lo + hi) >> 1; if (a[m] < x) lo = m + 1; else hi = m; } return lo; }
 function autoscaleY() {
   const v = S.view; let lo = Infinity, hi = -Infinity;
   for (const ds of visible()) for (const r of ds.ranges) {
-    const i0 = Math.max(0, lowerBound(r.xs, v.x0) - 1), i1 = Math.min(r.xs.length, lowerBound(r.xs, v.x1) + 1);
-    for (let i = i0; i < i1; i++) { const t = PY(ds, r.ys[i]); if (t < lo) lo = t; if (t > hi) hi = t; }
+    const i0 = Math.max(0, lowerBound(r.us, v.x0) - 1), i1 = Math.min(r.us.length, lowerBound(r.us, v.x1) + 1);
+    for (let i = i0; i < i1; i++) { const t = PY(ds, r.yp[i]); if (t < lo) lo = t; if (t > hi) hi = t; }
   }
   if (!isNum(lo)) { lo = 0; hi = 1; }
   if (hi - lo < 1e-9) hi = lo + 1;
@@ -1215,7 +1336,7 @@ function autoscaleY() {
 function clampView() {
   const v = S.view, f = S.full, fullSpan = Math.max(f.x1 - f.x0, 1e-6), pad = fullSpan * 0.02;
   let span = v.x1 - v.x0;
-  const minSpan = Math.min(0.02, fullSpan);
+  const minSpan = Math.min(fullSpan, S.xMode === "tth" ? 0.02 : fullSpan / 4000);
   if (span < minSpan) { const c = (v.x0 + v.x1) / 2; v.x0 = c - minSpan / 2; v.x1 = c + minSpan / 2; span = minSpan; }
   if (span > fullSpan + 2 * pad) { v.x0 = f.x0 - pad; v.x1 = f.x1 + pad; span = v.x1 - v.x0; }
   if (v.x0 < f.x0 - pad) { v.x0 = f.x0 - pad; v.x1 = v.x0 + span; }
@@ -1223,18 +1344,31 @@ function clampView() {
   if (v.y1 - v.y0 < 1e-9) v.y1 = v.y0 + 1e-9;
   if (S.autoY) autoscaleY();
 }
+// view limits in 2θ (for the selected dataset's wavelength)
+function viewTth() {
+  const lam = currentLambda();
+  let a = unmapU(S.view.x0, lam), b = unmapU(S.view.x1, lam);
+  if (!isNum(a)) a = S.fullTth.x0; if (!isNum(b)) b = S.fullTth.x1;
+  return a < b ? [a, b] : [b, a];
+}
 
 /* =====================================================================
-   Drawing
+   Drawing (canvas or SVG context)
    ===================================================================== */
-const cv = $("cv"), ctx = cv.getContext("2d");
-const PAD = { l: 58, r: 12, t: 14, b: 34 };
-let W = 0, H = 0, DPR = 1;
-function plotRect() { return { x: PAD.l, y: PAD.t, w: Math.max(10, W - PAD.l - PAD.r), h: Math.max(10, H - PAD.t - PAD.b) }; }
+const cv = $("cv");
+const LIGHT = { "--grid": "#e4e7ec", "--axis": "#6b7280", "--muted": "#4b5563", "--ink": "#111827", "--panel": "#ffffff", "--cursor": "#d1495b", "--marker": "#1f8f7f", "--fit": "#d97706" };
+const G = { ctx: null, W: 0, H: 0, fs: 1, exp: false };
+let cssCache = null;
+function col(n) { if (G.exp) return LIGHT[n] || "#000"; if (!cssCache) cssCache = getComputedStyle(document.documentElement); return cssCache.getPropertyValue(n).trim(); }
+matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => { cssCache = null; requestDraw(); });
+const font = (px, w) => `${w ? w + " " : ""}${(px * G.fs).toFixed(1)}px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif`;
+function plotRect() {
+  const f = G.fs, l = 58 * f, r = (S.viewMode === "map" ? 26 : 12) * f, t = 14 * f, b = 34 * f;
+  return { x: l, y: t, w: Math.max(10, G.W - l - r), h: Math.max(10, G.H - t - b) };
+}
 const sx = x => { const p = plotRect(); return p.x + (x - S.view.x0) / (S.view.x1 - S.view.x0) * p.w; };
 const sy = t => { const p = plotRect(); return p.y + p.h - (t - S.view.y0) / (S.view.y1 - S.view.y0) * p.h; };
 const dx = px => { const p = plotRect(); return S.view.x0 + (px - p.x) / p.w * (S.view.x1 - S.view.x0); };
-function cssVar(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
 function niceStep(range, count) {
   const raw = range / Math.max(1, count), mag = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / mag;
   return (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) * mag;
@@ -1254,203 +1388,712 @@ function yTicks() {
     for (let e = e0; e <= e1; e++) for (const m of mult) { const t = Math.log10(m) + e; if (t >= v.y0 && t <= v.y1) out.push([t, Math.pow(10, t)]); }
     return out;
   }
-  const d0 = Tinv(v.y0), d1 = Tinv(v.y1), step = niceStep(d1 - d0, H < 300 ? 4 : 6), out = [];
+  const d0 = Tinv(v.y0), d1 = Tinv(v.y1), step = niceStep(d1 - d0, G.H < 300 * G.fs ? 4 : 6), out = [];
   for (let d = Math.ceil(d0 / step) * step; d <= d1 + step * 1e-6; d += step) out.push([T(d), Math.abs(d) < step * 1e-6 ? 0 : d]);
   return out;
+}
+// viridis colour map (polynomial approximation)
+function viridis(t) {
+  t = Math.min(1, Math.max(0, t));
+  const c0 = [0.2777, 0.0054, 0.334], c1 = [0.105, 1.4046, 1.3846], c2 = [-0.3308, 0.2148, 0.095], c3 = [-4.6342, -5.7991, -19.3324],
+        c4 = [6.2283, 14.1799, 56.6906], c5 = [4.7764, -13.7451, -65.353], c6 = [-5.4355, 4.6459, 26.3124];
+  return [0, 1, 2].map(k => Math.round(255 * Math.min(1, Math.max(0, c0[k] + t * (c1[k] + t * (c2[k] + t * (c3[k] + t * (c4[k] + t * (c5[k] + t * c6[k])))))))));
+}
+function mapRows() {
+  const rows = visible().slice();
+  if (S.mapOrder === "name") rows.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  else if (S.mapOrder === "temp") rows.sort((a, b) => (tempOf(a) ?? Infinity) - (tempOf(b) ?? Infinity));
+  return rows;
+}
+// temperature from the file (non-ambient BRML) or from the file name (e.g. "_150C", "T300K", "25°C")
+function tempOf(ds) {
+  if (ds.meta.temperature && isNum(ds.meta.temperature.v)) return ds.meta.temperature.v;
+  const m = /(?:^|[_\-\s])T?(-?\d+(?:[.,]\d+)?)\s*(?:°\s*)?(C|K)(?=$|[_\-\s.])/i.exec(ds.name.replace(/\.[^.]+$/, ""));
+  return m ? parseFloat(m[1].replace(",", ".")) : null;
 }
 
 function draw() {
   if (!hasContent() || !S.view) return;
-  const rect = cv.getBoundingClientRect(); DPR = window.devicePixelRatio || 1;
-  W = rect.width; H = rect.height;
-  if (!W || !H) return;
-  if (cv.width !== Math.round(W * DPR) || cv.height !== Math.round(H * DPR)) { cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); }
-  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  ctx.clearRect(0, 0, W, H);
-  const p = plotRect(), v = S.view, vis = visible(), offsetOn = S.offset > 0 && vis.length > 1;
-  const cGrid = cssVar("--grid"), cAxis = cssVar("--axis"), cMuted = cssVar("--muted");
-  ctx.font = "11px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  const xstep = niceStep(v.x1 - v.x0, Math.max(3, Math.floor(p.w / 80))), xd = decimalsFor(xstep);
-  ctx.strokeStyle = cGrid; ctx.lineWidth = 1; ctx.fillStyle = cMuted; ctx.textAlign = "center"; ctx.textBaseline = "top";
+  const rect = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  if (!rect.width || !rect.height) return;
+  if (cv.width !== Math.round(rect.width * dpr) || cv.height !== Math.round(rect.height * dpr)) { cv.width = Math.round(rect.width * dpr); cv.height = Math.round(rect.height * dpr); }
+  const c = cv.getContext("2d");
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  c.clearRect(0, 0, rect.width, rect.height);
+  renderPlot(c, rect.width, rect.height, 1, false);
+}
+function renderPlot(c, w, h, fs, exp) {
+  const saved = { ...G };
+  Object.assign(G, { ctx: c, W: w, H: h, fs, exp });
+  try { drawLayers(); } finally { Object.assign(G, saved); }
+}
+function drawLayers() {
+  const c = G.ctx, p = plotRect(), v = S.view, vis = visible(), f = G.fs;
+  const isMap = S.viewMode === "map" && vis.length > 1;
+  const offsetOn = !isMap && S.offset > 0 && vis.length > 1;
+  if (G.exp) { c.fillStyle = "#ffffff"; c.fillRect(0, 0, G.W, G.H); }
+  c.font = font(11);
+  // x grid and ticks
+  const xstep = niceStep(v.x1 - v.x0, Math.max(3, Math.floor(p.w / (80 * f)))), xd = decimalsFor(xstep);
+  c.strokeStyle = col("--grid"); c.lineWidth = 1 * f; c.fillStyle = col("--muted"); c.textAlign = "center"; c.textBaseline = "top";
   for (let x = Math.ceil(v.x0 / xstep) * xstep; x <= v.x1; x += xstep) {
-    const X = Math.round(sx(x)) + 0.5; ctx.beginPath(); ctx.moveTo(X, p.y); ctx.lineTo(X, p.y + p.h); ctx.stroke();
-    ctx.fillText(x.toFixed(xd), X, p.y + p.h + 5);
+    const X = Math.round(sx(x)) + 0.5;
+    if (!isMap) { c.beginPath(); c.moveTo(X, p.y); c.lineTo(X, p.y + p.h); c.stroke(); }
+    const val = S.xMode === "d" ? -x : x;
+    c.fillText(Math.abs(val) < xstep * 1e-6 ? "0" : val.toFixed(xd), X, p.y + p.h + 5 * f);
   }
-  ctx.textAlign = "right"; ctx.textBaseline = "middle";
-  if (!offsetOn && vis.length) for (const [t, d] of yTicks()) {
+  // y grid and ticks
+  c.textAlign = "right"; c.textBaseline = "middle";
+  if (!isMap && !offsetOn && vis.length) for (const [t, d] of yTicks()) {
     const Y = Math.round(sy(t)) + 0.5; if (Y < p.y - 1 || Y > p.y + p.h + 1) continue;
-    ctx.beginPath(); ctx.moveTo(p.x, Y); ctx.lineTo(p.x + p.w, Y); ctx.stroke();
-    ctx.fillText(fmtY(d), p.x - 6, Y);
+    c.beginPath(); c.moveTo(p.x, Y); c.lineTo(p.x + p.w, Y); c.stroke();
+    c.fillText(fmtY(d), p.x - 6 * f, Y);
   }
-  const ax = S.selected ? S.selected.ranges[0].xAxis : { name: "2θ", unit: "°" };
-  ctx.fillStyle = cMuted; ctx.textAlign = "right"; ctx.textBaseline = "bottom";
-  ctx.fillText(ax.name + " (" + (ax.unit || "°") + ")", p.x + p.w, H - 1);
-  ctx.save(); ctx.translate(11, p.y + p.h / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  const base = !vis.length ? "I (rel., izračunato)" : S.norm ? "I/Imax (%)" : "I (impulsi)";
-  ctx.fillText(base + (S.scale === "sqrt" ? ", √ skala" : S.scale === "log" ? ", log skala" : "") + (offsetOn ? ", s pomakom" : ""), 0, 0); ctx.restore();
-  ctx.strokeStyle = cAxis; ctx.strokeRect(p.x + 0.5, p.y + 0.5, p.w - 1, p.h - 1);
-  ctx.save(); ctx.beginPath(); ctx.rect(p.x, p.y, p.w, p.h); ctx.clip();
-  // draw selected dataset last (on top)
+  // axis titles
+  c.fillStyle = col("--muted"); c.textAlign = "right"; c.textBaseline = "bottom";
+  c.fillText(xAxisLabel(), p.x + p.w, G.H - 1);
+  c.save(); c.translate(11 * f, p.y + p.h / 2); c.rotate(-Math.PI / 2); c.textAlign = "center"; c.textBaseline = "middle";
+  const base = isMap ? (S.mapOrder === "temp" ? "T" : "difraktogram") : !vis.length ? "I (rel., izračunato)" : S.norm ? "I/Imax (%)" : S.proc.bg === "sub" ? "I − pozadina" : "I (impulsi)";
+  c.fillText(base + (!isMap && S.scale === "sqrt" ? ", √ skala" : !isMap && S.scale === "log" ? ", log skala" : "") + (offsetOn ? ", s pomakom" : ""), 0, 0); c.restore();
+
+  c.save(); c.beginPath(); c.rect(p.x, p.y, p.w, p.h); c.clip();
+  if (isMap) drawMap(p, vis);
+  else drawCurves(p, vis);
+  drawSim(p, vis, isMap);
+  if (!isMap) drawFits(p);
+  drawSticks(p, isMap);
+  if (offsetOn) {
+    c.font = font(11, 600); c.textAlign = "right"; c.textBaseline = "bottom";
+    for (const ds of vis) {
+      const r = ds.ranges[ds.ranges.length - 1];
+      const i = Math.min(r.us.length - 1, Math.max(0, lowerBound(r.us, v.x1) - 1));
+      const Y = sy(PY(ds, r.yp[i])) - 4 * f; if (Y < p.y + 10 * f || Y > p.y + p.h) continue;
+      c.fillStyle = ds.color; c.fillText(ds.name.replace(/\.[^.]+$/, "").slice(0, 28), p.x + p.w - 4 * f, Y);
+    }
+  }
+  if (!isMap) drawPeakMarks(p);
+  drawMarkers(p, isMap);
+  if (!G.exp) drawCursor(p, isMap);
+  c.restore();
+  c.strokeStyle = col("--axis"); c.lineWidth = 1 * f; c.strokeRect(p.x + 0.5, p.y + 0.5, p.w - 1, p.h - 1);
+  if (isMap) drawColorBar(p);
+}
+function drawCurves(p, vis) {
+  const c = G.ctx, v = S.view, f = G.fs;
   const order = vis.slice().sort((a, b) => (a === S.selected) - (b === S.selected));
   for (const ds of order) for (const r of ds.ranges) {
-    ctx.strokeStyle = ds.color; ctx.lineWidth = vis.length > 1 ? 1.2 : 1.25; ctx.lineJoin = "round"; ctx.beginPath();
-    const i0 = Math.max(0, lowerBound(r.xs, v.x0) - 1), i1 = Math.min(r.xs.length, lowerBound(r.xs, v.x1) + 1), n = i1 - i0;
-    if (n > p.w * 3) {
-      let col = -1, mn = 0, mx = 0, firstPt = true;
-      const flush = () => { if (col < 0) return; if (firstPt) { ctx.moveTo(col, mx); firstPt = false; } else ctx.lineTo(col, mx); ctx.lineTo(col, mn); };
+    const i0 = Math.max(0, lowerBound(r.us, v.x0) - 1), i1 = Math.min(r.us.length, lowerBound(r.us, v.x1) + 1), n = i1 - i0;
+    if (n <= 0) continue;
+    // background curve (shown, not subtracted)
+    if (S.proc.bg === "show" && r.bg) {
+      c.strokeStyle = ds.color; c.globalAlpha = 0.6; c.lineWidth = 1 * f; c.setLineDash([5 * f, 4 * f]); c.beginPath();
+      const stp = Math.max(1, Math.floor(n / p.w));
+      for (let i = i0; i < i1; i += stp) { const X = sx(r.us[i]), Y = sy(PY(ds, r.bg[i])); i === i0 ? c.moveTo(X, Y) : c.lineTo(X, Y); }
+      c.stroke(); c.setLineDash([]); c.globalAlpha = 1;
+    }
+    c.strokeStyle = ds.color; c.lineWidth = (vis.length > 1 ? 1.2 : 1.25) * f; c.lineJoin = "round"; c.beginPath();
+    if (n > p.w * 3 && !G.exp) {
+      let colX = -1, mn = 0, mx = 0, firstPt = true;
+      const flush = () => { if (colX < 0) return; if (firstPt) { c.moveTo(colX, mx); firstPt = false; } else c.lineTo(colX, mx); c.lineTo(colX, mn); };
       for (let i = i0; i < i1; i++) {
-        const X = Math.floor(sx(r.xs[i])), Y = sy(PY(ds, r.ys[i]));
-        if (X !== col) { flush(); col = X; mn = Y; mx = Y; } else { if (Y < mx) mx = Y; if (Y > mn) mn = Y; }
+        const X = Math.floor(sx(r.us[i])), Y = sy(PY(ds, r.yp[i]));
+        if (X !== colX) { flush(); colX = X; mn = Y; mx = Y; } else { if (Y < mx) mx = Y; if (Y > mn) mn = Y; }
       }
       flush();
     } else {
-      for (let i = i0; i < i1; i++) { const X = sx(r.xs[i]), Y = sy(PY(ds, r.ys[i])); i === i0 ? ctx.moveTo(X, Y) : ctx.lineTo(X, Y); }
+      for (let i = i0; i < i1; i++) { const X = sx(r.us[i]), Y = sy(PY(ds, r.yp[i])); i === i0 ? c.moveTo(X, Y) : c.lineTo(X, Y); }
     }
-    ctx.stroke();
-    if (n < p.w / 6) { ctx.fillStyle = ds.color; for (let i = i0; i < i1; i++) { ctx.beginPath(); ctx.arc(sx(r.xs[i]), sy(PY(ds, r.ys[i])), 2, 0, 7); ctx.fill(); } }
+    c.stroke();
+    if (n < p.w / (6 * f)) { c.fillStyle = ds.color; for (let i = i0; i < i1; i++) { c.beginPath(); c.arc(sx(r.us[i]), sy(PY(ds, r.yp[i])), 2 * f, 0, 7); c.fill(); } }
   }
-  // CIF reflection sticks (heights in screen space: I/Imax × 85 % of the plot height)
+}
+// 2D map: rows = data sets, colour = transformed intensity
+let mapCanvas = null;
+function drawMap(p, vis) {
+  const c = G.ctx, v = S.view, rows = mapRows(), n = rows.length;
+  const W = Math.max(1, Math.round(Math.min(p.w, 1600))), vals = [];
+  let lo = Infinity, hi = -Infinity;
+  for (const ds of rows) {
+    const row = new Float64Array(W).fill(NaN);
+    for (const r of ds.ranges) {
+      for (let k = 0; k < W; k++) {
+        const ua = v.x0 + (v.x1 - v.x0) * k / W, ub = v.x0 + (v.x1 - v.x0) * (k + 1) / W;
+        let i = lowerBound(r.us, ua); const j = lowerBound(r.us, ub);
+        let val = -Infinity;
+        if (j > i) { for (; i < j; i++) { const t = T(yN(ds, r.yp[i])); if (t > val) val = t; } }
+        else if (i > 0 && i < r.us.length) { const um = (ua + ub) / 2; val = T(yN(ds, interpAt(r.us, r.yp, um))); }
+        if (val > -Infinity) { row[k] = val; if (val < lo) lo = val; if (val > hi) hi = val; }
+      }
+    }
+    vals.push(row);
+  }
+  if (!(hi > lo)) { lo = 0; hi = 1; }
+  if (!mapCanvas) mapCanvas = document.createElement("canvas");
+  mapCanvas.width = W; mapCanvas.height = n;
+  const mc = mapCanvas.getContext("2d"), img = mc.createImageData(W, n);
+  for (let y = 0; y < n; y++) for (let k = 0; k < W; k++) {
+    const val = vals[n - 1 - y][k], o = (y * W + k) * 4;
+    if (!isNum(val)) { img.data[o + 3] = 0; continue; }
+    const [R, Gc, B] = viridis((val - lo) / (hi - lo));
+    img.data[o] = R; img.data[o + 1] = Gc; img.data[o + 2] = B; img.data[o + 3] = 255;
+  }
+  mc.putImageData(img, 0, 0);
+  c.imageSmoothingEnabled = false;
+  c.drawImage(mapCanvas, p.x, p.y, p.w, p.h);
+  c.imageSmoothingEnabled = true;
+  // row labels
+  const rh = p.h / n, f = G.fs, every = Math.max(1, Math.ceil(12 * f / rh));
+  G._mapRows = rows; G._mapLo = lo; G._mapHi = hi;
+  c.restore(); c.save();   // leave the clip to draw labels in the margin
+  c.font = font(10); c.fillStyle = col("--muted"); c.textAlign = "right"; c.textBaseline = "middle";
+  for (let k = 0; k < n; k += every) {
+    const ds = rows[k], Y = p.y + p.h - (k + 0.5) * rh, t = tempOf(ds);
+    const lbl = S.mapOrder === "temp" && t != null ? fmtN(t, 1) : String(k + 1);
+    c.fillText(lbl, p.x - 4 * f, Y);
+  }
+  c.beginPath(); c.rect(p.x, p.y, p.w, p.h); c.clip();
+}
+function drawColorBar(p) {
+  const c = G.ctx, f = G.fs, x = p.x + p.w + 8 * f, w = 10 * f;
+  const bar = document.createElement("canvas"); bar.width = 1; bar.height = 128;
+  const bc = bar.getContext("2d"), img = bc.createImageData(1, 128);
+  for (let i = 0; i < 128; i++) { const [R, Gc, B] = viridis(1 - i / 127); img.data.set([R, Gc, B, 255], i * 4); }
+  bc.putImageData(img, 0, 0);
+  c.imageSmoothingEnabled = true; c.drawImage(bar, x, p.y, w, p.h);
+  c.strokeStyle = col("--axis"); c.lineWidth = 1 * f; c.strokeRect(x + 0.5, p.y + 0.5, w - 1, p.h - 1);
+}
+function drawSticks(p, isMap) {
+  const c = G.ctx, v = S.view, f = G.fs;
   for (const ph of S.phases) {
     if (!ph.visible) continue;
-    const refl = phaseRefl(ph), bot = p.y + p.h, Hs = p.h * 0.85, shown = [];
-    ctx.strokeStyle = ph.color; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.85; ctx.beginPath();
-    for (const r of refl) {
-      if (r.tth < v.x0 || r.tth > v.x1) continue;
-      const X = Math.round(sx(r.tth)) + 0.5, top = bot - Math.max(7, r.I / 100 * Hs);
-      ctx.moveTo(X, bot); ctx.lineTo(X, top); shown.push([X, top, r]);
+    const groups = phaseRefl(ph), bot = p.y + p.h, Hs = (isMap ? 0.12 : 0.85) * p.h, shown = [];
+    c.strokeStyle = isMap ? "#ffffff" : ph.color; c.lineWidth = (isMap ? 3 : 1.5) * f; c.globalAlpha = isMap ? 0.7 : 0.85;
+    const segs = [];
+    for (const g of groups) {
+      if (g.u < v.x0 || g.u > v.x1) continue;
+      const X = Math.round(sx(g.u)) + 0.5, top = bot - Math.max(7 * f, g.I / 100 * Hs);
+      segs.push([X, top]); shown.push([X, top, g]);
     }
-    ctx.stroke(); ctx.globalAlpha = 1;
-    if (shown.length && shown.length <= 25) {   // hkl labels when zoomed in
-      ctx.font = "10px -apple-system, BlinkMacSystemFont, sans-serif"; ctx.fillStyle = ph.color; ctx.textBaseline = "middle";
+    if (isMap) { c.beginPath(); for (const [X, top] of segs) { c.moveTo(X, bot); c.lineTo(X, top); } c.stroke(); c.strokeStyle = ph.color; c.lineWidth = 1.5 * f; c.globalAlpha = 1; }
+    c.beginPath(); for (const [X, top] of segs) { c.moveTo(X, bot); c.lineTo(X, top); } c.stroke(); c.globalAlpha = 1;
+    if (!isMap && shown.length && shown.length <= 25) {
+      c.font = font(10); c.fillStyle = ph.color; c.textBaseline = "middle";
       const used = [];
-      for (const [X, top, r] of shown.filter(q => q[2].I >= 1).sort((a, b) => b[2].I - a[2].I)) {
-        if (used.some(u => Math.abs(u - X) < 12)) continue; used.push(X);
-        const label = r.fam.map(f => hklStr(f.hkl)).slice(0, 2).join(", "), tw = ctx.measureText(label).width;
-        ctx.save();
-        if (top - 4 - tw > p.y + 2) { ctx.translate(X, top - 4); ctx.rotate(-Math.PI / 2); ctx.textAlign = "left"; }
-        else { ctx.translate(X + 7, top + 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = "right"; }
-        ctx.fillText(label, 0, 0); ctx.restore();
+      for (const [X, top, g] of shown.filter(q => q[2].I >= 1).sort((a, b) => b[2].I - a[2].I)) {
+        if (used.some(u => Math.abs(u - X) < 12 * f)) continue; used.push(X);
+        const label = g.fam.map(r => hklStr(r.hkl)).slice(0, 2).join(", "), tw = c.measureText(label).width;
+        c.save();
+        if (top - 4 * f - tw > p.y + 2) { c.translate(X, top - 4 * f); c.rotate(-Math.PI / 2); c.textAlign = "left"; }
+        else { c.translate(X + 7 * f, top + 2 * f); c.rotate(-Math.PI / 2); c.textAlign = "right"; }
+        c.fillText(label, 0, 0); c.restore();
       }
     }
   }
-  // curve labels in offset mode
-  if (offsetOn) {
-    ctx.font = "600 11px -apple-system, sans-serif"; ctx.textAlign = "right"; ctx.textBaseline = "bottom";
-    for (const ds of vis) {
-      const r = ds.ranges[ds.ranges.length - 1];
-      const i = Math.min(r.xs.length - 1, Math.max(0, lowerBound(r.xs, v.x1) - 1));
-      const Y = sy(PY(ds, r.ys[i])) - 4; if (Y < p.y + 10 || Y > p.y + p.h) continue;
-      ctx.fillStyle = ds.color; ctx.fillText(ds.name.replace(/\.[^.]+$/, "").slice(0, 28), p.x + p.w - 4, Y);
-    }
+}
+function drawPeakMarks(p) {
+  const pk = S.peaks; if (!pk || !pk.ds.visible) return;
+  const c = G.ctx, f = G.fs, ds = pk.ds, lam = lambdaOf(ds);
+  c.fillStyle = col("--marker");
+  for (const q of pk.list) {
+    const u = mapTth(q.tth, lam); if (u < S.view.x0 || u > S.view.x1) continue;
+    const r = ds.ranges[q.ri], X = sx(u), Y = sy(PY(ds, interpAt(r.xs, r.yp, q.tth))) - 5 * f;
+    c.beginPath(); c.moveTo(X - 4 * f, Y - 7 * f); c.lineTo(X + 4 * f, Y - 7 * f); c.lineTo(X, Y); c.fill();
   }
-  const cMark = cssVar("--marker");
+}
+function drawMarkers(p, isMap) {
+  const c = G.ctx, f = G.fs;
   S.markers.forEach((m, k) => {
     if (!m.ds.visible) return;
-    const X = sx(m.x); if (X < p.x - 2 || X > p.x + p.w + 2) return;
-    const col = S.datasets.length > 1 ? m.ds.color : cMark;
-    ctx.strokeStyle = col; ctx.globalAlpha = 0.55; ctx.setLineDash([2, 3]);
-    ctx.beginPath(); ctx.moveTo(X, p.y + 14); ctx.lineTo(X, sy(PY(m.ds, m.y))); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
-    ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(X - 5, p.y + 2); ctx.lineTo(X + 5, p.y + 2); ctx.lineTo(X, p.y + 10); ctx.fill();
-    ctx.font = "600 10px -apple-system, sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "top"; ctx.fillText(String(k + 1), X + 6, p.y + 2);
+    const X = sx(mapTth(m.x, lambdaOf(m.ds))); if (X < p.x - 2 || X > p.x + p.w + 2) return;
+    const colr = S.datasets.length > 1 ? m.ds.color : col("--marker");
+    const r = m.ds.ranges[m.ri], yb = isMap ? p.y + p.h : sy(PY(m.ds, interpAt(r.xs, r.yp, m.x)));
+    c.strokeStyle = isMap ? "#ffffff" : colr; c.lineWidth = 1 * f; c.globalAlpha = isMap ? 0.8 : 0.55; c.setLineDash([2 * f, 3 * f]);
+    c.beginPath(); c.moveTo(X, p.y + 14 * f); c.lineTo(X, yb); c.stroke(); c.setLineDash([]); c.globalAlpha = 1;
+    c.fillStyle = colr; c.beginPath(); c.moveTo(X - 5 * f, p.y + 2 * f); c.lineTo(X + 5 * f, p.y + 2 * f); c.lineTo(X, p.y + 10 * f); c.fill();
+    c.font = font(10, 600); c.textAlign = "left"; c.textBaseline = "top"; c.fillText(String(k + 1), X + 6 * f, p.y + 2 * f);
   });
-  if (S.cursor && S.cursor.ph) {
-    const c = S.cursor, tth = tthOf(c.refl.d), X = sx(tth);
-    ctx.strokeStyle = c.ph.color; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
-    ctx.beginPath(); ctx.moveTo(X, p.y); ctx.lineTo(X, p.y + p.h); ctx.stroke(); ctx.setLineDash([]);
-    const label = c.refl.fam.map(f => hklStr(f.hkl)).slice(0, 2).join(", ") + "  " + tth.toFixed(3) + "°";
-    ctx.font = "600 12px -apple-system, sans-serif"; const tw = ctx.measureText(label).width + 10;
-    let LX = X + 6; if (LX + tw > p.x + p.w) LX = X - 6 - tw;
-    ctx.fillStyle = cssVar("--panel"); ctx.globalAlpha = 0.9; ctx.fillRect(LX, p.y + 4, tw, 18); ctx.globalAlpha = 1;
-    ctx.fillStyle = c.ph.color; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(label, LX + 5, p.y + 13);
-  } else if (S.cursor) {
-    const c = S.cursor, X = sx(c.x), Y = sy(PY(c.ds, c.y)), cc = cssVar("--cursor");
-    ctx.strokeStyle = cc; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
-    ctx.beginPath(); ctx.moveTo(X, p.y); ctx.lineTo(X, p.y + p.h); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle = cc; ctx.beginPath(); ctx.arc(X, Y, 4, 0, 7); ctx.fill();
-    if (vis.length > 1) { ctx.strokeStyle = c.ds.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(X, Y, 6.5, 0, 7); ctx.stroke(); }
-    const label = c.x.toFixed(4) + "°";
-    ctx.font = "600 12px -apple-system, sans-serif"; const tw = ctx.measureText(label).width + 10;
-    let LX = X + 6; if (LX + tw > p.x + p.w) LX = X - 6 - tw;
-    ctx.fillStyle = cssVar("--panel"); ctx.globalAlpha = 0.9; ctx.fillRect(LX, p.y + p.h - 22, tw, 18); ctx.globalAlpha = 1;
-    ctx.fillStyle = cc; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(label, LX + 5, p.y + p.h - 13);
+}
+function drawCursor(p, isMap) {
+  const c = G.ctx, cur = S.cursor; if (!cur) return;
+  if (cur.ph) {
+    const g = cur.g, X = sx(g.u);
+    c.strokeStyle = cur.ph.color; c.lineWidth = 1.5; c.setLineDash([4, 3]);
+    c.beginPath(); c.moveTo(X, p.y); c.lineTo(X, p.y + p.h); c.stroke(); c.setLineDash([]);
+    cursorLabel(p, X, famStr(g).split(", ").slice(0, 2).join(", ") + "  " + g.tth.toFixed(3) + "°", cur.ph.color, true);
+    return;
   }
-  ctx.restore();
+  const ds = cur.ds, X = sx(mapTth(cur.x, lambdaOf(ds))), cc = col("--cursor");
+  c.strokeStyle = cc; c.lineWidth = 1; c.setLineDash([4, 3]);
+  c.beginPath(); c.moveTo(X, p.y); c.lineTo(X, p.y + p.h); c.stroke(); c.setLineDash([]);
+  if (isMap) {
+    const rows = G._mapRows || mapRows(), k = rows.indexOf(ds), rh = p.h / rows.length;
+    if (k >= 0) { c.strokeStyle = "#ffffff"; c.lineWidth = 1.5; c.strokeRect(p.x + 1, p.y + p.h - (k + 1) * rh, p.w - 2, rh); }
+  } else {
+    const Y = sy(PY(ds, cur.y));
+    c.fillStyle = cc; c.beginPath(); c.arc(X, Y, 4, 0, 7); c.fill();
+    if (visible().length > 1) { c.strokeStyle = ds.color; c.lineWidth = 2; c.beginPath(); c.arc(X, Y, 6.5, 0, 7); c.stroke(); }
+  }
+  const val = S.xMode === "tth" ? cur.x.toFixed(4) + "°" : S.xMode === "q" ? qOfTth(cur.x, lambdaOf(ds)).toFixed(4) + " Å⁻¹" : dOfTth(cur.x, lambdaOf(ds)).toFixed(4) + " Å";
+  cursorLabel(p, X, val, cc, false);
+}
+function cursorLabel(p, X, label, color, top) {
+  const c = G.ctx;
+  c.font = font(12, 600); const tw = c.measureText(label).width + 10;
+  let LX = X + 6; if (LX + tw > p.x + p.w) LX = X - 6 - tw;
+  const Y = top ? p.y + 4 : p.y + p.h - 22;
+  c.fillStyle = col("--panel"); c.globalAlpha = 0.9; c.fillRect(LX, Y, tw, 18); c.globalAlpha = 1;
+  c.fillStyle = color; c.textAlign = "left"; c.textBaseline = "middle"; c.fillText(label, LX + 5, Y + 9);
 }
 let rafPending = false;
 function requestDraw() { if (rafPending) return; rafPending = true; requestAnimationFrame(() => { rafPending = false; draw(); }); }
 
 /* =====================================================================
-   Readout, picking
+   Minimal SVG drawing context (subset of CanvasRenderingContext2D)
    ===================================================================== */
-const isTT = ds => ds.ranges[0].xAxis.id === "TwoTheta";
-const dSpacing = (ds, x) => isTT(ds) && x > 0 ? lambdaOf(ds) / (2 * Math.sin(x * Math.PI / 360)) : NaN;
-const CLR_BTN = `<button class="btn" data-act="clear-cursor" style="margin-left:auto;min-height:30px;padding:4px 10px">✕ Ukloni</button>`;
+class SvgCtx {
+  constructor(w, h) {
+    this.w = w; this.h = h; this.out = []; this.defs = []; this.stack = []; this.path = ""; this.nclip = 0;
+    this.st = { m: [1, 0, 0, 1, 0, 0], strokeStyle: "#000", fillStyle: "#000", lineWidth: 1, font: "10px sans-serif", textAlign: "start", textBaseline: "alphabetic", globalAlpha: 1, dash: [], clip: null, lineJoin: "miter" };
+    this.mc = document.createElement("canvas").getContext("2d");
+    for (const k of ["strokeStyle", "fillStyle", "lineWidth", "font", "textAlign", "textBaseline", "globalAlpha", "lineJoin"])
+      Object.defineProperty(this, k, { get: () => this.st[k], set: v => { this.st[k] = v; } });
+    this.imageSmoothingEnabled = true;
+  }
+  save() { this.stack.push({ ...this.st, m: this.st.m.slice(), dash: this.st.dash.slice() }); }
+  restore() { if (this.stack.length) this.st = this.stack.pop(); }
+  setTransform(a, b, c, d, e, f) { this.st.m = [a, b, c, d, e, f]; }
+  translate(x, y) { const m = this.st.m; m[4] += m[0] * x + m[2] * y; m[5] += m[1] * x + m[3] * y; }
+  rotate(t) { const m = this.st.m, c = Math.cos(t), s = Math.sin(t), [a, b, cc, d] = m; m[0] = a * c + cc * s; m[1] = b * c + d * s; m[2] = -a * s + cc * c; m[3] = -b * s + d * c; }
+  tp(x, y) { const m = this.st.m; return [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]]; }
+  beginPath() { this.path = ""; }
+  moveTo(x, y) { const [X, Y] = this.tp(x, y); this.path += `M${X.toFixed(2)} ${Y.toFixed(2)}`; }
+  lineTo(x, y) { const [X, Y] = this.tp(x, y); this.path += `L${X.toFixed(2)} ${Y.toFixed(2)}`; }
+  closePath() { this.path += "Z"; }
+  rect(x, y, w, h) { this.moveTo(x, y); this.lineTo(x + w, y); this.lineTo(x + w, y + h); this.lineTo(x, y + h); this.closePath(); }
+  arc(x, y, r) { const [X, Y] = this.tp(x, y); this.path += `M${(X - r).toFixed(2)} ${Y.toFixed(2)}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0`; }
+  wrap(el) { this.out.push(this.st.clip ? `<g clip-path="url(#${this.st.clip})">${el}</g>` : el); }
+  op() { return this.st.globalAlpha < 1 ? ` opacity="${this.st.globalAlpha}"` : ""; }
+  stroke() {
+    if (!this.path) return;
+    const dash = this.st.dash.length ? ` stroke-dasharray="${this.st.dash.join(" ")}"` : "";
+    this.wrap(`<path d="${this.path}" fill="none" stroke="${this.st.strokeStyle}" stroke-width="${this.st.lineWidth}" stroke-linejoin="${this.st.lineJoin}"${dash}${this.op()}/>`);
+  }
+  fill() { if (this.path) this.wrap(`<path d="${this.path}" fill="${this.st.fillStyle}"${this.op()}/>`); }
+  fillRect(x, y, w, h) { const p = this.path; this.beginPath(); this.rect(x, y, w, h); this.fill(); this.path = p; }
+  strokeRect(x, y, w, h) { const p = this.path; this.beginPath(); this.rect(x, y, w, h); this.stroke(); this.path = p; }
+  clearRect() {}
+  clip() { const id = "c" + (++this.nclip); this.defs.push(`<clipPath id="${id}"><path d="${this.path}"/></clipPath>`); this.st.clip = id; }
+  setLineDash(a) { this.st.dash = a.slice(); }
+  measureText(t) { this.mc.font = this.st.font; return this.mc.measureText(t); }
+  fillText(t, x, y) {
+    const m = this.st.m, fm = /(?:(\d{3}|bold)\s+)?([\d.]+)px\s+(.*)$/.exec(this.st.font) || [];
+    const anchor = { left: "start", start: "start", center: "middle", right: "end", end: "end" }[this.st.textAlign] || "start";
+    const base = { middle: "central", top: "hanging", bottom: "text-after-edge", alphabetic: "auto" }[this.st.textBaseline] || "auto";
+    const esc_ = String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+    this.wrap(`<text transform="matrix(${m.map(v => +v.toFixed(4)).join(" ")})" x="${x}" y="${y}" fill="${this.st.fillStyle}" font-size="${fm[2] || 10}" font-family="Helvetica, Arial, sans-serif"${fm[1] ? ` font-weight="${fm[1]}"` : ""} text-anchor="${anchor}" dominant-baseline="${base}"${this.op()}>${esc_}</text>`);
+  }
+  drawImage(img, x, y, w, h) {
+    const [X, Y] = this.tp(x, y), url = img.toDataURL("image/png");
+    this.wrap(`<image href="${url}" x="${X}" y="${Y}" width="${w}" height="${h}" preserveAspectRatio="none" style="image-rendering:${this.imageSmoothingEnabled ? "auto" : "pixelated"}"/>`);
+  }
+  toString() { return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${this.w}" height="${this.h}" viewBox="0 0 ${this.w} ${this.h}"><defs>${this.defs.join("")}</defs>${this.out.join("\n")}</svg>`; }
+}
+/* =====================================================================
+   Numerical helpers: linear solve, Levenberg–Marquardt
+   ===================================================================== */
+function solveLin(A, b) {
+  const n = b.length, M = A.map((r, i) => [...r, b[i]]);
+  for (let c = 0; c < n; c++) {
+    let p = c; for (let r = c + 1; r < n; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;
+    if (Math.abs(M[p][c]) < 1e-300) return null;
+    [M[c], M[p]] = [M[p], M[c]];
+    for (let r = 0; r < n; r++) if (r !== c) { const f = M[r][c] / M[c][c]; for (let k = c; k <= n; k++) M[r][k] -= f * M[c][k]; }
+  }
+  return M.map((r, i) => r[n] / r[i]);
+}
+function invMat(A) {
+  const n = A.length, out = [];
+  for (let j = 0; j < n; j++) { const e = Array(n).fill(0); e[j] = 1; const col = solveLin(A, e); if (!col) return null; out.push(col); }
+  return A.map((_, i) => out.map(col => col[i]));
+}
+/* model(i, p) -> value for point i; y, w arrays; lo/hi bounds; returns p, cov, chi2, red */
+function lmFit(model, p0, y, w, lo, hi, maxIter = 200) {
+  const n = y.length, k = p0.length, clamp = p => p.map((v, j) => Math.min(hi[j], Math.max(lo[j], v)));
+  let p = clamp(p0.slice()), lam = 1e-3;
+  const chiOf = p => { let s = 0; for (let i = 0; i < n; i++) { const r = y[i] - model(i, p); s += w[i] * r * r; } return s; };
+  let chi = chiOf(p), A = null;
+  for (let it = 0; it < maxIter; it++) {
+    const J = [], m0 = new Float64Array(n);
+    for (let i = 0; i < n; i++) m0[i] = model(i, p);
+    for (let j = 0; j < k; j++) {
+      const h = Math.max(Math.abs(p[j]) * 1e-6, 1e-9), q = p.slice(); q[j] += h;
+      const col = new Float64Array(n); for (let i = 0; i < n; i++) col[i] = (model(i, q) - m0[i]) / h; J.push(col);
+    }
+    A = Array.from({ length: k }, () => Array(k).fill(0)); const g = Array(k).fill(0);
+    for (let i = 0; i < n; i++) { const r = y[i] - m0[i]; for (let a = 0; a < k; a++) { g[a] += w[i] * J[a][i] * r; for (let b = 0; b <= a; b++) A[a][b] += w[i] * J[a][i] * J[b][i]; } }
+    for (let a = 0; a < k; a++) for (let b = 0; b < a; b++) A[b][a] = A[a][b];
+    let improved = false;
+    for (let t = 0; t < 12; t++) {
+      const Ad = A.map((r, a) => r.map((v, b) => a === b ? v * (1 + lam) + 1e-12 : v));
+      const d = solveLin(Ad, g); if (!d) { lam *= 10; continue; }
+      const pn = clamp(p.map((v, j) => v + d[j])), cn = chiOf(pn);
+      if (cn < chi) { const rel = (chi - cn) / Math.max(chi, 1e-30); p = pn; chi = cn; lam = Math.max(lam / 3, 1e-12); improved = true; if (rel < 1e-10) it = maxIter; break; }
+      lam *= 4;
+    }
+    if (!improved) break;
+  }
+  const red = chi / Math.max(1, n - k), Ai = A ? invMat(A) : null;
+  const cov = Ai ? Ai.map(r => r.map(v => v * red)) : null;
+  return { p, cov, err: cov ? cov.map((r, j) => Math.sqrt(Math.max(r[j], 0))) : p.map(() => NaN), chi, red, n };
+}
+// value(error) notation, e.g. 5.27912(3)
+function fmtEsd(v, e) {
+  if (!isNum(v)) return "—";
+  if (!isNum(e) || e <= 0) return v.toFixed(5);
+  let d = Math.max(0, -Math.floor(Math.log10(e))); if (Math.round(e * 10 ** d) < 2 && d < 8) d++;
+  return v.toFixed(d) + "(" + Math.round(e * 10 ** d) + ")";
+}
+
+/* =====================================================================
+   Peak search (on raw data of the selected data set)
+   ===================================================================== */
+function findPeaks(ds) {
+  const out = [], lam = lambdaOf(ds), thr = S.peakOpt.sens, minRel = S.peakOpt.minRel / 100;
+  ds.ranges.forEach((r, ri) => {
+    const st = stepOf(r), n = r.xs.length;
+    const ws = Math.max(5, (Math.round(0.06 / st) | 1)), y = sgSmooth(r.ys, Math.min(ws, 21));
+    const b = backgroundOf(r, S.proc.bgWidth), net = y.map((v, i) => v - b[i]);
+    const half = Math.max(2, Math.round(0.03 / st));
+    let maxNet = 0; for (let i = 0; i < n; i++) if (net[i] > maxNet) maxNet = net[i];
+    // noise of the smoothed signal: robust scatter (MAD) of (smoothed − background), which also captures the
+    // short-range correlated noise of position-sensitive detectors; floor: counting statistics
+    const bs = Array.from(b).sort((p_, q_) => p_ - q_), bmed = Math.max(bs[bs.length >> 1], 1);
+    const dev = Array.from(net, (v, k) => v / Math.sqrt(Math.max(b[k], 1) / bmed)).sort((p_, q_) => p_ - q_);
+    const med = dev[dev.length >> 1], ad = dev.map(v => Math.abs(v - med)).sort((p_, q_) => p_ - q_);
+    const sigS = 1.4826 * ad[ad.length >> 1];
+    const m_ = (Math.min(ws, 21) - 1) >> 1; let sc2 = 0;
+    { const den = (2 * m_ + 3) * (2 * m_ + 1) * (2 * m_ - 1); for (let k = -m_; k <= m_; k++) sc2 += ((3 * (3 * m_ * m_ + 3 * m_ - 1) - 15 * k * k) / den) ** 2; }
+    for (let i = half; i < n - half; i++) {
+      const v = y[i]; let ok = true;
+      for (let k = i - half; k <= i + half; k++) if (y[k] > v || (y[k] === v && k < i)) { ok = false; break; }
+      if (!ok) continue;
+      // counting statistics (√background) or the empirical scatter, whichever is larger; neighbouring
+      // points of position-sensitive detectors are correlated, so the empirical estimate alone is too small
+      const sig = Math.max(Math.sqrt(Math.max(b[i], 1) * sc2), sigS * Math.sqrt(Math.max(b[i], 1) / bmed));
+      if (net[i] < thr * sig || net[i] < minRel * maxNet) continue;
+      // parabolic refinement of the position
+      let x = r.xs[i];
+      const den = y[i - 1] - 2 * y[i] + y[i + 1];
+      if (den < 0) { const off = 0.5 * (y[i - 1] - y[i + 1]) / den; if (Math.abs(off) <= 1) x = r.xs[i] + off * st; }
+      // FWHM from the net profile
+      const hm = net[i] / 2; let L = NaN, R = NaN;
+      for (let k = i; k > 0; k--) if (net[k - 1] <= hm) { L = r.xs[k - 1] + (hm - net[k - 1]) / (net[k] - net[k - 1]) * (r.xs[k] - r.xs[k - 1]); break; }
+      for (let k = i; k < n - 1; k++) if (net[k + 1] <= hm) { R = r.xs[k] + (net[k] - hm) / (net[k] - net[k + 1]) * (r.xs[k + 1] - r.xs[k]); break; }
+      if (isNum(R - L) && R - L < 1.5 * st) continue;   // narrower than the sampling: a spike, not a peak
+      out.push({ tth: x, d: isTT(ds) ? dOfTth(x, lam) : NaN, I: net[i], fwhm: R - L, ri, i });
+    }
+  });
+  const mx = out.reduce((a, q) => Math.max(a, q.I), 0) || 1;
+  out.forEach(q => q.Irel = 100 * q.I / mx);
+  out.sort((a, b) => a.tth - b.tth);
+  return out;
+}
+
+/* =====================================================================
+   Single-peak fit: pseudo-Voigt (Kα1 + Kα2) on a linear background
+   ===================================================================== */
+const C_G = 2 * Math.sqrt(Math.LN2 / Math.PI), C_L = 2 / Math.PI;
+function pvoigt(x, x0, H, eta) { const t = (x - x0) / H, t2 = 4 * t * t; return eta * C_L / H / (1 + t2) + (1 - eta) * C_G / H * Math.exp(-Math.LN2 * t2); }
+const tthKa2 = (t, a1, a2) => { const s = a2 / a1 * Math.sin(t * D2R / 2); return s < 1 ? 2 * Math.asin(s) / D2R : NaN; };
+function fitPeak(ds, t0, t1) {
+  // the range containing most of the interval
+  let best = null;
+  ds.ranges.forEach((r, ri) => { const a = lowerBound(r.xs, t0), b = lowerBound(r.xs, t1); if (!best || b - a > best.n) best = { r, ri, a, b, n: b - a }; });
+  if (!best || best.n < 8) throw new Error("U prikazanom rasponu ima premalo točaka (zumirajte na vrh tako da bude vidljiv cijeli, s ponešto pozadine).");
+  const { r, ri, a, b } = best, xs = r.xs.subarray(a, b), ys = r.ys.subarray(a, b), n = xs.length;
+  const K = ka2Of(ds), useKa2 = S.fitOpt.ka2 && isNum(K.a2) && isTT(ds), R2 = useKa2 ? K.ratio : 0;
+  const xc = (xs[0] + xs[n - 1]) / 2;
+  const e = Math.max(2, Math.floor(n / 12));
+  const yl = ys.slice(0, e).reduce((s, v) => s + v, 0) / e, yr = ys.slice(n - e).reduce((s, v) => s + v, 0) / e;
+  const b1 = (yr - yl) / (xs[n - 1] - xs[0]), b0 = (yl + yr) / 2;
+  let im = 0; for (let i = 0; i < n; i++) if (ys[i] - (b0 + b1 * (xs[i] - xc)) > ys[im] - (b0 + b1 * (xs[im] - xc))) im = i;
+  const hgt = ys[im] - (b0 + b1 * (xs[im] - xc));
+  if (!(hgt > 0)) throw new Error("U prikazanom rasponu nije pronađen vrh iznad pozadine.");
+  let H0 = (xs[n - 1] - xs[0]) / 6;
+  { const hm = hgt / 2 + b0; let L = im, Rr = im; while (L > 0 && ys[L] > hm) L--; while (Rr < n - 1 && ys[Rr] > hm) Rr++; if (Rr > L) H0 = Math.max(xs[Rr] - xs[L], stepOf(r) * 2); }
+  const A0 = hgt * H0 * 1.06 / (1 + R2 * 0.8);
+  const model = (i, p) => {
+    const x = xs[i]; let v = p[1] * pvoigt(x, p[0], p[2], p[3]);
+    if (R2) { const x2 = tthKa2(p[0], K.a1, K.a2); if (isNum(x2)) v += p[1] * R2 * pvoigt(x, x2, p[2], p[3]); }
+    return v + p[4] + p[5] * (x - xc);
+  };
+  const wts = Array.from(ys, v => 1 / Math.max(v, 1));
+  const lo = [xs[0], 0, stepOf(r) * 0.5, 0, -Infinity, -Infinity], hi = [xs[n - 1], Infinity, (xs[n - 1] - xs[0]), 1, Infinity, Infinity];
+  const fr = lmFit(model, [xs[im], A0, H0, 0.5, b0, b1], ys, wts, lo, hi, 300);
+  const [x0, A, H, eta] = fr.p, ex = fr.err;
+  // Rwp
+  let num = 0, den = 0; for (let i = 0; i < n; i++) { const d = ys[i] - model(i, fr.p); num += wts[i] * d * d; den += wts[i] * ys[i] * ys[i]; }
+  const pk0 = eta * C_L / H + (1 - eta) * C_G / H, beta = 1 / pk0;
+  // error of β from H and η
+  let eBeta = NaN;
+  if (fr.cov) { const s = eta * C_L + (1 - eta) * C_G, dH = 1 / s, dE = -H * (C_L - C_G) / (s * s); eBeta = Math.sqrt(Math.max(0, dH * dH * fr.cov[2][2] + dE * dE * fr.cov[3][3] + 2 * dH * dE * fr.cov[2][3])); }
+  return {
+    ds, ri, t0: xs[0], t1: xs[n - 1], xc, p: fr.p, err: ex, ka2: R2 ? { a1: K.a1, a2: K.a2, R: R2 } : null,
+    tth: x0, eTth: ex[0], fwhm: H, eFwhm: ex[2], beta, eBeta, eta, eEta: ex[3], area: A, rwp: Math.sqrt(num / den), include: true,
+    model: x => { let v = A * pvoigt(x, x0, H, eta); if (R2) { const x2 = tthKa2(x0, K.a1, K.a2); if (isNum(x2)) v += A * R2 * pvoigt(x, x2, H, eta); } return v + fr.p[4] + fr.p[5] * (x - xc); },
+    comp1: x => A * pvoigt(x, x0, H, eta) + fr.p[4] + fr.p[5] * (x - xc)
+  };
+}
+// size broadening from a fit (Scherrer), using the chosen width, instrumental correction (quadratic)
+function sizeOf(fit) {
+  const w = S.fitOpt.width === "beta" ? fit.beta : fit.fwhm, wi = S.fitOpt.inst || 0;
+  const ws = Math.sqrt(Math.max(w * w - wi * wi, 0));
+  const lam = ka2Of(fit.ds).a1, th = fit.tth * D2R / 2;
+  return { ws, D: ws > 0 ? S.fitOpt.K * lam / (ws * D2R * Math.cos(th)) / 10 : NaN };   // nm
+}
+function drawFits(p) {
+  const c = G.ctx, f = G.fs;
+  for (const ft of S.fits) {
+    const ds = ft.ds; if (!ds.visible) continue;
+    const lam = lambdaOf(ds), r = ds.ranges[ft.ri];
+    const N = 160, pts = [], pts1 = [];
+    for (let k = 0; k <= N; k++) {
+      const x = ft.t0 + (ft.t1 - ft.t0) * k / N, sub = (S.proc.bg === "sub" && r.bg) ? interpAt(r.xs, r.bg, x) : 0;
+      pts.push([sx(mapTth(x, lam)), sy(PY(ds, ft.model(x) - sub))]);
+      if (ft.ka2) pts1.push([sx(mapTth(x, lam)), sy(PY(ds, ft.comp1(x) - sub))]);
+    }
+    c.strokeStyle = col("--fit"); c.lineWidth = 2 * f; c.beginPath(); pts.forEach(([X, Y], k) => k ? c.lineTo(X, Y) : c.moveTo(X, Y)); c.stroke();
+    if (pts1.length) { c.lineWidth = 1 * f; c.setLineDash([4 * f, 3 * f]); c.beginPath(); pts1.forEach(([X, Y], k) => k ? c.lineTo(X, Y) : c.moveTo(X, Y)); c.stroke(); c.setLineDash([]); }
+  }
+}
+// Williamson–Hall: y = w·cosθ (rad), x = 4·sinθ  ->  y = Kλ/D + ε·x
+function williamsonHall() {
+  const pts = S.fits.filter(f => f.include).map(f => { const th = f.tth * D2R / 2, s = sizeOf(f); return { x: 4 * Math.sin(th), y: s.ws * D2R * Math.cos(th), f }; }).filter(q => q.y > 0);
+  if (pts.length < 2) return { pts, ok: false };
+  const n = pts.length, mx = pts.reduce((a, q) => a + q.x, 0) / n, my = pts.reduce((a, q) => a + q.y, 0) / n;
+  let sxx = 0, sxy = 0; for (const q of pts) { sxx += (q.x - mx) ** 2; sxy += (q.x - mx) * (q.y - my); }
+  if (sxx <= 0) return { pts, ok: false };
+  const b = sxy / sxx, a = my - b * mx;
+  let rss = 0; for (const q of pts) rss += (q.y - a - b * q.x) ** 2;
+  const s2 = n > 2 ? rss / (n - 2) : NaN, eb = Math.sqrt(s2 / sxx), ea = Math.sqrt(s2 * (1 / n + mx * mx / sxx));
+  const lam = ka2Of(pts[0].f.ds).a1, K = S.fitOpt.K;
+  const D = a > 0 ? K * lam / a / 10 : NaN, eD = a > 0 ? D * ea / a : NaN;
+  return { pts, ok: true, a, b, ea, eb, D, eD, eps: b, eEps: eb };
+}
+
+/* =====================================================================
+   Cell refinement from observed positions
+   ===================================================================== */
+function observedPositions() {
+  const ds = S.selected;
+  if (S.peaks && S.peaks.ds === ds && S.peaks.list.length) return { src: "pretraga vrhova", list: S.peaks.list.map(q => q.tth) };
+  const ms = S.markers.filter(m => m.ds === ds).map(m => m.x);
+  return { src: "oznake", list: ms };
+}
+function refineCell(ph) {
+  if (!S.selected) throw new Error("Za utočnjavanje treba učitati izmjereni difraktogram.");
+  const obs = observedPositions();
+  if (obs.list.length < 3) throw new Error("Potrebna su barem tri izmjerena položaja: pokrenite pretragu vrhova ili postavite oznake.");
+  const sys = crystalSystem(ph.cell), free = sys.free.slice(), lam = lambdaOf(S.selected), R = radiusOf(S.selected);
+  const useZ = $("refZero").checked, useD = $("refDisp").checked, tol = +$("refTol").value || 0.12;
+  const names = [...free, ...(useZ ? ["zero"] : []), ...(useD ? ["disp"] : [])];
+  const p0 = names.map(k => k === "zero" ? S.corr.zero : k === "disp" ? S.corr.disp / 1000 : ph.cellCur[k]);
+  const calcT = (hkl, p) => {
+    const cp = {}; names.forEach((k, j) => cp[k] = p[j]);
+    const cell = sys.build(Object.assign({}, ph.cellCur, cp));
+    const t = tthOfD(dOfHkl(gsOfCell(cell), hkl), lam); if (!isNum(t)) return NaN;
+    const z = useZ ? cp.zero : S.corr.zero, s = useD ? cp.disp : S.corr.disp / 1000;
+    return t + z - (360 / Math.PI) * s * Math.cos(t * D2R / 2) / R;
+  };
+  const match = p => {
+    const groups = phaseRefl(ph).filter(g => g.I >= 0.3);
+    const cand = groups.map(g => ({ g, t: calcT(g.fam[0].hkl, p) })).filter(q => isNum(q.t));
+    const pairs = [];
+    for (const o of obs.list) {
+      let bq = null; for (const q of cand) { const d = Math.abs(q.t - o); if (d <= tol && (!bq || d < bq.d)) bq = { q, d }; }
+      if (bq) pairs.push({ o, g: bq.q.g, d: bq.d });
+    }
+    // one observation per reflection (keep the closest)
+    const byG = new Map(); for (const pr of pairs) { const e = byG.get(pr.g); if (!e || pr.d < e.d) byG.set(pr.g, pr); }
+    return [...byG.values()].sort((a, b) => a.o - b.o);
+  };
+  let p = p0.slice(), pairs = match(p), fr = null;
+  for (let round = 0; round < 3; round++) {
+    if (pairs.length <= names.length) throw new Error(`Pridruženo je samo ${pairs.length} refleksa za ${names.length} parametara; povećajte toleranciju ili provjerite fazu.`);
+    const y = pairs.map(q => q.o), w = pairs.map(() => 1);
+    const lo = names.map(k => k === "zero" ? -1 : k === "disp" ? -2 : (["al", "be", "ga"].includes(k) ? 60 : 0.5)), hi = names.map(k => k === "zero" ? 1 : k === "disp" ? 2 : (["al", "be", "ga"].includes(k) ? 150 : 100));
+    fr = lmFit((i, q) => calcT(pairs[i].g.fam[0].hkl, q), p, y, w, lo, hi, 200);
+    p = fr.p;
+    const np = match(p); if (np.length === pairs.length && np.every((q, i) => q.g === pairs[i].g)) { pairs = np; break; }
+    pairs = np;
+  }
+  const cp = {}; names.forEach((k, j) => cp[k] = p[j]);
+  const cell = sys.build(Object.assign({}, ph.cellCur, cp));
+  // volume and its esd by numerical propagation
+  const V = volOfCell(cell); let eV = NaN;
+  if (fr.cov) {
+    const gV = names.map((k, j) => { if (k === "zero" || k === "disp") return 0; const q = p.slice(), h = Math.abs(p[j]) * 1e-6 || 1e-6; q[j] += h; const c2 = {}; names.forEach((kk, jj) => c2[kk] = q[jj]); return (volOfCell(sys.build(Object.assign({}, ph.cellCur, c2))) - V) / h; });
+    let s = 0; for (let a = 0; a < names.length; a++) for (let b = 0; b < names.length; b++) s += gV[a] * gV[b] * fr.cov[a][b]; eV = Math.sqrt(Math.max(s, 0));
+  }
+  const rows = pairs.map(q => ({ hkl: q.g.fam.map(f => f.hkl), obs: q.o, calc: calcT(q.g.fam[0].hkl, p) }));
+  const rms = Math.sqrt(rows.reduce((a, r) => a + (r.obs - r.calc) ** 2, 0) / rows.length);
+  return { ph, sys, names, p, err: fr.err, cell, V, eV, rows, rms, src: obs.src, nObs: obs.list.length, useZ, useD, zero: useZ ? cp.zero : S.corr.zero, disp: useD ? cp.disp * 1000 : S.corr.disp };
+}
+
+/* =====================================================================
+   Simulated profile of visible phases (Caglioti pseudo-Voigt, Kα1+Kα2)
+   ===================================================================== */
+let simCache = null;
+function simKey() {
+  const phs = S.phases.filter(p => p.visible);
+  return JSON.stringify([S.sim, S.corr, phs.map(p => [p.id, cellKey(p.cellCur)]), S.selected && S.selected.id, S.proc.bgWidth, S.lambdaMode, S.fullTth]);
+}
+function simulate() {
+  if (!S.sim.on) return null;
+  const phs = S.phases.filter(p => p.visible); if (!phs.length) return null;
+  const key = simKey(); if (simCache && simCache.key === key) return simCache;
+  const ds = S.selected, K = ka2Of(ds), useKa2 = S.sim.ka2 && isNum(K.a2);
+  // grid: the selected data set, or a uniform grid
+  let grids;
+  if (ds) grids = ds.ranges.map((r, ri) => ({ ri, xs: r.xs, ys: r.ys, bg: backgroundOf(r, S.proc.bgWidth) }));
+  else { const n = Math.round((S.fullTth.x1 - S.fullTth.x0) / 0.01) + 1; grids = [{ ri: -1, xs: Float64Array.from({ length: n }, (_, i) => S.fullTth.x0 + i * 0.01) }]; }
+  const { U, V, W, eta } = S.sim;
+  const curves = phs.map(ph => grids.map(gr => {
+    const out = new Float64Array(gr.xs.length);
+    for (const g of phaseRefl(ph)) {
+      if (g.tth < gr.xs[0] - 2 || g.tth > gr.xs[gr.xs.length - 1] + 2) continue;
+      const tn = Math.tan(g.tth * D2R / 2), H = Math.sqrt(Math.max(U * tn * tn + V * tn + W, 1e-6));
+      const add = (x0, A) => { const a = lowerBound(gr.xs, x0 - 12 * H), b = lowerBound(gr.xs, x0 + 12 * H); for (let i = a; i < b; i++) out[i] += A * pvoigt(gr.xs[i], x0, H, eta); };
+      add(g.tth, g.Iabs);
+      if (useKa2) { const x2 = tthKa2(g.tth, K.a1, K.a2); if (isNum(x2)) add(x2, g.Iabs * K.ratio); }
+    }
+    return out;
+  }));
+  // scale factors: least squares against net data
+  let scales = phs.map(() => 1), rwp = NaN;
+  if (ds) {
+    const k = phs.length, A = Array.from({ length: k }, () => Array(k).fill(0)), bv = Array(k).fill(0);
+    grids.forEach((gr, gi) => { for (let i = 0; i < gr.xs.length; i++) { const net = gr.ys[i] - gr.bg[i], w = 1 / Math.max(gr.ys[i], 1); for (let a = 0; a < k; a++) { bv[a] += w * curves[a][gi][i] * net; for (let b = 0; b < k; b++) A[a][b] += w * curves[a][gi][i] * curves[b][gi][i]; } } });
+    const sol = solveLin(A, bv); if (sol) scales = sol.map(v => Math.max(v, 0));
+    let num = 0, den = 0;
+    grids.forEach((gr, gi) => { for (let i = 0; i < gr.xs.length; i++) { let yc = gr.bg[i]; for (let a = 0; a < k; a++) yc += scales[a] * curves[a][gi][i]; const w = 1 / Math.max(gr.ys[i], 1); num += w * (gr.ys[i] - yc) ** 2; den += w * gr.ys[i] ** 2; } });
+    rwp = Math.sqrt(num / den);
+  } else {
+    const mx = Math.max(...curves.map(cs => Math.max(...cs.map(c => c.reduce((a, v) => Math.max(a, v), 0))))) || 1;
+    scales = phs.map(() => 1 / mx);
+  }
+  simCache = { key, phs, grids, curves, scales, rwp, ds };
+  return simCache;
+}
+function drawSim(p, vis, isMap) {
+  if (isMap) return;
+  const sim = simulate(); if (!sim) return;
+  const c = G.ctx, f = G.fs, ds = sim.ds, lam = ds ? lambdaOf(ds) : currentLambda();
+  const noData = !ds || !ds.visible;
+  const yOf = (gi, i, v) => {
+    if (noData) return p.y + p.h - v * 0.85 * p.h;
+    const r = ds.ranges[sim.grids[gi].ri], bg = (S.proc.bg === "sub") ? 0 : sim.grids[gi].bg[i];
+    return sy(PY(ds, v + bg));
+  };
+  const path = (vals, color, lw, dash) => {
+    c.strokeStyle = color; c.lineWidth = lw * f; c.setLineDash(dash ? [6 * f, 3 * f] : []);
+    sim.grids.forEach((gr, gi) => {
+      const i0 = Math.max(0, lowerBound(gr.xs, unmapU(S.view.x0, lam) || gr.xs[0]) - 1);
+      c.beginPath(); let started = false;
+      for (let i = i0; i < gr.xs.length; i++) {
+        const u = mapTth(gr.xs[i], lam); if (u > S.view.x1) break; if (u < S.view.x0) continue;
+        const X = sx(u), Y = yOf(gi, i, vals(gi, i));
+        if (!started) { c.moveTo(X, Y); started = true; } else c.lineTo(X, Y);
+      }
+      c.stroke();
+    });
+    c.setLineDash([]);
+  };
+  sim.phs.forEach((ph, a) => path((gi, i) => sim.scales[a] * sim.curves[a][gi][i], ph.color, 1.3, sim.phs.length > 1));
+  if (sim.phs.length > 1) path((gi, i) => sim.phs.reduce((s, _, a) => s + sim.scales[a] * sim.curves[a][gi][i], 0), col("--ink"), 1.2, false);
+}
+
+/* =====================================================================
+   Picking and readout
+   ===================================================================== */
+const CLR_BTN = `<button class="btn sm" data-act="clear-cursor" style="margin-left:auto">✕ Ukloni</button>`;
 $("readout").addEventListener("click", e => {
   if (e.target.closest("[data-act=clear-cursor]")) { S.cursor = null; updateReadout(); requestDraw(); }
 });
-const cursorX = c => c.ph ? tthOf(c.refl.d) : c.x;
+const cursorU = c => c.ph ? c.g.u : mapTth(c.x, lambdaOf(c.ds));
 function updateReadout() {
   const c = S.cursor, el = $("readout");
   $("markBtn").disabled = !c || !c.ds;
   if (c && c.ph) {
-    const r = c.refl, tth = tthOf(r.d);
+    const g = c.g, lam = currentLambda();
     el.innerHTML = `<span style="display:inline-flex;align-items:center;max-width:100%"><i class="dot" style="background:${c.ph.color}"></i><span class="k" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.ph.title)}</span></span>` +
-      `<span class="v hkl">(${r.fam.slice(0, 3).map(f => hklStr(f.hkl)).join("), (")})</span>` +
-      `<span><span class="k">2θ </span><span class="v">${tth.toFixed(4)}°</span></span>` +
-      `<span><span class="k">d </span><span class="v">${r.d.toFixed(4)} Å</span></span>` +
-      `<span><span class="k">I<sub>rel</sub> </span><span class="v">${r.I.toFixed(1)}</span></span><span class="k">m = ${r.m}, izračunato iz CIF-a</span>` + CLR_BTN;
+      `<span class="v hkl">(${g.fam.slice(0, 3).map(f => hklStr(f.hkl)).join("), (")})</span>` +
+      `<span><span class="k">2θ </span><span class="v">${g.tth.toFixed(4)}°</span></span>` +
+      `<span><span class="k">d </span><span class="v">${g.d.toFixed(4)} Å</span></span>` +
+      `<span><span class="k">Q </span><span class="v">${(2 * Math.PI / g.d).toFixed(4)}</span></span>` +
+      `<span><span class="k">I<sub>rel</sub> </span><span class="v">${g.I.toFixed(1)}</span></span><span class="k">m = ${g.m}, izračunato iz CIF-a${S.corr.zero || S.corr.disp ? ", s korekcijama" : ""}</span>` + CLR_BTN;
     return;
   }
   if (!c) { el.innerHTML = `<span class="hint">Dodirnite graf za očitanje položaja; ponovni dodir na crtu ili „✕ Ukloni” briše oznaku.${S.snap ? " Uključeno prianjanje uz vrh." : ""}</span>`; return; }
-  const ds = c.ds, ax = ds.ranges[c.ri].xAxis, d = dSpacing(ds, c.x);
+  const ds = c.ds, lam = lambdaOf(ds), tt = isTT(ds);
+  const t = tempOf(ds);
   el.innerHTML =
-    (S.datasets.length > 1 ? `<span style="display:inline-flex;align-items:center;max-width:100%"><i class="dot" style="background:${ds.color}"></i><span class="k" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(ds.name)}</span></span>` : "") +
-    `<span><span class="k">${esc(ax.name)} </span><span class="v">${c.x.toFixed(4)}°</span></span>` +
-    (isNum(d) ? `<span><span class="k">d </span><span class="v">${d.toFixed(4)} Å</span></span>` : "") +
-    `<span><span class="k">I </span><span class="v">${fmtN(c.y, 1)}</span>${S.norm ? ` <span class="k">(${fmtN(100 * c.y / ds.ymax, 1)} %)</span>` : ""}</span>` +
+    (S.datasets.length > 1 ? `<span style="display:inline-flex;align-items:center;max-width:100%"><i class="dot" style="background:${ds.color}"></i><span class="k" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(ds.name)}${S.viewMode === "map" && t != null ? " · T = " + fmtN(t, 1) : ""}</span></span>` : "") +
+    `<span><span class="k">${esc(ds.ranges[c.ri].xAxis.name)} </span><span class="v">${c.x.toFixed(4)}°</span></span>` +
+    (tt ? `<span><span class="k">d </span><span class="v">${dOfTth(c.x, lam).toFixed(4)} Å</span></span><span><span class="k">Q </span><span class="v">${qOfTth(c.x, lam).toFixed(4)}</span></span>` : "") +
+    `<span><span class="k">I${S.proc.bg === "sub" ? "<sub>net</sub>" : ""} </span><span class="v">${fmtN(c.y, 1)}</span>${S.norm ? ` <span class="k">(${fmtN(100 * c.y / ds.ymax, 1)} %)</span>` : ""}</span>` +
     `<span class="k">${c.peak ? "vrh, parabolična interpolacija" : "najbliža mjerna točka"}</span>` + CLR_BTN;
 }
 function pickAt(px, py) {
   const pr = plotRect(), ty = S.view.y0 + (pr.y + pr.h - py) / pr.h * (S.view.y1 - S.view.y0);
-  const dataPick = pickData(px, py);
-  // reflection sticks of visible CIF phases
+  const isMap = S.viewMode === "map" && visible().length > 1;
+  const dataPick = isMap ? pickMap(px, py) : pickData(px, py);
   let bestR = null;
-  const bot = pr.y + pr.h, Hs = pr.h * 0.85;
+  const bot = pr.y + pr.h, Hs = (isMap ? 0.12 : 0.85) * pr.h;
   for (const ph of S.phases) {
     if (!ph.visible) continue;
-    for (const r of phaseRefl(ph)) {
-      if (r.tth < S.view.x0 || r.tth > S.view.x1) continue;
-      const ddx = Math.abs(sx(r.tth) - px); if (ddx > 8) continue;
-      const top = bot - Math.max(7, r.I / 100 * Hs); if (py < top - 18) continue;
-      if (!bestR || ddx < bestR.dd - 0.5 || (Math.abs(ddx - bestR.dd) <= 0.5 && r.I > bestR.r.I)) bestR = { ph, r, dd: ddx };
+    for (const g of phaseRefl(ph)) {
+      if (g.u < S.view.x0 || g.u > S.view.x1) continue;
+      const ddx = Math.abs(sx(g.u) - px); if (ddx > 8) continue;
+      const top = bot - Math.max(7, g.I / 100 * Hs); if (py < top - 18) continue;
+      if (!bestR || ddx < bestR.dd - 0.5 || (Math.abs(ddx - bestR.dd) <= 0.5 && g.I > bestR.g.I)) bestR = { ph, g, dd: ddx };
     }
   }
-  if (bestR && !(dataPick && dataPick.eu < 10)) return { ph: bestR.ph, refl: bestR.r, x: bestR.r.tth, tx: dx(px), ty };
+  if (bestR && !(dataPick && dataPick.eu < 10)) return { ph: bestR.ph, g: bestR.g, tx: dx(px), ty };
   return dataPick;
 }
+function pickMap(px, py) {
+  const p = plotRect(), rows = mapRows(), k = Math.floor((p.y + p.h - py) / (p.h / rows.length));
+  const ds = rows[Math.min(rows.length - 1, Math.max(0, k))]; if (!ds) return null;
+  const u = dx(px); let best = null;
+  ds.ranges.forEach((r, ri) => { let i = lowerBound(r.us, u); if (i >= r.us.length) i = r.us.length - 1; if (i > 0 && Math.abs(r.us[i - 1] - u) < Math.abs(r.us[i] - u)) i--; const d = Math.abs(r.us[i] - u); if (!best || d < best.d) best = { ri, i, d }; });
+  if (!best) return null;
+  const r = ds.ranges[best.ri];
+  return { ds, ri: best.ri, i: best.i, x: r.xs[best.i], y: r.yp[best.i], peak: false, tx: u, ty: 0, eu: 99 };
+}
 function pickData(px, py) {
-  const xData = dx(px); let best = null;
+  const uData = dx(px); let best = null;
   const vis = visible(), multi = vis.length > 1;
   for (const ds of vis) ds.ranges.forEach((r, ri) => {
-    let i = lowerBound(r.xs, xData);
-    if (i >= r.xs.length) i = r.xs.length - 1;
-    if (i > 0 && Math.abs(r.xs[i - 1] - xData) < Math.abs(r.xs[i] - xData)) i--;
-    const st = r.xs.length > 1 ? Math.abs(r.xs[1] - r.xs[0]) : 0;
-    if (xData < r.xs[0] - st * 3 || xData > r.xs[r.xs.length - 1] + st * 3) return;
-    const dist = Math.hypot(sx(r.xs[i]) - px, (sy(PY(ds, r.ys[i])) - py) * (multi ? 1 : 0.3));
-    if (!best || dist < best.dist) best = { ds, ri, i, dist, eu: Math.hypot(sx(r.xs[i]) - px, sy(PY(ds, r.ys[i])) - py) };
+    let i = lowerBound(r.us, uData);
+    if (i >= r.us.length) i = r.us.length - 1;
+    if (i > 0 && Math.abs(r.us[i - 1] - uData) < Math.abs(r.us[i] - uData)) i--;
+    const st = r.us.length > 1 ? Math.abs(r.us[1] - r.us[0]) : 0;
+    if (uData < r.us[0] - st * 3 || uData > r.us[r.us.length - 1] + st * 3) return;
+    const dist = Math.hypot(sx(r.us[i]) - px, (sy(PY(ds, r.yp[i])) - py) * (multi ? 1 : 0.3));
+    if (!best || dist < best.dist) best = { ds, ri, i, dist, eu: Math.hypot(sx(r.us[i]) - px, sy(PY(ds, r.yp[i])) - py) };
   });
   if (!best) return null;
-  const pr = plotRect(), tx = xData, ty = S.view.y0 + (pr.y + pr.h - py) / pr.h * (S.view.y1 - S.view.y0);
+  const pr = plotRect(), tx = uData, ty = S.view.y0 + (pr.y + pr.h - py) / pr.h * (S.view.y1 - S.view.y0);
   const ds = best.ds, r = ds.ranges[best.ri];
   let i = best.i;
-  if (!S.snap) return { ds, ri: best.ri, i, x: r.xs[i], y: r.ys[i], peak: false, tx, ty, eu: best.eu };
-  const xl = dx(px - 14), xr = dx(px + 14);
-  const a = Math.max(0, lowerBound(r.xs, xl)), b = Math.min(r.xs.length - 1, lowerBound(r.xs, xr));
-  for (let k = a; k <= b; k++) if (r.ys[k] > r.ys[i]) i = k;
-  let x = r.xs[i], y = r.ys[i];
+  if (!S.snap) return { ds, ri: best.ri, i, x: r.xs[i], y: r.yp[i], peak: false, tx, ty, eu: best.eu };
+  const ul = dx(px - 14), ur = dx(px + 14);
+  const a = Math.max(0, lowerBound(r.us, ul)), b = Math.min(r.us.length - 1, lowerBound(r.us, ur));
+  for (let k = a; k <= b; k++) if (r.yp[k] > r.yp[i]) i = k;
+  let x = r.xs[i], y = r.yp[i];
   if (i > 0 && i < r.xs.length - 1) {
-    const y0 = r.ys[i - 1], y1 = r.ys[i], y2 = r.ys[i + 1], den = y0 - 2 * y1 + y2;
+    const y0 = r.yp[i - 1], y1 = r.yp[i], y2 = r.yp[i + 1], den = y0 - 2 * y1 + y2;
     if (den < 0) {
       const off = 0.5 * (y0 - y2) / den;
       if (Math.abs(off) <= 1) { const h = off >= 0 ? r.xs[i + 1] - r.xs[i] : r.xs[i] - r.xs[i - 1]; x = r.xs[i] + off * h; y = y1 - 0.25 * (y0 - y2) * off; }
@@ -1460,11 +2103,12 @@ function pickData(px, py) {
 }
 
 /* =====================================================================
-   Interaction
+   Pointer interaction
    ===================================================================== */
 const pointers = new Map(); let gs = null, tap = null, lastTap = { t: 0, x: 0, y: 0 };
 function localXY(e) { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
 function beginGesture() { gs = { view: { ...S.view }, pts: [...pointers.values()].map(q => ({ ...q })) }; }
+function withScreen(fn) { const rect = cv.getBoundingClientRect(), saved = { ...G }; Object.assign(G, { W: rect.width, H: rect.height, fs: 1, exp: false }); try { return fn(); } finally { Object.assign(G, saved); } }
 cv.addEventListener("pointerdown", e => {
   if (!hasContent()) return;
   cv.setPointerCapture(e.pointerId);
@@ -1473,98 +2117,449 @@ cv.addEventListener("pointerdown", e => {
 });
 cv.addEventListener("pointermove", e => {
   if (!pointers.has(e.pointerId) || !gs) return;
-  const q = localXY(e); pointers.set(e.pointerId, q);
-  const p = plotRect(), v0 = gs.view, v = S.view, pts = [...pointers.values()];
-  if (tap && Math.hypot(q.x - tap.x, q.y - tap.y) > 8) tap.moved = true;
-  if (pts.length === 1 && gs.pts.length === 1) {
-    if (tap && !tap.moved) return;
-    const ddx = pts[0].x - gs.pts[0].x, ddy = pts[0].y - gs.pts[0].y;
-    const kx = (v0.x1 - v0.x0) / p.w; v.x0 = v0.x0 - ddx * kx; v.x1 = v0.x1 - ddx * kx;
-    if (!S.autoY) { const ky = (v0.y1 - v0.y0) / p.h; v.y0 = v0.y0 + ddy * ky; v.y1 = v0.y1 + ddy * ky; }
-  } else if (pts.length >= 2 && gs.pts.length >= 2) {
-    const [a0, b0] = gs.pts, [a1, b1] = pts;
-    const m0 = { x: (a0.x + b0.x) / 2, y: (a0.y + b0.y) / 2 }, m1 = { x: (a1.x + b1.x) / 2, y: (a1.y + b1.y) / 2 };
-    const sx0 = Math.abs(a0.x - b0.x), sx1 = Math.abs(a1.x - b1.x), sy0 = Math.abs(a0.y - b0.y), sy1 = Math.abs(a1.y - b1.y);
-    const fx = sx0 > 24 ? sx0 / Math.max(sx1, 1) : 1;
-    const xr0 = v0.x1 - v0.x0, xAnchor = v0.x0 + (m0.x - p.x) / p.w * xr0, xr = xr0 * fx;
-    v.x0 = xAnchor - (m1.x - p.x) / p.w * xr; v.x1 = v.x0 + xr;
-    if (sy0 > 40) {
-      if (S.autoY && Math.abs(sy1 - sy0) > 12) S.autoY = false;
-      if (!S.autoY) {
-        const fy = sy0 / Math.max(sy1, 1), yr0 = v0.y1 - v0.y0, yAnchor = v0.y0 + (p.y + p.h - m0.y) / p.h * yr0, yr = yr0 * fy;
-        v.y0 = yAnchor - (p.y + p.h - m1.y) / p.h * yr; v.y1 = v.y0 + yr;
+  withScreen(() => {
+    const q = localXY(e); pointers.set(e.pointerId, q);
+    const p = plotRect(), v0 = gs.view, v = S.view, pts = [...pointers.values()], isMap = S.viewMode === "map";
+    if (tap && Math.hypot(q.x - tap.x, q.y - tap.y) > 8) tap.moved = true;
+    if (pts.length === 1 && gs.pts.length === 1) {
+      if (tap && !tap.moved) return;
+      const ddx = pts[0].x - gs.pts[0].x, ddy = pts[0].y - gs.pts[0].y;
+      const kx = (v0.x1 - v0.x0) / p.w; v.x0 = v0.x0 - ddx * kx; v.x1 = v0.x1 - ddx * kx;
+      if (!S.autoY && !isMap) { const ky = (v0.y1 - v0.y0) / p.h; v.y0 = v0.y0 + ddy * ky; v.y1 = v0.y1 + ddy * ky; }
+    } else if (pts.length >= 2 && gs.pts.length >= 2) {
+      const [a0, b0] = gs.pts, [a1, b1] = pts;
+      const m0 = { x: (a0.x + b0.x) / 2, y: (a0.y + b0.y) / 2 }, m1 = { x: (a1.x + b1.x) / 2, y: (a1.y + b1.y) / 2 };
+      const sx0 = Math.abs(a0.x - b0.x), sx1 = Math.abs(a1.x - b1.x), sy0 = Math.abs(a0.y - b0.y), sy1 = Math.abs(a1.y - b1.y);
+      const fx = sx0 > 24 ? sx0 / Math.max(sx1, 1) : 1;
+      const xr0 = v0.x1 - v0.x0, xAnchor = v0.x0 + (m0.x - p.x) / p.w * xr0, xr = xr0 * fx;
+      v.x0 = xAnchor - (m1.x - p.x) / p.w * xr; v.x1 = v.x0 + xr;
+      if (sy0 > 40 && !isMap) {
+        if (S.autoY && Math.abs(sy1 - sy0) > 12) S.autoY = false;
+        if (!S.autoY) {
+          const fy = sy0 / Math.max(sy1, 1), yr0 = v0.y1 - v0.y0, yAnchor = v0.y0 + (p.y + p.h - m0.y) / p.h * yr0, yr = yr0 * fy;
+          v.y0 = yAnchor - (p.y + p.h - m1.y) / p.h * yr; v.y1 = v.y0 + yr;
+        }
       }
     }
-  }
-  clampView(); requestDraw();
+    clampView(); requestDraw();
+  });
 });
 function endPointer(e) {
   if (!pointers.has(e.pointerId)) return;
   pointers.delete(e.pointerId);
-  if (tap && !tap.moved && pointers.size === 0 && performance.now() - tap.t < 450) {
-    const now = performance.now();
-    if (now - lastTap.t < 320 && Math.hypot(tap.x - lastTap.x, tap.y - lastTap.y) < 30) { resetView(); lastTap.t = 0; }
-    else {
-      if (S.cursor && Math.abs(sx(cursorX(S.cursor)) - tap.x) < 10) S.cursor = null;   // tap on the cursor line removes it
-      else S.cursor = pickAt(tap.x, tap.y);
-      updateReadout(); lastTap = { t: now, x: tap.x, y: tap.y };
+  withScreen(() => {
+    if (tap && !tap.moved && pointers.size === 0 && performance.now() - tap.t < 450) {
+      const now = performance.now();
+      if (now - lastTap.t < 320 && Math.hypot(tap.x - lastTap.x, tap.y - lastTap.y) < 30) { resetView(); lastTap.t = 0; }
+      else {
+        if (S.cursor && Math.abs(sx(cursorU(S.cursor)) - tap.x) < 10) S.cursor = null;
+        else S.cursor = pickAt(tap.x, tap.y);
+        updateReadout(); lastTap = { t: now, x: tap.x, y: tap.y };
+      }
+      requestDraw();
     }
-    requestDraw();
-  }
+  });
   tap = null;
-  if (pointers.size) beginGesture(); else gs = null;
+  if (pointers.size) beginGesture(); else { gs = null; scheduleSave(); }
 }
 cv.addEventListener("pointerup", endPointer);
 cv.addEventListener("pointercancel", endPointer);
 cv.addEventListener("wheel", e => {
   if (!hasContent()) return;
   e.preventDefault();
-  const q = localXY(e), p = plotRect(), v = S.view;
-  if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && !e.ctrlKey) {
-    const k = (v.x1 - v.x0) / p.w; v.x0 += e.deltaX * k; v.x1 += e.deltaX * k;
-  } else {
-    const f = Math.exp(e.deltaY * (e.ctrlKey ? 0.01 : 0.0015));
-    if (e.shiftKey || e.altKey) {
-      S.autoY = false; const ya = v.y0 + (p.y + p.h - q.y) / p.h * (v.y1 - v.y0);
-      v.y0 = ya - (ya - v.y0) * f; v.y1 = ya + (v.y1 - ya) * f;
-    } else { const xa = dx(q.x); v.x0 = xa - (xa - v.x0) * f; v.x1 = xa + (v.x1 - xa) * f; }
-  }
-  clampView(); requestDraw();
+  withScreen(() => {
+    const q = localXY(e), p = plotRect(), v = S.view;
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && !e.ctrlKey) { const k = (v.x1 - v.x0) / p.w; v.x0 += e.deltaX * k; v.x1 += e.deltaX * k; }
+    else {
+      const f = Math.exp(e.deltaY * (e.ctrlKey ? 0.01 : 0.0015));
+      if ((e.shiftKey || e.altKey) && S.viewMode !== "map") { S.autoY = false; const ya = v.y0 + (p.y + p.h - q.y) / p.h * (v.y1 - v.y0); v.y0 = ya - (ya - v.y0) * f; v.y1 = ya + (v.y1 - ya) * f; }
+      else { const xa = dx(q.x); v.x0 = xa - (xa - v.x0) * f; v.x1 = xa + (v.x1 - xa) * f; }
+    }
+    clampView(); requestDraw(); scheduleSave();
+  });
 }, { passive: false });
 ["gesturestart", "gesturechange"].forEach(t => document.addEventListener(t, e => e.preventDefault()));
+/* =====================================================================
+   Loading files
+   ===================================================================== */
+async function loadOne(name, buf) {
+  const src = { name, buf };
+  const b = new Uint8Array(buf, 0, Math.min(8, buf.byteLength)), sig = String.fromCharCode(...b);
+  let res;
+  if (sig.startsWith("PK")) res = await readBrml(buf);
+  else if (/^RAW[ 124]/.test(sig)) res = readBrukerRaw(buf);
+  else {
+    const text = new TextDecoder("utf-8").decode(buf);
+    if (/\.cif$/i.test(name) || (/(^|\n)\s*data_/i.test(text) && /_cell_length_a/i.test(text))) {
+      return readCif(text, name).map((ph, k) => Object.assign(ph, { id: ++dsSeq, visible: true, src, block: k, cellCur: { ...ph.cell } }));
+    }
+    res = readText(buf);
+  }
+  if (/^\s*commander sample id\s*$/i.test(res.meta.sample || "")) res.meta.sample = "";
+  const ds = { kind: "data", id: ++dsSeq, name, ranges: res.ranges, meta: res.meta, visible: true, src, block: 0 };
+  mapDs(ds); processDs(ds);
+  return [ds];
+}
+async function loadFiles(fileList) {
+  const files = Array.from(fileList); if (!files.length) return;
+  const errs = [];
+  $("msg").innerHTML = `<div class="banner warn">Učitavam ${files.length > 1 ? files.length + " datoteke" : esc(files[0].name)} …</div>`;
+  let addedData = 0, addedPh = 0;
+  for (const f of files) {
+    try {
+      for (const it of await loadOne(f.name, await f.arrayBuffer())) {
+        it.color = PALETTE[S.nextColor++ % PALETTE.length];
+        if (it.kind === "phase") { S.phases.push(it); S.metaItem = it; S.phSel = it; addedPh++; }
+        else { S.datasets.push(it); S.selected = it; S.metaItem = it; addedData++; }
+      }
+    } catch (err) { console.error(err); errs.push(`${esc(f.name)}: ${esc(err.message || String(err))}`); }
+  }
+  $("msg").innerHTML = errs.map(e => `<div class="banner err">Greška — ${e}</div>`).join("");
+  if (!addedData && !addedPh) return;
+  showApp();
+  computeFull();
+  if (addedData || !S.view) { S.cursor = null; resetView(); }
+  refreshAll();
+}
+function showApp() { $("empty").hidden = true; $("app").hidden = false; $("hdrAdd").hidden = false; }
+function clearAllItems() {
+  Object.assign(S, { datasets: [], phases: [], markers: [], cursor: null, selected: null, metaItem: null, phSel: null, nextColor: 0, view: null, peaks: null, fits: [], refine: null });
+  $("app").hidden = true; $("empty").hidden = false; $("hdrAdd").hidden = true; $("warn").innerHTML = "";
+  scheduleSave(); checkResume();
+}
+function removeItem(it) {
+  if (it.kind === "phase") {
+    S.phases = S.phases.filter(p => p !== it);
+    if (S.cursor && S.cursor.ph === it) S.cursor = null;
+    if (S.refine && S.refine.ph === it) S.refine = null;
+  } else {
+    S.datasets = S.datasets.filter(d => d !== it);
+    S.markers = S.markers.filter(m => m.ds !== it);
+    S.fits = S.fits.filter(f => f.ds !== it);
+    if (S.peaks && S.peaks.ds === it) S.peaks = null;
+    if (S.cursor && S.cursor.ds === it) S.cursor = null;
+    if (S.selected === it) S.selected = S.datasets[S.datasets.length - 1] || null;
+  }
+  if (S.metaItem === it) S.metaItem = S.selected || S.phases[S.phases.length - 1] || null;
+  if (!hasContent()) { clearAllItems(); return; }
+  computeFull(); if (it.kind !== "phase") resetView(); refreshAll();
+}
+function refreshAll() {
+  if (S.fullTth) S.phases.forEach(phaseRefl);
+  renderDatasets(); renderInfo(); renderPhaseTools(); renderPeaks(); renderFits(); renderRefine(); renderMarkers(); updateReadout(); requestDraw(); scheduleSave();
+}
 
 /* =====================================================================
-   Controls
+   Lists and information panels
    ===================================================================== */
-$("scaleSeg").addEventListener("click", e => {
-  const b = e.target.closest("button"); if (!b) return;
-  S.scale = b.dataset.s; [...$("scaleSeg").children].forEach(x => x.classList.toggle("on", x === b));
-  S.autoY = true; autoscaleY(); requestDraw();
+function cellTxt(c) {
+  const f = v => fmtN(v, 4);
+  const ang = [["α", c.al], ["β", c.be], ["γ", c.ga]].filter(([, v]) => Math.abs(v - 90) > 1e-3).map(([n, v]) => `${n} ${fmtN(v, 2)}°`);
+  const cubic = Math.abs(c.a - c.b) < 1e-4 && Math.abs(c.a - c.c) < 1e-4 && !ang.length;
+  return (cubic ? `a ${f(c.a)} Å` : `a ${f(c.a)}, b ${f(c.b)}, c ${f(c.c)} Å`) + (ang.length ? ", " + ang.join(", ") : "");
+}
+const cellChanged = ph => cellKey(ph.cellCur) !== cellKey(ph.cell);
+function renderDatasets() {
+  const nD = S.datasets.length, nP = S.phases.length, many = nD + nP > 1;
+  $("dsTitle").textContent = nP ? (nD ? "Difraktogrami i faze" : (nP > 1 ? `Faze iz CIF-a (${nP})` : "Faza iz CIF-a")) : (nD > 1 ? `Difraktogrami (${nD})` : "Difraktogram");
+  const rowD = ds => {
+    const r0 = ds.ranges[0], t = ds.meta.temperature ? ds.meta.temperature.v : null;
+    const sub = [ds.meta.sample, ds.meta.dateShort, t != null ? `T ${fmtN(t, 1)}` : "", `${fmtN(r0.xAxis.start, 2)}–${fmtN(r0.xAxis.stop, 2)}°`, ds.ranges.length > 1 ? ds.ranges.length + " raspona" : ""].filter(Boolean).join(" · ");
+    return `<div class="ds${ds.visible ? "" : " off"}${ds === S.metaItem && many ? " sel" : ""}" data-kind="d" data-id="${ds.id}">
+      <button class="sw" data-act="vis" style="border-color:${ds.color}" aria-label="Prikaži/sakrij"><span style="background:${ds.color}"></span></button>
+      <div class="nm" data-act="sel"><b>${esc(ds.name)}</b><small>${esc(sub)}</small></div>
+      <button class="x" data-act="rm" aria-label="Ukloni">×</button></div>`;
+  };
+  const rowP = ph => {
+    const n = ph._groups ? ph._groups.filter(inRangeT).length : 0;
+    const sub = ["CIF", ph.sg, cellTxt(ph.cellCur) + (cellChanged(ph) ? " (izmijenjeno)" : ""), n ? n + " refleksa" : ""].filter(Boolean).join(" · ");
+    return `<div class="ds ph${ph.visible ? "" : " off"}${ph === S.metaItem && many ? " sel" : ""}" data-kind="p" data-id="${ph.id}">
+      <button class="sw" data-act="vis" style="border-color:${ph.color}" aria-label="Prikaži/sakrij"><span style="background:repeating-linear-gradient(90deg, ${ph.color} 0 2px, transparent 2px 5px) !important"></span></button>
+      <div class="nm" data-act="sel"><b>${esc(ph.title)}</b><small>${esc(sub)}</small></div>
+      <button class="x" data-act="copy" aria-label="Kopiraj popis refleksa" title="Kopiraj popis refleksa" style="font-size:16px">⧉</button>
+      <button class="x" data-act="rm" aria-label="Ukloni">×</button></div>`;
+  };
+  $("dslist").innerHTML = S.datasets.map(rowD).join("") + S.phases.map(rowP).join("");
+  $("ovl").style.display = nD > 1 ? "" : "none";
+  const isMap = S.viewMode === "map";
+  $("offsetLbl").hidden = isMap; $("normBtn").hidden = isMap; $("mapOrderLbl").hidden = !isMap;
+  $("clearAll").hidden = !many;
+  const sel = $("metaSel");
+  sel.innerHTML = S.datasets.map(ds => `<option value="d:${ds.id}"${ds === S.metaItem ? " selected" : ""}>${esc(ds.name)}</option>`).join("") +
+                  S.phases.map(ph => `<option value="p:${ph.id}"${ph === S.metaItem ? " selected" : ""}>CIF: ${esc(ph.title)}</option>`).join("");
+  sel.hidden = !many;
+  $("pkNote").textContent = S.selected ? `Pretraga se provodi na odabranom difraktogramu: ${S.selected.name}.` : "Za pretragu je potreban izmjereni difraktogram.";
+}
+const findItem = (kind, id) => (kind === "p" ? S.phases : S.datasets).find(d => d.id === id);
+$("dslist").addEventListener("click", e => {
+  const row = e.target.closest(".ds"); if (!row) return;
+  const it = findItem(row.dataset.kind, +row.dataset.id); if (!it) return;
+  const act = e.target.closest("[data-act]")?.dataset.act;
+  if (act === "rm") { removeItem(it); return; }
+  if (act === "copy") { copyText(reflText(it), "Popis refleksa"); return; }
+  if (act === "vis") {
+    it.visible = !it.visible;
+    if (!it.visible && S.cursor && (S.cursor.ds === it || S.cursor.ph === it)) S.cursor = null;
+    offCache = null; if (S.autoY) autoscaleY(); renderDatasets(); updateReadout(); requestDraw(); scheduleSave(); return;
+  }
+  if (act === "sel") selectItem(it);
 });
-$("snapBtn").addEventListener("click", () => {
-  S.snap = !S.snap; $("snapBtn").classList.toggle("on", S.snap);
-  if (S.cursor) S.cursor = pickAt(sx(S.cursor.tx), sy(S.cursor.ty));
-  updateReadout(); requestDraw();
+function selectItem(it) {
+  S.metaItem = it;
+  if (it.kind === "phase") S.phSel = it; else S.selected = it;
+  refreshAll();
+}
+$("metaSel").addEventListener("change", e => { const [k, id] = e.target.value.split(":"); const it = findItem(k, +id); if (it) selectItem(it); });
+$("clearAll").addEventListener("click", clearAllItems);
+
+function renderInfo() {
+  const many = S.datasets.length + S.phases.length > 1, wm = new Map();
+  // identical warnings of several files are shown once, with the file names listed
+  for (const it of [...S.datasets, ...S.phases]) for (const t of (it.kind === "phase" ? it.warnings : it.meta.warnings) || []) {
+    const key = t.replace(/\d+ položaj/, "N položaj"); if (!wm.has(key)) wm.set(key, { t, names: [] }); wm.get(key).names.push(it.kind === "phase" ? it.file : it.name);
+  }
+  $("warn").innerHTML = [...wm.values()].map(({ t, names }) => `<div class="banner warn">${many || names.length > 1 ? `<b>${esc(names.length > 3 ? names.slice(0, 3).join(", ") + ` i još ${names.length - 3}` : names.join(", "))}:</b> ` : ""}${esc(t)}</div>`).join("");
+  const it = S.metaItem;
+  if (!it) { $("meta").innerHTML = ""; return; }
+  if (it.kind === "phase") { renderPhaseInfo(it); return; }
+  $("copyXY").textContent = "Kopiraj XY podatke";
+  const ds = it, M = ds.meta;
+  const scanCards = ds.ranges.map((r, i) => {
+    const ax = r.xAxis;
+    const ymin = r.ys.reduce((a, v) => Math.min(a, v), Infinity), ymax = r.ys.reduce((a, v) => Math.max(a, v), -Infinity);
+    const rows = [
+      ["Format", i === 0 ? M.format : ""], ["Tip skena", r.scanName], ["Način", r.scanMode],
+      [`${ax.name} početak – kraj`, `${fmtN(ax.start, 4)} – ${fmtN(ax.stop, 4)} ${ax.unit}`],
+      ["Korak", `${fmtN(ax.inc, 5)} ${ax.unit}`],
+      ["Vrijeme po koraku", isNum(r.timePerStep) ? `${fmtN(r.timePerStep, 3)} s` + (isNum(r.timeEff) && r.timeEff !== r.timePerStep ? ` (efektivno ${fmtN(r.timeEff, 1)} s)` : "") : ""],
+      ["Broj točaka", `${r.xs.length}` + (r.plannedSteps && r.plannedSteps !== r.xs.length ? ` od planiranih ${r.plannedSteps}` : "")],
+      ["Izmjereni raspon", `${fmtN(r.xs[0], 4)} – ${fmtN(r.xs[r.xs.length - 1], 4)} ${ax.unit}`],
+      ["I min / max", `${fmtN(ymin, 1)} / ${fmtN(ymax, 1)}`],
+      ["Kanal intenziteta", r.intLabel], ...(r.extra || [])
+    ];
+    return { title: ds.ranges.length > 1 ? `Sken ${i + 1}${r.file ? " (" + r.file + ")" : ""}` : "Parametri skena", rows };
+  });
+  const g0 = M.groups.find(g => g.title === "Uzorak") || { title: "Uzorak", rows: [] };
+  const sampleCard = { title: "Uzorak", rows: [["Ime datoteke", ds.name], ...(M.sample ? [["Naziv uzorka", M.sample]] : []), ...g0.rows.filter(([k]) => k !== "Naziv uzorka")] };
+  const groups = [sampleCard, ...scanCards, ...M.groups.filter(g => g !== g0)].filter(Boolean);
+  $("meta").innerHTML = groups.map(metaCard).join("");
+  const n = ds.ranges.reduce((a, r) => a + r.xs.length, 0);
+  $("xyInfo").textContent = `${many ? ds.name + ": " : ""}${n} točaka, stupci: ${ds.ranges[0].xAxis.name} (${ds.ranges[0].xAxis.unit}), intenzitet`;
+}
+function metaCard(gr) {
+  const rows = gr.rows.filter(([, v]) => v && !/^\s*(—|NaN)/.test(String(v)) && !/^—\s/.test(v));
+  if (!rows.length) return "";
+  return `<div class="card sect"><h3>${esc(gr.title)}</h3><dl>${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl></div>`;
+}
+function renderPhaseInfo(ph) {
+  const groups = phaseRefl(ph), c = ph.cellCur, calc = ph.calc, changed = cellChanged(ph);
+  const g1 = { title: "Kristalna struktura (CIF)", rows: [
+    ["Datoteka", ph.file], ["Naziv / formula", ph.title], ["Prostorna grupa", ph.sg], ["Operacija simetrije", String(ph.ops)],
+    ["a, b, c", `${fmtN(c.a, 5)}, ${fmtN(c.b, 5)}, ${fmtN(c.c, 5)} Å${changed ? " (izmijenjeno)" : ""}`], ["α, β, γ", `${fmtN(c.al, 3)}, ${fmtN(c.be, 3)}, ${fmtN(c.ga, 3)}°`],
+    ["V", fmtN(volOfCell(c), 2) + " Å³"], ["Z", isNum(ph.Z) ? String(ph.Z) : ""],
+    ["Položaja / atoma u ćeliji", `${ph.sites.length} / ${ph.atoms.length}`]] };
+  const g2 = { title: "Izračun refleksa", rows: [
+    ["λ", fmtN(currentLambda(), 5) + " Å" + (S.selected ? ` (iz ${S.selected.name})` : " (Cu, zadano)")],
+    ["Anomalna disperzija", calc.anode ? `f′, f″ za ${calc.anode} Kα (Chantler)` : "nije uključena"],
+    ["Atomski faktori", "Waasmaier–Kirfel; B iz CIF-a"],
+    ["LP faktor", "Bragg–Brentano, bez monokromatora"],
+    ["Korekcije", S.corr.zero || S.corr.disp ? `pomak nule ${fmtN(S.corr.zero, 4)}°, pomak uzorka ${fmtN(S.corr.disp, 1)} µm` : "nema"],
+    ["Nije uključeno", "preferirana orijentacija, apsorpcija"]] };
+  const inR = groups.filter(inRangeT), LIM = 600;
+  const rowsHtml = inR.slice(0, LIM).map(g => `<tr><td class="hkl">${famStr(g)}</td><td>${g.tth.toFixed(3)}</td><td>${g.d.toFixed(4)}</td><td>${g.I.toFixed(1)}</td><td>${g.m}</td></tr>`).join("");
+  $("meta").innerHTML = metaCard(g1) + metaCard(g2) +
+    `<div class="card sect" style="grid-column:1/-1"><h3>Refleksi ${fmtN(S.fullTth.x0, 1)}–${fmtN(S.fullTth.x1, 1)}° <span style="text-transform:none">2θ</span> (${inR.length}${inR.length > LIM ? ", prikazano " + LIM : ""})</h3>
+     <div class="scroll"><table><thead><tr><th>hkl</th><th>2θ (°)</th><th>d (Å)</th><th>I<sub>rel</sub></th><th>m</th></tr></thead><tbody>${rowsHtml}</tbody></table></div></div>`;
+  $("copyXY").textContent = "Kopiraj popis refleksa";
+  $("xyInfo").textContent = `${ph.title}: ${inR.length} refleksa`;
+}
+function reflText(ph) {
+  const groups = phaseRefl(ph).filter(inRangeT), c = ph.cellCur;
+  const lines = [`# ${ph.title} (${ph.file})`, `# ${ph.sg}  a=${c.a} b=${c.b} c=${c.c} alpha=${c.al} beta=${c.be} gamma=${c.ga}`,
+    `# lambda = ${currentLambda()} A; zero = ${S.corr.zero} deg; displacement = ${S.corr.disp} um; I rel. (Bragg-Brentano LP, bez pref. orijentacije)`, "# h k l\t2theta(deg)\td(A)\tI_rel\tm"];
+  for (const g of groups) lines.push([g.fam.map(f => f.hkl.join(" ")).join(" / "), g.tth.toFixed(4), g.d.toFixed(5), g.I.toFixed(2), g.m].join("\t"));
+  return lines.join("\n");
+}
+
+/* ---------- phase tools ---------- */
+function renderPhaseTools() {
+  $("tPhase").hidden = !S.phases.length;
+  if (!S.phases.length) return;
+  if (!S.phases.includes(S.phSel)) S.phSel = (S.metaItem && S.metaItem.kind === "phase") ? S.metaItem : S.phases[0];
+  const ph = S.phSel, sys = crystalSystem(ph.cell);
+  $("phSel").innerHTML = S.phases.map(p => `<option value="${p.id}"${p === ph ? " selected" : ""}>${esc(p.title)}</option>`).join("");
+  $("phSys").textContent = `${sys.name}${ph.sg ? " · " + ph.sg : ""}`;
+  $("cellBox").innerHTML = sys.free.map(k => {
+    const v0 = ph.cell[k], v = ph.cellCur[k], ang = ["al", "be", "ga"].includes(k);
+    const lo = ang ? v0 - 2 : v0 * 0.98, hi = ang ? v0 + 2 : v0 * 1.02, st = ang ? 0.001 : +(v0 * 1e-5).toPrecision(2);
+    return `<span>${CELL_LBL[k]}</span><input type="range" data-k="${k}" min="${lo}" max="${hi}" step="${st}" value="${v}">` +
+           `<input type="number" data-k="${k}" step="${ang ? 0.01 : 0.0001}" value="${v.toFixed(ang ? 3 : 5)}">`;
+  }).join("");
+  $("corrZero").value = S.corr.zero; $("corrDisp").value = S.corr.disp;
+  $("corrR").textContent = `R = ${fmtN(radiusOf(S.selected), 1)} mm${S.selected && isNum(S.selected.meta.radius) ? "" : " (pretpostavljeno)"}`;
+  renderSimRes();
+}
+function renderSimRes() {
+  const el = $("simRes");
+  if (!S.sim.on) { el.innerHTML = ""; return; }
+  const sim = simulate();
+  if (!sim) { el.innerHTML = `<span class="muted">Nema vidljivih faza.</span>`; return; }
+  el.innerHTML = sim.ds ? `Faktori skale: ${sim.phs.map((p, a) => `<span style="color:${p.color}">■</span> ${esc(p.title)}: ${sim.scales[a].toExponential(3)}`).join("; ")}` +
+    ` · R<sub>wp</sub> = ${(100 * sim.rwp).toFixed(1)} % <span class="muted">(bez utočnjavanja profila)</span>` : `<span class="muted">Bez izmjerenog difraktograma profil je normiran na najjači vrh.</span>`;
+}
+$("phSel").addEventListener("change", e => { S.phSel = S.phases.find(p => p.id === +e.target.value) || S.phSel; renderPhaseTools(); });
+$("cellBox").addEventListener("input", e => {
+  const el = e.target, k = el.dataset.k; if (!k) return;
+  const ph = S.phSel, v = parseFloat(el.value); if (!isNum(v) || v <= 0) return;
+  const sys = crystalSystem(ph.cell);
+  ph.cellCur = sys.build(Object.assign({}, ph.cellCur, { [k]: v }));
+  for (const o of $("cellBox").querySelectorAll(`[data-k="${k}"]`)) if (o !== el) o.value = o.type === "number" ? v.toFixed(["al", "be", "ga"].includes(k) ? 3 : 5) : v;
+  requestDraw(); updateReadout();
 });
-$("resetBtn").addEventListener("click", () => { resetView(); requestDraw(); });
-$("lambdaSel").addEventListener("change", e => { S.lambdaMode = e.target.value; refreshAll(); });
-$("offset").addEventListener("input", e => {
-  S.offset = +e.target.value / 100; $("offsetVal").textContent = e.target.value + " %";
-  S.autoY = true; autoscaleY(); requestDraw();
+$("cellBox").addEventListener("change", () => { renderDatasets(); renderInfo(); renderSimRes(); scheduleSave(); });
+$("cellReset").addEventListener("click", () => { const ph = S.phSel; if (!ph) return; ph.cellCur = { ...ph.cell }; refreshAll(); });
+for (const id of ["corrZero", "corrDisp"]) $(id).addEventListener("input", () => {
+  const z = parseFloat($("corrZero").value), d = parseFloat($("corrDisp").value);
+  S.corr.zero = isNum(z) ? z : 0; S.corr.disp = isNum(d) ? d : 0; requestDraw(); updateReadout();
 });
-$("normBtn").addEventListener("click", () => {
-  S.norm = !S.norm; $("normBtn").classList.toggle("on", S.norm);
-  S.autoY = true; autoscaleY(); updateReadout(); requestDraw();
+for (const id of ["corrZero", "corrDisp"]) $(id).addEventListener("change", () => { renderInfo(); renderSimRes(); scheduleSave(); });
+$("refBtn").addEventListener("click", () => {
+  try { S.refine = refineCell(S.phSel); renderRefine(); $("refSect").scrollIntoView({ behavior: "smooth", block: "nearest" }); }
+  catch (err) { toast(err.message); }
 });
+function renderRefine() {
+  const R = S.refine; $("refSect").hidden = !R; if (!R) return;
+  const ph = R.ph, cellRows = R.sys.free.map(k => { const j = R.names.indexOf(k); return `${CELL_LBL[k].replace(/ \(.*\)/, "")} = <b>${fmtEsd(R.p[j], R.err[j])}</b> ${["al", "be", "ga"].includes(k) ? "°" : "Å"}`; });
+  const extra = [];
+  if (R.useZ) { const j = R.names.indexOf("zero"); extra.push(`pomak nule = <b>${fmtEsd(R.p[j], R.err[j])}</b>°`); }
+  if (R.useD) { const j = R.names.indexOf("disp"); extra.push(`pomak uzorka = <b>${fmtEsd(R.p[j] * 1000, R.err[j] * 1000)}</b> µm`); }
+  $("refTitle").textContent = `Utočnjavanje ćelije: ${ph.title}`;
+  $("refRes").innerHTML = `<p>${cellRows.join(" · ")} · V = <b>${fmtEsd(R.V, R.eV)}</b> Å³${extra.length ? " · " + extra.join(" · ") : ""}</p>` +
+    `<p class="muted">${R.sys.name}; ${R.rows.length} pridruženih refleksa od ${R.nObs} opaženih položaja (${R.src}); λ = ${fmtN(lambdaOf(S.selected), 5)} Å; rms(Δ2θ) = ${R.rms.toFixed(4)}°.</p>`;
+  $("refBody").innerHTML = R.rows.map(r => `<tr><td class="hkl">${r.hkl.map(hklStr).join(", ")}</td><td>${r.obs.toFixed(4)}</td><td>${r.calc.toFixed(4)}</td><td>${(r.obs - r.calc).toFixed(4)}</td><td></td></tr>`).join("");
+}
+$("refApply").addEventListener("click", () => {
+  const R = S.refine; if (!R) return;
+  R.ph.cellCur = R.cell; if (R.useZ) S.corr.zero = +R.zero.toFixed(5); if (R.useD) S.corr.disp = +R.disp.toFixed(2);
+  toast("Utočnjeni parametri primijenjeni na fazu"); refreshAll();
+});
+$("refCopy").addEventListener("click", () => {
+  const R = S.refine; if (!R) return;
+  const lines = [`# Utočnjavanje ćelije: ${R.ph.title} (${R.ph.file}), ${R.sys.name}`, `# λ = ${lambdaOf(S.selected)} Å; rms(Δ2θ) = ${R.rms.toFixed(5)}°; ${R.rows.length} refleksa`];
+  R.names.forEach((k, j) => lines.push(`${k}\t${R.p[j]}\t${R.err[j]}`));
+  lines.push(`V\t${R.V}\t${R.eV}`, "# hkl\t2theta_obs\t2theta_calc\tdelta");
+  for (const r of R.rows) lines.push([r.hkl.map(h => h.join(" ")).join(" / "), r.obs.toFixed(4), r.calc.toFixed(4), (r.obs - r.calc).toFixed(4)].join("\t"));
+  copyText(lines.join("\n"), "Rezultati utočnjavanja");
+});
+$("refClose").addEventListener("click", () => { S.refine = null; renderRefine(); });
+// simulation controls
+function readSim() {
+  const n = id => { const v = parseFloat($(id).value); return isNum(v) ? v : 0; };
+  Object.assign(S.sim, { on: $("simOn").checked, ka2: $("simKa2").checked, U: n("simU"), V: n("simV"), W: n("simW"), eta: n("simEta") });
+  $("simEtaVal").textContent = S.sim.eta.toFixed(2);
+  requestDraw(); renderSimRes(); scheduleSave();
+}
+for (const id of ["simOn", "simKa2", "simU", "simV", "simW", "simEta"]) $(id).addEventListener("input", readSim);
+
+/* ---------- peaks ---------- */
+$("pkBtn").addEventListener("click", () => {
+  const ds = S.selected; if (!ds) { toast("Nema izmjerenog difraktograma."); return; }
+  S.peakOpt.sens = +$("pkSens").value; S.peakOpt.minRel = Math.max(0, +$("pkMin").value || 0);
+  S.peaks = { ds, list: findPeaks(ds) };
+  renderPeaks(); requestDraw(); scheduleSave();
+  toast(`Pronađeno vrhova: ${S.peaks.list.length}`);
+});
+function renderPeaks() {
+  const pk = S.peaks; $("peakSect").hidden = !pk; if (!pk) return;
+  $("peakTitle").textContent = `Vrhovi: ${pk.ds.name} (${pk.list.length})`;
+  $("peakBody").innerHTML = pk.list.map((q, k) => `<tr><td>${k + 1}</td><td>${q.tth.toFixed(4)}</td><td>${isNum(q.d) ? q.d.toFixed(4) : "—"}</td><td>${fmtN(q.I, 1)}</td><td>${q.Irel.toFixed(1)}</td><td>${isNum(q.fwhm) ? q.fwhm.toFixed(4) : "—"}</td></tr>`).join("");
+}
+const peaksText = () => { const pk = S.peaks; return [`# ${pk.ds.name}; vrhovi (osjetljivost ${S.peakOpt.sens} sigma, min I_rel ${S.peakOpt.minRel} %)`, "#\t2theta(deg)\td(A)\tI_net\tI_rel\tFWHM(deg)", ...pk.list.map((q, k) => [k + 1, q.tth.toFixed(4), isNum(q.d) ? q.d.toFixed(5) : "", q.I.toFixed(1), q.Irel.toFixed(2), isNum(q.fwhm) ? q.fwhm.toFixed(4) : ""].join("\t"))].join("\n"); };
+$("pkCopy").addEventListener("click", () => S.peaks && copyText(peaksText(), "Popis vrhova"));
+$("pkSave").addEventListener("click", () => S.peaks && saveText(S.peaks.ds.name.replace(/\.[^.]+$/, "") + "_vrhovi.txt", peaksText()));
+$("pkClear").addEventListener("click", () => { S.peaks = null; renderPeaks(); requestDraw(); scheduleSave(); });
+$("pkToMarks").addEventListener("click", () => {
+  const pk = S.peaks; if (!pk) return;
+  for (const q of pk.list) { const r = pk.ds.ranges[q.ri]; S.markers.push({ ds: pk.ds, ri: q.ri, i: q.i, x: q.tth, y: r.yp[q.i], peak: true }); }
+  S.markers.sort((a, b) => a.x - b.x); renderMarkers(); requestDraw(); scheduleSave();
+});
+
+/* ---------- peak fitting ---------- */
+$("fitBtn").addEventListener("click", () => {
+  const ds = S.selected; if (!ds) { toast("Nema izmjerenog difraktograma."); return; }
+  S.fitOpt.ka2 = $("fitKa2").checked;
+  try {
+    const [t0, t1] = viewTth();
+    const ft = fitPeak(ds, t0, t1);
+    S.fits.push(ft); S.fits.sort((a, b) => a.tth - b.tth);
+    renderFits(); requestDraw(); scheduleSave();
+    toast(`2θ = ${ft.tth.toFixed(4)}°, FWHM = ${ft.fwhm.toFixed(4)}°`);
+  } catch (err) { toast(err.message); }
+});
+for (const id of ["whWidth", "whK", "whInst"]) $(id).addEventListener("input", () => {
+  S.fitOpt.width = $("whWidth").value; S.fitOpt.K = +$("whK").value || 0.9; S.fitOpt.inst = Math.max(0, +$("whInst").value || 0);
+  renderFits(); scheduleSave();
+});
+$("fitKa2").addEventListener("change", () => { S.fitOpt.ka2 = $("fitKa2").checked; scheduleSave(); });
+function renderFits() {
+  $("fitSect").hidden = !S.fits.length; if (!S.fits.length) return;
+  $("fitBody").innerHTML = S.fits.map((f, k) => {
+    const sz = sizeOf(f), lam = ka2Of(f.ds).a1;
+    return `<tr class="${f.include ? "" : "off"}"><td><input type="checkbox" data-k="${k}" ${f.include ? "checked" : ""}></td><td>${fmtEsd(f.tth, f.eTth)}</td><td>${dOfTth(f.tth, lam).toFixed(4)}</td><td>${fmtEsd(f.fwhm, f.eFwhm)}</td><td>${f.beta.toFixed(4)}</td><td>${f.eta.toFixed(2)}</td><td>${isNum(sz.D) ? sz.D.toFixed(1) : "—"}</td><td>${(100 * f.rwp).toFixed(1)} %</td><td><button class="x" data-rm="${k}" aria-label="Ukloni">×</button></td></tr>`;
+  }).join("");
+  const wh = williamsonHall();
+  $("whBox").hidden = !wh.ok;
+  if (wh.ok) {
+    const wname = S.fitOpt.width === "beta" ? "β" : "FWHM";
+    $("whAxis").textContent = `${wname}·cosθ prema 4·sinθ`;
+    $("whRes").innerHTML = `D = <b>${isNum(wh.D) ? fmtEsd(wh.D, wh.eD) : "—"}</b> nm · ε = <b>${fmtEsd(wh.eps * 100, wh.eEps * 100)}</b> % ` +
+      `<span class="muted">(${wh.pts.length} vrhova; K = ${S.fitOpt.K}; instrumentalna širina ${S.fitOpt.inst}° oduzeta kvadratno)</span>`;
+    drawWH(wh);
+  }
+}
+$("fitBody").addEventListener("click", e => {
+  const rm = e.target.closest("[data-rm]"); if (rm) { S.fits.splice(+rm.dataset.rm, 1); renderFits(); requestDraw(); scheduleSave(); return; }
+  const cb = e.target.closest("input[type=checkbox]"); if (cb) { S.fits[+cb.dataset.k].include = cb.checked; renderFits(); scheduleSave(); }
+});
+$("fitClear").addEventListener("click", () => { S.fits = []; renderFits(); requestDraw(); scheduleSave(); });
+$("fitCopy").addEventListener("click", () => {
+  const lines = [`# Prilagodba pseudo-Voigt (${S.fits.some(f => f.ka2) ? "Kα1+Kα2" : "Kα1"}), linearna pozadina; Scherrer K=${S.fitOpt.K}, širina=${S.fitOpt.width}, instr.=${S.fitOpt.inst} deg`,
+    "# datoteka\t2theta\tesd\td(A)\tFWHM\tesd\tbeta\teta\tpovrsina\tD(nm)\tRwp"];
+  for (const f of S.fits) { const sz = sizeOf(f); lines.push([f.ds.name, f.tth.toFixed(5), f.eTth.toExponential(2), dOfTth(f.tth, ka2Of(f.ds).a1).toFixed(5), f.fwhm.toFixed(5), f.eFwhm.toExponential(2), f.beta.toFixed(5), f.eta.toFixed(3), f.area.toFixed(2), isNum(sz.D) ? sz.D.toFixed(2) : "", f.rwp.toFixed(4)].join("\t")); }
+  const wh = williamsonHall(); if (wh.ok) lines.push(`# Williamson-Hall: D = ${wh.D} nm (${wh.eD}), strain = ${wh.eps} (${wh.eEps})`);
+  copyText(lines.join("\n"), "Rezultati prilagodbe");
+});
+function drawWH(wh) {
+  const c0 = $("whCv"), rect = c0.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  if (!rect.width) return;
+  c0.width = rect.width * dpr; c0.height = rect.height * dpr;
+  const c = c0.getContext("2d"); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, rect.width, rect.height);
+  const P = { l: 58, r: 12, t: 10, b: 30 }, w = rect.width - P.l - P.r, h = rect.height - P.t - P.b;
+  const xs = wh.pts.map(q => q.x), ys = wh.pts.map(q => q.y * 1000);
+  const x0 = 0, x1 = Math.max(...xs) * 1.08, y0 = Math.min(0, ...ys, wh.a * 1000), y1 = Math.max(...ys, wh.a * 1000 + wh.b * 1000 * x1) * 1.1;
+  const X = x => P.l + (x - x0) / (x1 - x0) * w, Y = y => P.t + h - (y - y0) / (y1 - y0) * h;
+  const cs = getComputedStyle(document.documentElement), cv_ = n => cs.getPropertyValue(n).trim();
+  c.strokeStyle = cv_("--axis"); c.strokeRect(P.l + 0.5, P.t + 0.5, w, h);
+  c.font = "11px -apple-system, sans-serif"; c.fillStyle = cv_("--muted");
+  c.textAlign = "center"; c.textBaseline = "top";
+  const xs_ = niceStep(x1 - x0, 5); for (let x = 0; x <= x1; x += xs_) c.fillText(+x.toFixed(2) + "", X(x), P.t + h + 4);
+  c.textAlign = "right"; c.textBaseline = "middle";
+  const ys_ = niceStep(y1 - y0, 4); for (let y = Math.ceil(y0 / ys_) * ys_; y <= y1; y += ys_) c.fillText(+y.toFixed(3) + "", P.l - 5, Y(y));
+  c.save(); c.translate(12, P.t + h / 2); c.rotate(-Math.PI / 2); c.textAlign = "center"; c.fillText("w·cosθ (mrad)", 0, 0); c.restore();
+  c.textAlign = "right"; c.textBaseline = "bottom"; c.fillText("4·sinθ", P.l + w, rect.height - 1);
+  c.strokeStyle = cv_("--fit"); c.lineWidth = 1.5; c.beginPath(); c.moveTo(X(x0), Y((wh.a + wh.b * x0) * 1000)); c.lineTo(X(x1), Y((wh.a + wh.b * x1) * 1000)); c.stroke();
+  c.fillStyle = cv_("--accent"); for (let k = 0; k < xs.length; k++) { c.beginPath(); c.arc(X(xs[k]), Y(ys[k]), 4, 0, 7); c.fill(); }
+}
+
+/* ---------- markers ---------- */
 $("markBtn").addEventListener("click", () => {
   if (!S.cursor || !S.cursor.ds) return;
-  S.markers.push({ ...S.cursor }); S.markers.sort((a, b) => a.x - b.x); renderMarkers(); requestDraw();
+  const c = S.cursor; S.markers.push({ ds: c.ds, ri: c.ri, i: c.i, x: c.x, y: c.y, peak: c.peak });
+  S.markers.sort((a, b) => a.x - b.x); renderMarkers(); requestDraw(); scheduleSave();
 });
-$("clearMarks").addEventListener("click", () => { S.markers = []; renderMarkers(); requestDraw(); });
-$("markBody").addEventListener("click", e => {
-  const b = e.target.closest("button.x"); if (!b) return;
-  S.markers.splice(+b.dataset.k, 1); renderMarkers(); requestDraw();
-});
+$("clearMarks").addEventListener("click", () => { S.markers = []; renderMarkers(); requestDraw(); scheduleSave(); });
+$("markBody").addEventListener("click", e => { const b = e.target.closest("button.x"); if (!b) return; S.markers.splice(+b.dataset.k, 1); renderMarkers(); requestDraw(); scheduleSave(); });
+const dSpacing = (ds, x) => isTT(ds) && x > 0 ? dOfTth(x, lambdaOf(ds)) : NaN;
 function renderMarkers() {
   $("markSect").hidden = !S.markers.length;
   const multi = S.datasets.length > 1;
@@ -1575,10 +2570,7 @@ function renderMarkers() {
 }
 function markersText() {
   const head = `# lambda: ${S.lambdaMode === "avg" ? "K-alpha (prosjek)" : "K-alpha1"} iz datoteke\n#\tdatoteka\t2theta(deg)\td(A)\tI\tI/Imax(%)`;
-  return head + "\n" + S.markers.map((m, k) => {
-    const d = dSpacing(m.ds, m.x);
-    return [k + 1, m.ds.name, m.x.toFixed(4), isNum(d) ? d.toFixed(4) : "", m.y.toFixed(1), (100 * m.y / m.ds.ymax).toFixed(1)].join("\t");
-  }).join("\n");
+  return head + "\n" + S.markers.map((m, k) => { const d = dSpacing(m.ds, m.x); return [k + 1, m.ds.name, m.x.toFixed(4), isNum(d) ? d.toFixed(4) : "", m.y.toFixed(1), (100 * m.y / m.ds.ymax).toFixed(1)].join("\t"); }).join("\n");
 }
 function xyText(ds) {
   const lines = [`# ${ds.name}`, `# ${ds.meta.sample || ""}`, `# ${ds.ranges[0].xAxis.name} (${ds.ranges[0].xAxis.unit})\tI`];
@@ -1588,15 +2580,94 @@ function xyText(ds) {
   });
   return lines.join("\n");
 }
+$("copyMarks").addEventListener("click", () => copyText(markersText(), "Oznake"));
+$("saveMarks").addEventListener("click", () => saveText("oznake.txt", markersText()));
+$("copyXY").addEventListener("click", () => { const it = S.metaItem; if (!it) return; if (it.kind === "phase") copyText(reflText(it), "Popis refleksa"); else copyText(xyText(it), "XY podaci"); });
+$("saveXY").addEventListener("click", () => { const it = S.metaItem; if (!it) return; const base = (it.kind === "phase" ? it.file : it.name).replace(/\.[^.]+$/, ""); if (it.kind === "phase") saveText(base + "_refleksi.txt", reflText(it)); else saveText(base + ".xy", xyText(it)); });
+
+/* =====================================================================
+   Toolbar and processing controls
+   ===================================================================== */
+function segSet(id, attr, val) { for (const b of $(id).children) b.classList.toggle("on", b.dataset[attr] === val); }
+$("scaleSeg").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; S.scale = b.dataset.s; segSet("scaleSeg", "s", S.scale); offCache = null; S.autoY = true; autoscaleY(); requestDraw(); scheduleSave(); });
+$("xSeg").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; setXMode(b.dataset.x); });
+function setXMode(m) {
+  if (m === S.xMode) return;
+  const [t0, t1] = S.view ? viewTth() : [null, null];
+  S.xMode = m; segSet("xSeg", "x", m);
+  for (const ds of S.datasets) mapDs(ds);
+  computeFull();
+  if (t0 != null) { const lam = currentLambda(); S.view.x0 = mapTth(t0, lam); S.view.x1 = mapTth(t1, lam); clampView(); } else resetView();
+  updateReadout(); requestDraw(); scheduleSave();
+}
+$("snapBtn").addEventListener("click", () => {
+  S.snap = !S.snap; $("snapBtn").classList.toggle("on", S.snap);
+  if (S.cursor) withScreen(() => { S.cursor = pickAt(sx(S.cursor.tx), sy(S.cursor.ty)); });
+  updateReadout(); requestDraw(); scheduleSave();
+});
+$("resetBtn").addEventListener("click", () => { resetView(); requestDraw(); scheduleSave(); });
+$("lambdaSel").addEventListener("change", e => {
+  S.lambdaMode = e.target.value;
+  const [t0, t1] = viewTth(); for (const ds of S.datasets) mapDs(ds); computeFull();
+  if (S.xMode !== "tth") { const lam = currentLambda(); S.view.x0 = mapTth(t0, lam); S.view.x1 = mapTth(t1, lam); clampView(); }
+  refreshAll();
+});
+$("offset").addEventListener("input", e => { S.offset = +e.target.value / 100; $("offsetVal").textContent = e.target.value + " %"; S.autoY = true; autoscaleY(); requestDraw(); scheduleSave(); });
+$("normBtn").addEventListener("click", () => { S.norm = !S.norm; $("normBtn").classList.toggle("on", S.norm); offCache = null; S.autoY = true; autoscaleY(); updateReadout(); requestDraw(); scheduleSave(); });
+$("viewSeg").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; S.viewMode = b.dataset.v; segSet("viewSeg", "v", S.viewMode); S.autoY = true; autoscaleY(); renderDatasets(); requestDraw(); scheduleSave(); });
+$("mapOrder").addEventListener("change", e => { S.mapOrder = e.target.value; requestDraw(); scheduleSave(); });
+function reprocess() {
+  for (const ds of S.datasets) processDs(ds);
+  offCache = null; S.autoY = true; autoscaleY();
+  $("procSum").textContent = [S.proc.smooth ? `glađenje ${S.proc.smooth} t.` : "", S.proc.bg === "show" ? "pozadina prikazana" : S.proc.bg === "sub" ? "pozadina oduzeta" : ""].filter(Boolean).join(", ") || "pozadina i glađenje";
+  updateReadout(); renderSimRes(); requestDraw(); scheduleSave();
+}
+$("smoothSel").addEventListener("change", e => { S.proc.smooth = +e.target.value; reprocess(); });
+$("bgSeg").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; S.proc.bg = b.dataset.b; segSet("bgSeg", "b", S.proc.bg); reprocess(); });
+$("bgW").addEventListener("input", e => { S.proc.bgWidth = +e.target.value; $("bgWVal").textContent = S.proc.bgWidth.toFixed(1) + "°"; reprocess(); });
+
+/* =====================================================================
+   Export (images, text) and clipboard
+   ===================================================================== */
+const inFrame = (() => { try { return window.self !== window.top; } catch { return true; } })();
+if (inFrame) $("expNote").textContent += " U ugrađenom prikazu (Claude) preuzimanje datoteka nije dopušteno; koristite verziju s GitHuba.";
+async function saveBlob(name, blob) {
+  const file = new File([blob], name, { type: blob.type });
+  if (matchMedia("(pointer: coarse)").matches && navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file] }); return; } catch (e) { if (e && e.name === "AbortError") return; }
+  }
+  try {
+    const url = URL.createObjectURL(blob), a = document.createElement("a");
+    a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    toast("Spremljeno: " + name);
+  } catch { toast("Preuzimanje nije dopušteno u ovom prikazu."); }
+}
+const saveText = (name, text) => saveBlob(name, new Blob([text], { type: "text/plain;charset=utf-8" }));
+function exportImage(kind) {
+  if (!hasContent() || !S.view) return;
+  const size = $("expSize").value, rect = cv.getBoundingClientRect();
+  let w = 1600, h = 1000;
+  if (size === "screen") { w = Math.round(rect.width); h = Math.round(rect.height); } else if (size === "square") { w = 1200; h = 1200; }
+  const fs = size === "screen" ? 1 : Math.max(1, Math.min(w, h * 1.6) / 900);
+  const base = (S.selected ? S.selected.name : S.phases[0] ? S.phases[0].title : "difraktogram").replace(/\.[^.]+$/, "").replace(/[^\w.\-]+/g, "_");
+  if (kind === "png") {
+    const scale = size === "screen" ? 3 : 2, can = document.createElement("canvas");
+    can.width = w * scale; can.height = h * scale;
+    const c = can.getContext("2d"); c.setTransform(scale, 0, 0, scale, 0, 0);
+    renderPlot(c, w, h, fs, true);
+    can.toBlob(b => b && saveBlob(base + ".png", b), "image/png");
+  } else {
+    const sc = new SvgCtx(w, h); renderPlot(sc, w, h, fs, true);
+    saveBlob(base + ".svg", new Blob([sc.toString()], { type: "image/svg+xml" }));
+  }
+}
+$("expPng").addEventListener("click", () => exportImage("png"));
+$("expSvg").addEventListener("click", () => exportImage("svg"));
 async function copyText(text, what) {
   try { await navigator.clipboard.writeText(text); toast(what + " kopirano u međuspremnik"); }
   catch { showTextModal(text, what); }
 }
-$("copyMarks").addEventListener("click", () => copyText(markersText(), "Oznake"));
-$("copyXY").addEventListener("click", () => {
-  const it = S.metaItem; if (!it) return;
-  if (it.kind === "phase") copyText(reflText(it), "Popis refleksa"); else copyText(xyText(it), "XY podaci");
-});
 function showTextModal(text, what) {
   const m = document.createElement("div"); m.className = "modal";
   m.innerHTML = `<div class="card"><div class="secthead"><h2>${esc(what)} — označite i kopirajte</h2><button class="btn">Zatvori</button></div><textarea readonly></textarea></div>`;
@@ -1606,19 +2677,115 @@ function showTextModal(text, what) {
   document.body.appendChild(m); const ta = m.querySelector("textarea"); ta.focus(); ta.select();
 }
 let toastTimer = 0;
-function toast(s) { const t = $("toast"); t.textContent = s; t.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 1600); }
+function toast(s) { const t = $("toast"); t.textContent = s; t.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2400); }
 
 /* =====================================================================
-   File inputs
+   Session (IndexedDB, this device only)
+   ===================================================================== */
+const SKEY = "session";
+function idb() {
+  return new Promise((res, rej) => {
+    try { const r = indexedDB.open("brml-preglednik", 1); r.onupgradeneeded = () => r.result.createObjectStore("kv"); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }
+    catch (e) { rej(e); }
+  });
+}
+async function idbOp(mode, fn) { const db = await idb(); return new Promise((res, rej) => { const tx = db.transaction("kv", mode), st = tx.objectStore("kv"), rq = fn(st); tx.oncomplete = () => res(rq && rq.result); tx.onerror = () => rej(tx.error); }); }
+const idbGet = k => idbOp("readonly", st => st.get(k));
+const idbSet = (k, v) => idbOp("readwrite", st => st.put(v, k));
+const idbDel = k => idbOp("readwrite", st => st.delete(k));
+let saveTimer = 0, restoring = false;
+function scheduleSave() { if (!S.autoSave || restoring) return; clearTimeout(saveTimer); saveTimer = setTimeout(saveSession, 900); }
+async function saveSession() {
+  try {
+    if (!hasContent()) { await idbDel(SKEY); return; }
+    const all = [...S.datasets, ...S.phases], srcs = [], si = new Map();
+    const items = all.map(it => {
+      if (!si.has(it.src)) { si.set(it.src, srcs.length); srcs.push({ name: it.src.name, buf: it.src.buf }); }
+      return { kind: it.kind, src: si.get(it.src), block: it.block || 0, color: it.color, visible: it.visible, cellCur: it.kind === "phase" ? it.cellCur : null };
+    });
+    const ix = it => all.indexOf(it);
+    await idbSet(SKEY, {
+      v: 1, savedAt: Date.now(), srcs, items, selected: ix(S.selected), metaItem: ix(S.metaItem), phSel: ix(S.phSel),
+      settings: { scale: S.scale, xMode: S.xMode, viewMode: S.viewMode, mapOrder: S.mapOrder, lambdaMode: S.lambdaMode, offset: S.offset, norm: S.norm, snap: S.snap,
+        proc: S.proc, peakOpt: S.peakOpt, fitOpt: S.fitOpt, corr: S.corr, sim: S.sim },
+      view: S.view, autoY: S.autoY,
+      markers: S.markers.map(m => ({ ds: ix(m.ds), ri: m.ri, i: m.i, x: m.x, y: m.y, peak: m.peak })),
+      peaks: S.peaks ? ix(S.peaks.ds) : -1,
+      fits: S.fits.map(f => ({ ds: ix(f.ds), t0: f.t0, t1: f.t1, include: f.include, ka2: !!f.ka2 })),
+      open: [...document.querySelectorAll("details.tool")].filter(d => d.open).map(d => d.id)
+    });
+  } catch (e) { console.warn("Spremanje sesije nije uspjelo", e); }
+}
+async function checkResume() {
+  try {
+    const st = await idbGet(SKEY);
+    if (st && st.srcs && st.srcs.length) {
+      $("resumeBox").hidden = false;
+      $("resumeInfo").textContent = `${st.srcs.map(s => s.name).slice(0, 3).join(", ")}${st.srcs.length > 3 ? ` i još ${st.srcs.length - 3}` : ""} · spremljeno ${new Date(st.savedAt).toLocaleString("hr-HR")}`;
+    } else $("resumeBox").hidden = true;
+  } catch { $("resumeBox").hidden = true; }
+}
+async function restoreSession() {
+  let st; try { st = await idbGet(SKEY); } catch { st = null; }
+  if (!st) { toast("Spremljena sesija nije pronađena."); return; }
+  restoring = true;
+  try {
+    Object.assign(S, { scale: st.settings.scale, xMode: st.settings.xMode, viewMode: st.settings.viewMode, mapOrder: st.settings.mapOrder, lambdaMode: st.settings.lambdaMode,
+      offset: st.settings.offset, norm: st.settings.norm, snap: st.settings.snap });
+    Object.assign(S.proc, st.settings.proc); Object.assign(S.peakOpt, st.settings.peakOpt); Object.assign(S.fitOpt, st.settings.fitOpt); Object.assign(S.corr, st.settings.corr); Object.assign(S.sim, st.settings.sim);
+    const made = [];
+    for (const s of st.srcs) made.push(await loadOne(s.name, s.buf));
+    const all = st.items.map(it => { const x = made[it.src] && made[it.src][it.block]; if (x) { x.color = it.color; x.visible = it.visible; if (x.kind === "phase" && it.cellCur) x.cellCur = it.cellCur; } return x; });
+    S.datasets = all.filter(x => x && x.kind === "data"); S.phases = all.filter(x => x && x.kind === "phase");
+    S.nextColor = all.length;
+    S.selected = all[st.selected] && all[st.selected].kind === "data" ? all[st.selected] : S.datasets[S.datasets.length - 1] || null;
+    S.metaItem = all[st.metaItem] || S.selected || S.phases[0] || null;
+    S.phSel = all[st.phSel] && all[st.phSel].kind === "phase" ? all[st.phSel] : S.phases[0] || null;
+    for (const ds of S.datasets) { mapDs(ds); processDs(ds); }
+    computeFull();
+    if (st.view) { S.view = st.view; S.autoY = st.autoY; clampView(); } else resetView();
+    S.markers = st.markers.filter(m => all[m.ds]).map(m => ({ ...m, ds: all[m.ds] }));
+    S.peaks = all[st.peaks] ? { ds: all[st.peaks], list: findPeaks(all[st.peaks]) } : null;
+    S.fits = [];
+    const ka2Saved = S.fitOpt.ka2;
+    for (const f of st.fits) { if (!all[f.ds]) continue; S.fitOpt.ka2 = f.ka2; try { const ft = fitPeak(all[f.ds], f.t0, f.t1); ft.include = f.include; S.fits.push(ft); } catch {} }
+    S.fitOpt.ka2 = ka2Saved;
+    for (const id of st.open || []) if ($(id)) $(id).open = true;
+    syncControls(); showApp(); refreshAll();
+  } catch (e) { console.error(e); toast("Sesiju nije moguće vratiti: " + e.message); }
+  restoring = false;
+}
+function syncControls() {
+  segSet("scaleSeg", "s", S.scale); segSet("xSeg", "x", S.xMode); segSet("viewSeg", "v", S.viewMode); segSet("bgSeg", "b", S.proc.bg);
+  $("mapOrder").value = S.mapOrder; $("lambdaSel").value = S.lambdaMode; $("smoothSel").value = String(S.proc.smooth);
+  $("bgW").value = S.proc.bgWidth; $("bgWVal").textContent = S.proc.bgWidth.toFixed(1) + "°";
+  $("offset").value = Math.round(S.offset * 100); $("offsetVal").textContent = Math.round(S.offset * 100) + " %";
+  $("normBtn").classList.toggle("on", S.norm); $("snapBtn").classList.toggle("on", S.snap);
+  $("pkSens").value = String(S.peakOpt.sens); $("pkMin").value = S.peakOpt.minRel;
+  $("fitKa2").checked = S.fitOpt.ka2; $("whWidth").value = S.fitOpt.width; $("whK").value = S.fitOpt.K; $("whInst").value = S.fitOpt.inst;
+  $("simOn").checked = S.sim.on; $("simKa2").checked = S.sim.ka2; $("simU").value = S.sim.U; $("simV").value = S.sim.V; $("simW").value = S.sim.W; $("simEta").value = S.sim.eta; $("simEtaVal").textContent = (+S.sim.eta).toFixed(2);
+  $("autoSave").checked = S.autoSave;
+  $("procSum").textContent = [S.proc.smooth ? `glađenje ${S.proc.smooth} t.` : "", S.proc.bg === "show" ? "pozadina prikazana" : S.proc.bg === "sub" ? "pozadina oduzeta" : ""].filter(Boolean).join(", ") || "pozadina i glađenje";
+}
+$("resumeBtn").addEventListener("click", restoreSession);
+const forget = async () => { try { await idbDel(SKEY); } catch {} $("resumeBox").hidden = true; toast("Spremljena sesija obrisana"); };
+$("forgetBtn").addEventListener("click", forget);
+$("forgetBtn2").addEventListener("click", forget);
+$("autoSave").addEventListener("change", e => { S.autoSave = e.target.checked; try { localStorage.setItem("brml-autosave", S.autoSave ? "1" : "0"); } catch {} if (S.autoSave) scheduleSave(); });
+for (const d of document.querySelectorAll("details.tool")) d.addEventListener("toggle", () => { scheduleSave(); if (d.id === "tPeaks" && d.open) renderFits(); });
+
+/* =====================================================================
+   File inputs and start-up
    ===================================================================== */
 for (const id of ["file", "file2", "file3"]) $(id).addEventListener("change", e => { const fl = e.target.files; if (fl && fl.length) loadFiles(fl); e.target.value = ""; });
 ["dragover", "dragenter"].forEach(t => document.addEventListener(t, e => { e.preventDefault(); $("empty").classList.add("drag"); }));
 ["dragleave", "drop"].forEach(t => document.addEventListener(t, e => { e.preventDefault(); $("empty").classList.remove("drag"); }));
 document.addEventListener("drop", e => { const fl = e.dataTransfer?.files; if (fl && fl.length) loadFiles(fl); });
 new ResizeObserver(() => { if (hasContent() && S.view) { if (S.autoY) autoscaleY(); draw(); } }).observe($("plotwrap"));
-matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => requestDraw());
+try { S.autoSave = localStorage.getItem("brml-autosave") !== "0"; } catch {}
+$("autoSave").checked = S.autoSave;
 updateReadout();
-// already running from the home screen: the "add to home screen" hint is not needed
+checkResume();
 if (navigator.standalone || matchMedia("(display-mode: standalone)").matches) $("a2hs").hidden = true;
 </script>
 <script>
