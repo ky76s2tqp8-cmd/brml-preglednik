@@ -229,7 +229,7 @@
         <p class="note" id="pkNote">Pretraga se provodi na odabranom difraktogramu.</p>
         <p class="note">„Uredi vrhove”: dodir na grafu dodaje vrh na najvišu točku u blizini mjesta dodira, a dodir na postojeći vrh (▼) ga uklanja. Vrhovi se mogu ukloniti i u tablici (×).</p>
         <h4>Prilagodba vrha (pseudo-Voigt)</h4>
-        <p class="note">Tri načina: (1) dodirnite vrh na grafu i zatim „Prilagodi označeni vrh”; (2) u tablici vrhova dodirnite ⌁ uz željeni vrh; (3) zumirajte na vrh i dodirnite „Prilagodi vrh u prikazu”. Raspon prilagodbe u (1) i (2) određuje se automatski (±2,5 FWHM, uz Kα2 dublet), uz linearnu pozadinu.</p>
+        <p class="note">Tri načina: (1) dodirnite vrh na grafu i zatim „Prilagodi označeni vrh”; (2) u tablici vrhova dodirnite ⌁ uz željeni vrh; (3) zumirajte na vrh i dodirnite „Prilagodi vrh u prikazu” (ako je prikazan raspon širi od 3°, prilagođava se najjači vrh u prikazu s automatski određenim rasponom). Raspon prilagodbe u (1) i (2) određuje se automatski (±2,5 FWHM, uz Kα2 dublet), uz linearnu pozadinu.</p>
         <div class="frow">
           <button class="btn primary" id="fitSel" disabled>Prilagodi označeni vrh</button>
           <button class="btn" id="fitBtn">Prilagodi vrh u prikazu</button>
@@ -2609,7 +2609,18 @@ function doFit(make) {
 }
 $("fitBtn").addEventListener("click", () => {
   const ds = S.selected; if (!ds) { toast("Nema izmjerenog difraktograma."); return; }
-  doFit(() => { const [t0, t1] = viewTth(); return fitPeak(ds, t0, t1); });
+  const [t0, t1] = viewTth();
+  if (t1 - t0 <= 3) { doFit(() => fitPeak(ds, t0, t1)); return; }
+  // wide view: a single peak with one linear background cannot describe it; fit the strongest peak
+  // in view with an automatically chosen window instead
+  let best = null;
+  ds.ranges.forEach((r, ri) => {
+    const P = peakCtx(r), a = lowerBound(r.xs, t0), b = Math.min(P.n - 1, lowerBound(r.xs, t1));
+    for (let i = a; i <= b; i++) if (!best || P.net[i] > best.v) best = { v: P.net[i], t: r.xs[i] };
+  });
+  if (!best) { toast("U prikazu nema izmjerenih točaka."); return; }
+  doFit(() => fitAround(ds, best.t));
+  toast(`Prikazan je širok raspon: prilagođen je najjači vrh u prikazu (2θ ≈ ${best.t.toFixed(2)}°).`);
 });
 $("fitSel").addEventListener("click", () => {
   const c = S.cursor; if (!c || !c.ds) { toast("Najprije dodirnite vrh na grafu."); return; }
