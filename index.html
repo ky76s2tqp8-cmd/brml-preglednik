@@ -395,7 +395,9 @@ function extractBrmlMeta(doc, dcDoc) {
   const root = doc.documentElement, M = { groups: [], warnings: [] };
   const info = {};
   for (const it of doc.getElementsByTagName("InfoItem")) info[it.getAttribute("Name")] = it.getAttribute("Value");
-  M.sample = info.SampleName || ""; M.status = txt(kid(root, "MeasurementStatus"));
+  // DIFFRAC.COMMANDER writes "COMMANDER Sample ID" when the Sample ID field was left at its default
+  const sampleDefault = /^\s*commander sample id\s*$/i.test(info.SampleName || "");
+  M.sample = sampleDefault ? "" : (info.SampleName || ""); M.status = txt(kid(root, "MeasurementStatus"));
   M.started = txt(kid(root, "TimeStampStarted")); M.finished = txt(kid(root, "TimeStampFinished"));
   M.dateShort = tsFmt(M.started).replace(/\s\d{2}:\d{2}:\d{2}$/, "");
   const tube = first(doc, "Tube");
@@ -405,7 +407,7 @@ function extractBrmlMeta(doc, dcDoc) {
     ratio: num(pv(first(tube, "WaveLengthRatio"))?.v), anode: txt(first(tube, "TubeMaterial"))
   };
   const g = M.groups;
-  g.push({ title: "Uzorak", rows: [["Naziv uzorka", info.SampleName], ["Korisnik", info.User], ["Pozicija", info.SamplePosition], ["Komentar", info.Comment]] });
+  g.push({ title: "Uzorak", rows: [["Naziv uzorka", sampleDefault ? "nije upisan (u COMMANDER-u ostala zadana vrijednost „Sample ID”)" : info.SampleName], ["Korisnik", info.User], ["Pozicija", info.SamplePosition], ["Komentar", info.Comment]] });
   const dur = (tsDate(M.finished) - tsDate(M.started)) / 1000;
   g.push({ title: "Vrijeme mjerenja", rows: [["Početak", tsFmt(M.started)], ["Kraj", tsFmt(M.finished)], ["Trajanje", durFmt(dur)],
     ["Status", M.status === "Measured" ? "dovršeno" : (M.status || "")]] });
