@@ -153,7 +153,7 @@
 <main>
   <section id="empty" class="card">
     <h1>Preglednik difraktograma</h1>
-    <p>Podržani formati: Bruker <b>.brml</b> (DIFFRAC.SUITE), binarni Bruker <b>.raw</b> (verzije 1, 2, 3/RAW1.01 i 4) te tekstne datoteke s dva stupca (.xy, .txt, .csv…). Može se odabrati više datoteka odjednom radi preklapanja.</p>
+    <p>Podržani formati: Bruker <b>.brml</b> (DIFFRAC.SUITE), binarni Bruker <b>.raw</b> (verzije 1, 2, 3/RAW1.01 i 4) PANalytical <b>.xrdml</b>, Philips <b>.rd/.sd</b> i <b>.udf</b> te tekstne datoteke s dva stupca (.xy, .txt, .csv…). Može se odabrati više datoteka odjednom radi preklapanja.</p>
     <p>Učitavanjem <b>.cif</b> datoteke izračunavaju se i iscrtavaju položaji i relativni intenziteti refleksa te faze.</p>
     <p>Zumiranje: dva prsta (vodoravno za 2θ, okomito za intenzitet). Pomicanje: jedan prst. Dodir: očitanje 2θ, d i I. Dvostruki dodir: početni prikaz.</p>
     <label class="btn primary big">Odaberi datoteke<input type="file" id="file2" multiple hidden></label>
@@ -1106,6 +1106,135 @@ const LP = tth => { const t = tth * Math.PI / 360, c2 = Math.cos(2 * t); return 
 const hklStr = ([h, k, l]) => (Math.abs(h) > 9 || Math.abs(k) > 9 || Math.abs(l) > 9) ? `${h} ${k} ${l}` : `${h}${k}${l}`.replace(/-(\d)/g, "‾$1").replace(/‾(\d)/g, "$1̅");
 
 
+
+/* =====================================================================
+   PANalytical readers: XRDML (XML), Philips binary RD/SD (V3/V5), Philips UDF (text)
+   Formats follow the XRDML schema and the xylib / GSAS-II readers.
+   ===================================================================== */
+function readXrdml(text) {
+  const doc = parseXml(text, "XRDML");
+  const all = (el, n) => el ? Array.from(el.getElementsByTagNameNS("*", n)) : [];
+  const one = (el, n) => all(el, n)[0] || null;
+  const kidsNS = (el, n) => el ? Array.from(el.children).filter(c => c.localName === n) : [];
+  const t = el => el ? el.textContent.trim() : "";
+  const nm = el => num(t(el));
+  const M = { groups: [], warnings: [], format: "PANalytical XRDML", lambda: {} };
+  const root = doc.documentElement;
+  const sample = one(root, "sample");
+  M.sample = t(one(sample, "name")) || t(one(sample, "id"));
+  const comments = all(kidsNS(root, "comment")[0], "entry").map(t).filter(Boolean);
+  const cm = k => { const e = comments.find(c => c.startsWith(k + "=")); return e ? e.slice(k.length + 1).split(/[,;]/)[0].trim() : ""; };
+  const ranges = [];
+  let firstMeas = null, temps = [];
+  for (const meas of all(root, "xrdMeasurement")) {
+    if (!firstMeas) firstMeas = meas;
+    for (const scan of kidsNS(meas, "scan")) {
+      const dp = one(scan, "dataPoints"); if (!dp) continue;
+      const scanAxis = scan.getAttribute("scanAxis") || "2Theta";
+      const positions = kidsNS(dp, "positions");
+      const want = /gonio|2theta/i.test(scanAxis) ? "2Theta" : scanAxis;
+      const pos = positions.find(p => p.getAttribute("axis") === want) || positions.find(p => one(p, "startPosition") || one(p, "listPositions"));
+      let ysEl = kidsNS(dp, "intensities")[0] || kidsNS(dp, "counts")[0];
+      if (!pos || !ysEl) continue;
+      let ys = t(ysEl).split(/\s+/).map(Number).filter(isNum);
+      const att = kidsNS(dp, "beamAttenuationFactors")[0];
+      if (att) {
+        const f = t(att).split(/\s+/).map(Number);
+        if (f.length === ys.length && f.some(v => v !== 1)) { ys = ys.map((v, i) => v * f[i]); M.warnings.push("Intenziteti su pomnoženi faktorima atenuatora snopa (beamAttenuationFactors) iz datoteke."); }
+      }
+      let xs;
+      const lp = one(pos, "listPositions");
+      if (lp) xs = t(lp).split(/\s+/).map(Number);
+      else { const a = nm(one(pos, "startPosition")), b = nm(one(pos, "endPosition")), n = ys.length; xs = ys.map((_, i) => n > 1 ? a + (b - a) * i / (n - 1) : a); }
+      if (xs.length !== ys.length || xs.length < 2) continue;
+      const axis = pos.getAttribute("axis") || "2Theta", isTth = axis === "2Theta";
+      const ct = nm(kidsNS(dp, "commonCountingTime")[0]);
+      const rg = makeRange(xs, ys, { scanName: `${scan.getAttribute("mode") || ""} sken (${scanAxis})`.trim(), scanMode: scan.getAttribute("status") || "", timePerStep: ct,
+        intLabel: (ysEl.localName === "counts" ? "counts" : "intensities") + (ysEl.getAttribute("unit") ? " (" + ysEl.getAttribute("unit") + ")" : ""), file: "sken " + (ranges.length + 1) });
+      if (!isTth) Object.assign(rg.xAxis, { id: axis, name: axis, unit: pos.getAttribute("unit") === "deg" ? "°" : (pos.getAttribute("unit") || "") });
+      if (xs[xs.length - 1] < xs[0]) { rg.xs.reverse(); rg.ys.reverse(); }
+      Object.assign(rg.xAxis, { start: rg.xs[0], stop: rg.xs[rg.xs.length - 1] });
+      const st = scan.getAttribute("status"); if (st && st !== "Completed") M.warnings.push(`Sken ${ranges.length + 1} nije dovršen (status: ${st}).`);
+      ranges.push(rg);
+      const hdr = one(scan, "header");
+      if (!M.started) { M.started = t(one(hdr, "startTimeStamp")); M.finished = t(one(hdr, "endTimeStamp")); M.author = t(one(one(hdr, "author"), "name")); M.software = t(one(hdr, "applicationSoftware")); }
+      const na = one(scan, "nonAmbientPoints");
+      if (na && /temp/i.test(na.getAttribute("type") || "")) { const v = t(one(na, "nonAmbientValues")).split(/\s+/).map(Number).filter(isNum); if (v.length) temps.push({ v: v.reduce((a, b) => a + b, 0) / v.length, unit: na.getAttribute("unit") || "" }); }
+    }
+  }
+  if (!ranges.length) throw new Error("U XRDML datoteci nije pronađen sken s podacima.");
+  const wl = one(firstMeas, "usedWavelength");
+  M.lambda = { a1: nm(one(wl, "kAlpha1")), a2: nm(one(wl, "kAlpha2")), beta: nm(one(wl, "kBeta")), ratio: nm(one(wl, "ratioKAlpha2KAlpha1")), anode: t(one(firstMeas, "anodeMaterial")) };
+  if (isNum(M.lambda.a1) && isNum(M.lambda.a2) && isNum(M.lambda.ratio)) M.lambda.avg = (M.lambda.a1 + M.lambda.ratio * M.lambda.a2) / (1 + M.lambda.ratio);
+  const inc = one(firstMeas, "incidentBeamPath"), dif = one(firstMeas, "diffractedBeamPath"), tube = one(inc, "xRayTube");
+  const rIn = nm(one(inc, "radius")), rOut = nm(one(dif, "radius"));
+  if (isNum(rIn) && rIn > 50) M.radius = rIn;
+  if (temps.length) M.temperature = { v: temps[0].v, unit: temps[0].unit === "K" ? "K" : temps[0].unit, tag: "nonAmbientPoints" };
+  M.dateShort = tsFmt(M.started).replace(/\s\d{2}:\d{2}:\d{2}$/, "");
+  const vu = el => el ? (t(el) + (el.getAttribute("unit") ? " " + el.getAttribute("unit") : "")) : "";
+  const slit = el => { if (!el) return ""; const n = el.getAttribute("name") || ""; const a = one(el, "angle"), h = one(el, "height"); return (n || (a ? vu(a) : h ? vu(h) : "")) || ""; };
+  M.groups.push({ title: "Uzorak", rows: [["Naziv uzorka", M.sample], ["Oznaka (id)", t(one(sample, "id"))], ["Pripremio", t(one(sample, "preparedBy"))], ["Korisnik", M.author]] });
+  if (M.temperature) M.groups.push({ title: "Temperatura", rows: [["T", fmtN(M.temperature.v, 2) + " " + M.temperature.unit], ["Zapis", "nonAmbientPoints"]] });
+  const dur = (tsDate(M.finished) - tsDate(M.started)) / 1000;
+  M.groups.push({ title: "Vrijeme mjerenja", rows: [["Početak", tsFmt(M.started)], ["Kraj", tsFmt(M.finished)], ["Trajanje", durFmt(dur)]] });
+  M.groups.push({ title: "Rendgenska cijev", rows: [...lambdaRows(M.lambda), ["Napon / struja", [vu(one(tube, "tension")), vu(one(tube, "current"))].filter(Boolean).join(" / ")], ["Cijev", tube ? tube.getAttribute("name") || "" : ""]] });
+  const det = one(dif, "detector");
+  M.groups.push({ title: "Uređaj i optika", rows: [
+    ["Difraktometar", cm("Diffractometer system")], ["Goniometar", cm("Goniometer")], ["Konfiguracija", cm("Configuration")],
+    ["Radijus ul. / izl.", [rIn, rOut].filter(isNum).map(v => fmtN(v, 1)).join(" / ") + (isNum(rIn) || isNum(rOut) ? " mm" : "")],
+    ["Divergencijska pukotina", slit(one(inc, "divergenceSlit"))], ["Proturaspršna pukotina", slit(one(inc, "antiScatterSlit"))],
+    ["Ogledalo / monokromator", (one(inc, "xRayMirror") || one(inc, "monochromator") || {}).getAttribute?.("name") || ""],
+    ["Detektor", det ? det.getAttribute("name") || "" : ""], ["Način detektora", t(one(det, "mode"))], ["Program", M.software]] });
+  return { ranges, meta: M };
+}
+function readPhilipsRD(buf) {
+  const dv = new DataView(buf), u8 = new Uint8Array(buf), n = buf.byteLength, lat = new TextDecoder("windows-1252");
+  const str = (o, l) => o + l <= n ? lat.decode(u8.subarray(o, o + l)).split("\0")[0].trim() : "";
+  const ver = str(0, 2);
+  if (ver !== "V3" && ver !== "V5") throw new Error("Nepoznata Philips RD/SD datoteka.");
+  if (n < 250) throw new Error("Philips RD datoteka je prekratka.");
+  const types = ["PW1800", "PW1710", "PW1840", "PW3710", "nedefinirano", "X'Pert MPD"], anodes = ["Cu", "Mo", "Fe", "Cr", "ostalo"], focus = ["BF", "NF", "FF", "LFF"];
+  const step = dv.getFloat64(214, true), start = dv.getFloat64(222, true), end = dv.getFloat64(230, true);
+  if (!(step > 0 && step < 10) || !isNum(start) || !(end > start)) throw new Error("Neočekivano zaglavlje Philips RD datoteke.");
+  const cnt = Math.round((end - start) / step) + 1, off = ver === "V3" ? 250 : 810;
+  if (off + 2 * cnt > n) throw new Error("Philips RD datoteka je kraća od očekivanog.");
+  const xs = new Float64Array(cnt), ys = new Float64Array(cnt);
+  for (let i = 0; i < cnt; i++) { const p = dv.getUint16(off + 2 * i, true); xs[i] = start + i * step; ys[i] = Math.floor(0.01 * p * p); }
+  const anode = anodes[u8[85]] || "";
+  const L = { Cu: [1.54056, 1.54439], Mo: [0.70930, 0.71359], Fe: [1.93604, 1.93998], Cr: [2.28970, 2.29361] }[anode];
+  const M = { groups: [], warnings: [], format: `Philips binarni ${ver}RD/SD`, sample: str(146, 20), lambda: L ? { anode, a1: L[0], a2: L[1], ratio: 0.5 } : { anode } };
+  if (L) M.warnings.push(`Valna duljina nije zapisana u RD datoteci; korištene su tablične vrijednosti za anodu ${anode}.`);
+  M.groups.push({ title: "Uzorak", rows: [["Naziv uzorka", M.sample], ["Izvorno ime datoteke", str(138, 8)]] });
+  M.groups.push({ title: "Uređaj", rows: [["Difraktometar", types[u8[84]] || ""], ["Fokus cijevi", focus[u8[86]] || ""]] });
+  if (L) M.groups.push({ title: "Rendgenska cijev", rows: lambdaRows(M.lambda) });
+  const rg = makeRange(xs, ys, { file: "" }); Object.assign(rg.xAxis, { start, stop: xs[cnt - 1], inc: step });
+  return { ranges: [rg], meta: M };
+}
+function readUdf(text) {
+  const lines = text.split(/\r?\n/), kv = {};
+  let i = 0;
+  for (; i < lines.length; i++) {
+    const s = lines[i].trim(); if (s === "RawScan") { i++; break; }
+    const a = s.indexOf(","), b = s.lastIndexOf(",");
+    if (a > 0 && b > a) kv[s.slice(0, a).trim()] = s.slice(a + 1, b).trim();
+  }
+  const range = (kv.DataAngleRange || "").split(",").map(v => parseFloat(v));
+  const start = range[0], step = parseFloat(kv.ScanStepSize);
+  const ys = [];
+  for (; i < lines.length; i++) { const s = lines[i]; for (const tok of s.replace(/\//g, " ").split(/[\s,]+/)) { const v = parseFloat(tok); if (isNum(v)) ys.push(v); } if (s.includes("/")) break; }
+  if (!isNum(start) || !(step > 0) || ys.length < 3) throw new Error("UDF datoteka nema prepoznatljiv raspon kuta i podatke (RawScan).");
+  const xs = ys.map((_, k) => start + k * step);
+  const g = k => kv[k] || "";
+  const a1 = parseFloat(g("LambdaOne") || g("Lambda1")), a2 = parseFloat(g("LambdaTwo") || g("Lambda2")), ratio = parseFloat(g("RatioLambdaTwoOne") || g("IntensityRatio"));
+  const M = { groups: [], warnings: [], format: "Philips UDF (tekst)", sample: g("SampleIdent"), lambda: { a1, a2, ratio, anode: g("Anode") } };
+  M.groups.push({ title: "Uzorak", rows: [["Naziv uzorka", M.sample], ["Datum", g("Date")], ["Vrijeme", g("Time")]] });
+  if (isNum(a1)) M.groups.push({ title: "Rendgenska cijev", rows: lambdaRows(M.lambda) });
+  else M.warnings.push("UDF datoteka ne navodi valnu duljinu; za d se koristi Cu Kα1 = 1.54060 Å.");
+  const rest = Object.entries(kv).filter(([k]) => !["SampleIdent", "DataAngleRange", "ScanStepSize"].includes(k)).slice(0, 25);
+  if (rest.length) M.groups.push({ title: "Zaglavlje UDF", rows: rest });
+  const rg = makeRange(xs, ys, { file: "" }); Object.assign(rg.xAxis, { inc: step });
+  return { ranges: [rg], meta: M };
+}
 /* =====================================================================
    Application state
    ===================================================================== */
@@ -2353,13 +2482,19 @@ async function loadOne(name, buf) {
   let res;
   if (sig.startsWith("PK")) res = await readBrml(buf);
   else if (/^RAW[ 124]/.test(sig)) res = readBrukerRaw(buf);
+  else if (/^V[35]/.test(sig) && (/\.(rd|sd)$/i.test(name) || buf.byteLength > 250 && new Uint8Array(buf)[2] < 32)) res = readPhilipsRD(buf);
   else {
     const text = new TextDecoder("utf-8").decode(buf);
+    if (/<xrdMeasurements[\s>]/.test(text.slice(0, 4000))) { res = readXrdml(text); return finishDs(name, src, res); }
+    if (/\.udf$/i.test(name) || /^\s*SampleIdent\s*,/m.test(text) && /RawScan/.test(text)) { res = readUdf(text); return finishDs(name, src, res); }
     if (/\.cif$/i.test(name) || (/(^|\n)\s*data_/i.test(text) && /_cell_length_a/i.test(text))) {
       return readCif(text, name).map((ph, k) => Object.assign(ph, { id: ++dsSeq, visible: true, src, block: k, cellCur: { ...ph.cell } }));
     }
     res = readText(buf);
   }
+  return finishDs(name, src, res);
+}
+function finishDs(name, src, res) {
   if (/^\s*commander sample id\s*$/i.test(res.meta.sample || "")) res.meta.sample = "";
   const ds = { kind: "data", id: ++dsSeq, name, ranges: res.ranges, meta: res.meta, visible: true, src, block: 0 };
   mapDs(ds); processDs(ds);
