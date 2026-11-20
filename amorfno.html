@@ -128,16 +128,15 @@
   <div class="brand">Amorfni udio <span>· semikvantitativna procjena iz PXRD</span></div>
   <div style="display:flex;gap:8px">
     <a class="btn sm" href="index.html" style="text-decoration:none">BRML preglednik</a>
-    <button class="btn sm" id="hdrAdd" hidden>+ Datoteke</button>
+    <label class="btn sm" id="hdrAdd" hidden>+ Datoteke<input type="file" id="file" multiple hidden></label>
   </div>
-  <input type="file" id="file" multiple hidden accept=".brml,.raw,.xrdml,.rd,.sd,.udf,.xy,.txt,.csv,.dat,.asc">
 </header>
 <main>
   <section id="empty" class="card">
     <h1>Procjena udjela amorfne faze</h1>
     <p>Učitajte difraktograme (.brml, .raw, .xrdml, .xy …). Za svaki se određuju ovojnica nebraggovskog intenziteta i instrumentalna pozadina; omjer integriranih površina daje udio amorfnog intenziteta, bez strukturnog modela i bez CIF-a.</p>
     <p class="muted" style="font-size:13px">Datoteke se obrađuju isključivo lokalno, u pregledniku.</p>
-    <button class="btn primary" id="pick">Odaberi datoteke</button>
+    <label class="btn primary" id="pick">Odaberi datoteke<input type="file" id="file2" multiple hidden></label>
   </section>
 
   <section id="app" hidden>
@@ -1407,9 +1406,8 @@ $("yMode").addEventListener("click", e => {
 });
 
 /* ---------- file input & drag-drop ---------- */
-$("pick").addEventListener("click", () => $("file").click());
-$("hdrAdd").addEventListener("click", () => $("file").click());
-$("file").addEventListener("change", async () => { const fl = [...$("file").files]; $("file").value = ""; if (fl.length) await loadFiles(fl); });
+// no accept filter: iOS Safari greys out files whose extension it cannot map to a known type (.brml, .raw …)
+for (const id of ["file", "file2"]) $(id).addEventListener("change", async () => { const fl = [...$(id).files]; $(id).value = ""; if (fl.length) await loadFiles(fl); });
 document.addEventListener("dragover", e => { e.preventDefault(); document.body.classList.add("drag"); });
 document.addEventListener("dragleave", e => { if (e.target === document.documentElement || e.clientX <= 0) document.body.classList.remove("drag"); });
 document.addEventListener("drop", async e => { e.preventDefault(); document.body.classList.remove("drag"); const fl = [...(e.dataTransfer?.files || [])]; if (fl.length) await loadFiles(fl); });
