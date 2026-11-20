@@ -147,7 +147,10 @@
 <body>
 <header>
   <div class="brand">BRML <span>preglednik difraktograma</span></div>
-  <label class="btn primary" id="hdrAdd" hidden>+ Dodaj datoteke<input type="file" id="file" multiple hidden></label>
+  <div style="display:flex;gap:8px;align-items:center">
+    <a class="btn" href="amorfno.html" style="text-decoration:none" title="Semikvantitativna procjena udjela amorfne faze">Amorfni udio</a>
+    <label class="btn primary" id="hdrAdd" hidden>+ Dodaj datoteke<input type="file" id="file" multiple hidden></label>
+  </div>
 </header>
 
 <main>
@@ -156,6 +159,7 @@
     <p>Podržani formati: Bruker <b>.brml</b> (DIFFRAC.SUITE), binarni Bruker <b>.raw</b> (verzije 1, 2, 3/RAW1.01 i 4) PANalytical <b>.xrdml</b>, Philips <b>.rd/.sd</b> i <b>.udf</b> te tekstne datoteke s dva stupca (.xy, .txt, .csv…). Može se odabrati više datoteka odjednom radi preklapanja.</p>
     <p>Učitavanjem <b>.cif</b> datoteke izračunavaju se i iscrtavaju položaji i relativni intenziteti refleksa te faze.</p>
     <p>Zumiranje: dva prsta (vodoravno za 2θ, okomito za intenzitet). Pomicanje: jedan prst. Dodir: očitanje 2θ, d i I. Dvostruki dodir: početni prikaz.</p>
+    <p>Za semikvantitativnu procjenu udjela amorfne faze (bez CIF-a) otvorite aplikaciju <a href="amorfno.html">Amorfni udio</a>.</p>
     <label class="btn primary big">Odaberi datoteke<input type="file" id="file2" multiple hidden></label>
     <div id="resumeBox" hidden>
       <button class="btn big" id="resumeBtn">↺ Nastavi zadnju sesiju</button>
