@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Amorfno">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1f5fbf">
+<link rel="manifest" href="amorfno.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>Amorfni udio — PXRD</title>
+<style>
+  :root {
+    --bg: #f5f6f8; --panel: #ffffff; --ink: #16191f; --muted: #667085; --line: #e3e6eb;
+    --grid: #eceef2; --axis: #9aa1ad; --accent: #1f5fbf; --accent-soft: #e6eefb;
+    --amor: #e07a00; --instr: #2a9d8f; --cryst: #1f5fbf; --cursor: #d1495b;
+    --warn-bg: #fff6e0; --warn-ink: #7a5300; --err-bg: #fdecee; --err-ink: #9b1c2c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme=light]) {
+      --bg: #0f1115; --panel: #171a21; --ink: #e8eaee; --muted: #9098a6; --line: #2a2f39;
+      --grid: #20242d; --axis: #5d6574; --accent: #6ea1ff; --accent-soft: #1d2a42;
+      --amor: #ffb04a; --instr: #4fd1bd; --cryst: #6ea1ff; --cursor: #ff6b7d;
+      --warn-bg: #3a2f12; --warn-ink: #f4cf75; --err-bg: #3d1a20; --err-ink: #ffb3bd;
+    }
+  }
+  :root[data-theme=dark] {
+      --bg: #0f1115; --panel: #171a21; --ink: #e8eaee; --muted: #9098a6; --line: #2a2f39;
+      --grid: #20242d; --axis: #5d6574; --accent: #6ea1ff; --accent-soft: #1d2a42;
+      --amor: #ffb04a; --instr: #4fd1bd; --cryst: #6ea1ff; --cursor: #ff6b7d;
+      --warn-bg: #3a2f12; --warn-ink: #f4cf75; --err-bg: #3d1a20; --err-ink: #ffb3bd;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; -webkit-text-size-adjust: 100%; }
+  body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+  header { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 10px 14px; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+  .brand { font-weight: 700; letter-spacing: .2px; }
+  .brand span { font-weight: 400; color: var(--muted); }
+  @media (max-width: 460px) { .brand span { display: none; } }
+  main { max-width: 1100px; margin: 0 auto; padding: 12px 12px 40px; }
+  .btn { appearance: none; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 10px;
+    padding: 8px 12px; font: inherit; font-size: 14px; cursor: pointer; white-space: nowrap; display: inline-flex;
+    align-items: center; gap: 6px; min-height: 36px; }
+  .btn:active { transform: translateY(1px); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .btn.sm { min-height: 30px; padding: 4px 10px; font-size: 13.5px; }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel); }
+  .seg button { appearance: none; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: 13.5px;
+    padding: 6px 11px; min-height: 32px; cursor: pointer; }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  select, input[type=number] { font: inherit; font-size: 14px; color: var(--ink); background: var(--panel);
+    border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px; min-height: 34px; max-width: 100%; }
+  input[type=number] { width: 6.5em; font-variant-numeric: tabular-nums; }
+  input[type=range] { accent-color: var(--accent); width: 100%; }
+  input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); vertical-align: middle; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; }
+  .sect { padding: 12px 14px; margin-bottom: 12px; }
+  h2 { font-size: 15px; margin: 0 0 8px; font-weight: 650; }
+  h4 { font-size: 12.5px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin: 14px 0 6px; font-weight: 600; }
+  .note { color: var(--muted); font-size: 13px; margin: 6px 0; }
+  .banner { border-radius: 12px; padding: 9px 12px; margin-bottom: 10px; font-size: 13.5px; }
+  .banner.warn { background: var(--warn-bg); color: var(--warn-ink); }
+  .banner.err { background: var(--err-bg); color: var(--err-ink); }
+  #empty { padding: 34px 22px; text-align: center; margin-top: 18px; }
+  #empty h1 { font-size: 21px; margin: 0 0 8px; }
+  #empty p { color: var(--muted); margin: 6px auto; max-width: 560px; }
+  #empty .btn { margin-top: 16px; font-size: 16px; padding: 12px 18px; }
+  #empty.drag, body.drag main { outline: 2px dashed var(--accent); outline-offset: -8px; }
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 12px; align-items: start; }
+  @media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+  .samples { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; margin-bottom: 10px; }
+  .chip { flex: none; border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 6px 12px;
+    font-size: 13.5px; cursor: pointer; display: inline-flex; gap: 8px; align-items: center; color: var(--ink); font-family: inherit; }
+  .chip.sel { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .chip b { font-variant-numeric: tabular-nums; font-weight: 650; }
+  .chip .x { color: var(--muted); font-size: 16px; line-height: 1; padding-left: 2px; }
+  .plotcard { padding: 6px 6px 4px; }
+  .plotwrap { position: relative; height: clamp(260px, 52vh, 560px); }
+  @media (orientation: landscape) and (max-height: 520px) { .plotwrap { height: 76vh; } }
+  canvas.plot { display: block; width: 100%; height: 100%; touch-action: none; user-select: none; -webkit-user-select: none; cursor: crosshair; }
+  .plotbar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 6px 8px 4px; border-top: 1px solid var(--line); margin-top: 4px; }
+  .readout { font-variant-numeric: tabular-nums; font-size: 13.5px; color: var(--muted); flex: 1; min-width: 200px; }
+  .readout b { color: var(--ink); font-weight: 650; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--muted); padding: 2px 8px 6px; }
+  .legend i { display: inline-block; width: 18px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  .result { text-align: center; padding: 14px 14px 10px; }
+  .result .big { font-size: 40px; font-weight: 750; font-variant-numeric: tabular-nums; letter-spacing: -.5px; line-height: 1.1; }
+  .result .big small { font-size: 20px; font-weight: 600; color: var(--muted); }
+  .result .lbl { color: var(--muted); font-size: 13px; }
+  .result .band { font-size: 14px; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; font-size: 13.5px; margin-top: 10px; text-align: left; font-variant-numeric: tabular-nums; }
+  .kv span:nth-child(odd) { color: var(--muted); }
+  .prm { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; margin: 10px 0 4px; font-size: 14px; }
+  .prm label { font-weight: 550; }
+  .prm output { font-variant-numeric: tabular-nums; font-weight: 650; min-width: 3.5em; text-align: right; }
+  .prm input[type=range] { grid-column: 1 / -1; }
+  .prm .hint { grid-column: 1 / -1; color: var(--muted); font-size: 12.5px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin: 8px 0; font-size: 14px; }
+  .row label { display: inline-flex; gap: 6px; align-items: center; }
+  .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+  th, td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--muted); font-weight: 600; font-size: 12.5px; }
+  tr.sel td { background: var(--accent-soft); }
+  tbody tr { cursor: pointer; }
+  details.method summary { cursor: pointer; font-weight: 650; padding: 2px 0; }
+  details.method p, details.method li { font-size: 13.5px; line-height: 1.5; }
+  details.method ul { padding-left: 18px; margin: 6px 0; }
+  .eq { font-family: "Cambria Math", "STIX Two Math", Georgia, serif; font-size: 15px; text-align: center; margin: 8px 0; }
+  .muted { color: var(--muted); }
+  .modal { position: fixed; inset: 0; z-index: 20; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .modal .card { width: min(760px, 100%); max-height: 90vh; display: flex; flex-direction: column; padding: 14px; gap: 10px; }
+  .modal textarea { width: 100%; flex: 1; min-height: 240px; font: 12.5px/1.4 ui-monospace, Menlo, Consolas, monospace; color: var(--ink);
+    background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px; resize: vertical; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">Amorfni udio <span>· semikvantitativna procjena iz PXRD</span></div>
+  <div style="display:flex;gap:8px">
+    <a class="btn sm" href="index.html" style="text-decoration:none">BRML preglednik</a>
+    <button class="btn sm" id="hdrAdd" hidden>+ Datoteke</button>
+  </div>
+  <input type="file" id="file" multiple hidden accept=".brml,.raw,.xrdml,.rd,.sd,.udf,.xy,.txt,.csv,.dat,.asc">
+</header>
+<main>
+  <section id="empty" class="card">
+    <h1>Procjena udjela amorfne faze</h1>
+    <p>Učitajte difraktograme (.brml, .raw, .xrdml, .xy …). Za svaki se određuju ovojnica nebraggovskog intenziteta i instrumentalna pozadina; omjer integriranih površina daje udio amorfnog intenziteta, bez strukturnog modela i bez CIF-a.</p>
+    <p class="muted" style="font-size:13px">Datoteke se obrađuju isključivo lokalno, u pregledniku.</p>
+    <button class="btn primary" id="pick">Odaberi datoteke</button>
+  </section>
+
+  <section id="app" hidden>
+    <div id="msgs"></div>
+    <div class="samples" id="samples"></div>
+    <div class="grid">
+      <div>
+        <div class="card plotcard">
+          <div class="plotwrap"><canvas class="plot" id="cv"></canvas></div>
+          <div class="legend">
+            <span><i style="background:var(--ink);height:2px;vertical-align:3px"></i>izmjereno</span>
+            <span><i style="background:color-mix(in srgb,var(--amor) 35%,transparent);border:1px solid var(--amor)"></i>amorfni doprinos (A − B)</span>
+            <span><i style="background:color-mix(in srgb,var(--cryst) 22%,transparent)"></i>kristalni doprinos (I − A)</span>
+            <span><i style="background:var(--instr);height:2px;vertical-align:3px"></i>instrumentalna pozadina B</span>
+          </div>
+          <div class="plotbar">
+            <div class="readout" id="readout">Dodir ili klik: očitanje · povlačenje: pomak · dva prsta / kotačić: zum · dvostruki dodir: cijeli prikaz</div>
+            <div class="seg" id="yMode"><button data-v="bg" class="on">Pozadina</button><button data-v="full">Cijelo</button><button data-v="sqrt">√I</button></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div>
+        <div class="card result">
+          <div class="lbl" id="resName">—</div>
+          <div class="big" id="resVal">—</div>
+          <div class="lbl">udio amorfnog intenziteta, X<sub>am</sub></div>
+          <div class="band" id="resBand">&nbsp;</div>
+          <div class="kv" id="resKv"></div>
+        </div>
+
+        <div class="card sect" style="margin-top:12px">
+          <h2>Parametri</h2>
+          <div class="row">
+            <label>2θ od <input type="number" id="lo" step="0.5"></label>
+            <label>do <input type="number" id="hi" step="0.5"></label>
+          </div>
+          <div class="prm"><label for="L">Glatkoća ovojnice L</label><output id="Lv"></output>
+            <input type="range" id="L" min="3" max="20" step="0.5">
+            <div class="hint">°2θ; veća od širine Braggovih maksimuma i skupina maksimuma, manja od širine haloa</div></div>
+          <div class="prm"><label for="t">Prag za maksimume t</label><output id="tv"></output>
+            <input type="range" id="t" min="1" max="4" step="0.1">
+            <div class="hint">u jedinicama σ šuma; točke više od t·σ iznad ovojnice tretiraju se kao Braggov intenzitet</div></div>
+          <div class="prm"><label for="sw">Predglađivanje</label><output id="swv"></output>
+            <input type="range" id="sw" min="0" max="0.5" step="0.01">
+            <div class="hint">°2θ; širina Savitzky–Golayeva prozora, samo za klasifikaciju točaka</div></div>
+          <h4>Instrumentalna pozadina B</h4>
+          <div class="prm"><label for="deg">Stupanj Čebiševljeva polinoma</label><output id="degv"></output>
+            <input type="range" id="deg" min="0" max="5" step="1"></div>
+          <div class="row"><label><input type="checkbox" id="ox"> član c/2θ (raspršenje u zraku), c ≥ 0</label></div>
+          <h4>Kalibracija</h4>
+          <div class="row"><label>Faktor K <input type="number" id="K" step="0.01" min="0.01"></label>
+            <span class="note">X<sub>am</sub> = K·I<sub>a</sub> / (K·I<sub>a</sub> + I<sub>c</sub>)</span></div>
+          <div class="row"><button class="btn sm" id="defaults">Zadane vrijednosti</button></div>
+        </div>
+
+        <div class="card sect">
+          <details class="method">
+            <summary>Metoda i ograničenja</summary>
+            <p>Postupak slijedi logiku procjene kristalnosti u programu DIFFRAC.EVA: dvije krivulje dijele izmjereni intenzitet na kristalni i amorfni doprinos te instrumentalnu pozadinu.</p>
+            <ul>
+              <li><b>Ovojnica A(2θ)</b>: Whittakerovo izglađivanje (penalizacija drugih diferencija, granična duljina L) s iterativnim isključivanjem točaka koje leže više od t·σ iznad krivulje; σ = c·√A, gdje se c procjenjuje iz drugih diferencija sirovih podataka (c ≈ 1 za neskalirane brojeve impulsa). Pomak zbog odrezivanja raspodjele šuma ispravlja se članom σ·φ(t)/Φ(t).</li>
+              <li><b>Instrumentalna pozadina B(2θ)</b>: Čebiševljev polinom (i, po izboru, član c/2θ s c ≥ 0) prilagođen donjoj strani ovojnice asimetričnim najmanjim kvadratima (p = 0,001).</li>
+              <li><b>Rezultat</b>: I<sub>c</sub> = ∫(I − A) d2θ, I<sub>a</sub> = ∫max(A − B, 0) d2θ; X<sub>am</sub> = K·I<sub>a</sub>/(K·I<sub>a</sub> + I<sub>c</sub>).</li>
+              <li><b>Raspon osjetljivosti</b>: najmanja i najveća vrijednost X<sub>am</sub> uz L × (0,75; 1; 1,25), t ± 0,5 i stupanj polinoma ± 1 (do 27 izračuna).</li>
+            </ul>
+            <p>X<sub>am</sub> je udio integriranog intenziteta, a ne maseni udio. Jednaki su samo kad amorfna i kristalna faza imaju jednaku srednju raspršnu moć po jedinici mase; inače se primjenjuje faktor K određen na smjesama poznatog sastava. Integracija se provodi po 2θ, bez Lorentz-polarizacijske korekcije, kao u EVA-i.</p>
+            <p>Lorentzovi repovi jakih maksimuma i gusto preklopljene skupine refleksa djelomično ulaze u ovojnicu, pa se kod gotovo potpuno kristalnih uzoraka dobiva sustavni pozitivni pomak od nekoliko postotaka. Nanokristalne faze s vrlo širokim maksimumima pribrajaju se amorfnom doprinosu. Za kvantitativan rezultat preporučuje se metoda unutarnjeg standarda s Rietveldovim utočnjavanjem.</p>
+          </details>
+        </div>
+      </div>
+    </div>
+        <div class="card sect" style="margin-top:12px">
+      <h2>Svi uzorci (isti parametri)</h2>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Uzorak</th><th>X<sub>am</sub> / %</th><th>raspon osjetljivosti / %</th><th>maks. haloa / °2θ</th><th>I<sub>c</sub></th><th>I<sub>a</sub></th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table></div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn sm" id="csvAll">Izvoz tablice (CSV)</button>
+        <button class="btn sm" id="csvCurves">Izvoz krivulja odabranog uzorka (CSV)</button>
+        <button class="btn sm" id="report">Izvještaj (TXT)</button>
+      </div>
+    </div>
+  </section>
+</main>
+<div class="modal" id="modal" hidden>
+  <div class="card">
+    <h2 id="mTitle" style="margin:0"></h2>
+    <textarea id="mText" readonly></textarea>
+    <div class="row" style="margin:0;justify-content:flex-end">
+      <span class="note" id="mNote" style="flex:1"></span>
+      <button class="btn sm" id="mCopy">Kopiraj</button>
+      <button class="btn sm" id="mSave">Preuzmi datoteku</button>
+      <button class="btn sm primary" id="mClose">Zatvori</button>
+    </div>
+  </div>
+</div>
+<script>
+"use strict";
+/* =====================================================================
+   Generic helpers
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fmtN = (v, d) => Number.isFinite(v) ? v.toLocaleString("en-US", { maximumFractionDigits: d, minimumFractionDigits: 0, useGrouping: false }) : "—";
+const isNum = v => Number.isFinite(v);
+function tsFmt(s) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/.exec(s || "");
+  return m ? `${+m[3]}. ${+m[2]}. ${m[1]}. ${m[4]}:${m[5]}:${m[6]}` : (s || "");
+}
+function tsDate(s) { if (!s) return NaN; return Date.parse(s.replace(/(\.\d{3})\d+/, "$1")); }
+function durFmt(sec) {
+  if (!isNum(sec) || sec < 0) return "";
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = Math.round(sec % 60);
+  return (h ? h + " h " : "") + (h || m ? m + " min " : "") + s + " s";
+}
+function lambdaRows(L) {
+  return [
+    ["Anoda", L.anode],
+    ["λ Kα1", isNum(L.a1) ? fmtN(L.a1, 5) + " Å" : ""],
+    ["λ Kα2", isNum(L.a2) && L.a2 > 0 ? fmtN(L.a2, 5) + " Å" : ""],
+    ["λ Kα (prosjek)", isNum(L.avg) && L.avg > 0 ? fmtN(L.avg, 5) + " Å" : ""],
+    ["I(Kα2)/I(Kα1)", isNum(L.ratio) && L.ratio > 0 ? fmtN(L.ratio, 3) : ""],
+    ["λ Kβ", isNum(L.beta) && L.beta > 0 ? fmtN(L.beta, 5) + " Å" : ""]
+  ];
+}
+function makeRange(xs, ys, o) {
+  // common range object for every reader
+  return Object.assign({
+    xs: Float64Array.from(xs), ys: Float64Array.from(ys),
+    xAxis: { id: "TwoTheta", name: "2θ", unit: "°", start: xs[0], stop: xs[xs.length - 1], inc: xs.length > 1 ? (xs[xs.length - 1] - xs[0]) / (xs.length - 1) : NaN },
+    scanName: "", scanMode: "", timePerStep: NaN, timeEff: NaN, measuredSteps: xs.length, plannedSteps: xs.length,
+    intLabel: "", detMode: "", absNot1: false, extra: []
+  }, o || {});
+}
+
+/* =====================================================================
+   ZIP (for .brml)
+   ===================================================================== */
+async function inflateRawToText(bytes) {
+  if (typeof DecompressionStream === "undefined")
+    throw new Error("Ovaj preglednik ne podržava dekompresiju ZIP-a (potreban je iOS/Safari 16.4 ili noviji).");
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+  return await new Response(stream).text();
+}
+async function readZip(buf, wanted) {
+  const dv = new DataView(buf), u8 = new Uint8Array(buf), td = new TextDecoder();
+  let eocd = -1;
+  for (let i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 22 - 65535); i--) {
+    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error("Datoteka nije valjana BRML (ZIP) arhiva.");
+  const n = dv.getUint16(eocd + 10, true);
+  let p = dv.getUint32(eocd + 16, true);
+  const files = {};
+  for (let k = 0; k < n; k++) {
+    if (dv.getUint32(p, true) !== 0x02014b50) throw new Error("Oštećen središnji direktorij ZIP arhive.");
+    const method = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true);
+    const nlen = dv.getUint16(p + 28, true), xlen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true);
+    const loff = dv.getUint32(p + 42, true);
+    const name = td.decode(u8.subarray(p + 46, p + 46 + nlen)).replace(/\\/g, "/");
+    p += 46 + nlen + xlen + clen;
+    if (!wanted(name)) continue;
+    const start = loff + 30 + dv.getUint16(loff + 26, true) + dv.getUint16(loff + 28, true);
+    const data = u8.subarray(start, start + csize);
+    if (method === 0) files[name] = td.decode(data);
+    else if (method === 8) files[name] = await inflateRawToText(data);
+    else throw new Error("Nepodržana metoda kompresije (" + method + ") za " + name);
+  }
+  return files;
+}
+
+/* =====================================================================
+   BRML (XML) reader
+   ===================================================================== */
+const XSI = "http://www.w3.org/2001/XMLSchema-instance";
+const kids = (el, tag) => el ? Array.from(el.children).filter(c => c.localName === tag) : [];
+const kid = (el, tag) => kids(el, tag)[0] || null;
+const txt = el => el ? el.textContent.trim() : "";
+const num = s => { const v = parseFloat(s); return isNum(v) ? v : NaN; };
+const first = (root, tag) => root ? (root.getElementsByTagName(tag)[0] || null) : null;
+const xtype = el => el.getAttribute("xsi:type") || el.getAttributeNS(XSI, "type") || "";
+const pv = el => el ? { v: el.getAttribute("Value"), u: el.getAttribute("Unit") || "" } : null;
+const pvStr = el => { const q = pv(el); if (!q || q.v == null) return ""; return q.v + (q.u ? " " + q.u : ""); };
+function parseXml(text, label) {
+  const doc = new DOMParser().parseFromString(text, "application/xml");
+  if (doc.getElementsByTagName("parsererror").length) throw new Error("XML greška u " + label);
+  return doc;
+}
+
+async function readBrml(buf) {
+  const files = await readZip(buf, n => /RawData\d*\.xml$/i.test(n) || /DataContainer\.xml$/i.test(n));
+  const rawNames = Object.keys(files).filter(n => /RawData\d*\.xml$/i.test(n))
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  if (!rawNames.length) throw new Error("U arhivi nije pronađena datoteka RawData*.xml.");
+  const dcName = Object.keys(files).find(n => /DataContainer\.xml$/i.test(n));
+  const dcDoc = dcName ? parseXml(files[dcName], dcName) : null;
+  const ranges = []; let firstDoc = null;
+  for (const n of rawNames) {
+    const { range, doc } = parseRawDataXml(files[n], n);
+    ranges.push(range); if (!firstDoc) firstDoc = doc;
+    files[n] = null;
+  }
+  const meta = extractBrmlMeta(firstDoc, dcDoc);
+  meta.format = "Bruker BRML (DIFFRAC.SUITE)";
+  // warnings
+  if (meta.status && meta.status !== "Measured") {
+    const ms = ranges.reduce((a, r) => a + r.measuredSteps, 0), ps = ranges.reduce((a, r) => a + r.plannedSteps, 0);
+    meta.warnings.push(`Mjerenje nije dovršeno (status: ${meta.status})${ps ? ` — izmjereno ${ms} od ${ps} koraka` : ""}. Prikazane su samo izmjerene točke.`);
+  }
+  if (ranges.some(r => r.detMode === "Mode2D") || /2D/.test(ranges[0].intLabel))
+    meta.warnings.push("Detektor u 2D načinu: prikazuje se 1D profil pohranjen u BRML datoteci; pojedinačne 2D slike (.gfrm) nisu sadržane u arhivi.");
+  if (ranges.some(r => r.absNot1)) meta.warnings.push("Uočen faktor apsorbera ≠ 1 u dijelu točaka; intenziteti su prikazani kako su zapisani (neskalirani).");
+  return { ranges, meta };
+}
+
+function parseRawDataXml(text, fileName) {
+  const routeDatums = [];
+  const stripped = text.replace(/<DataRoute\b[\s\S]*?<\/DataRoute>/g, m => {
+    const arr = []; const re = /<Datum>([^<]*)<\/Datum>/g; let mm;
+    while ((mm = re.exec(m))) arr.push(mm[1]);
+    routeDatums.push(arr);
+    return m.replace(/<Datum>[^<]*<\/Datum>\s*/g, "");
+  });
+  const doc = parseXml(stripped, fileName);
+  const routesEl = Array.from(doc.getElementsByTagName("DataRoute"));
+  const candidates = routesEl.map((r, i) => parseRoute(r, routeDatums[i] || []));
+  candidates.sort((a, b) => (b.xs.length - a.xs.length) || ((b.flag === "Measured") - (a.flag === "Measured")));
+  const best = candidates[0];
+  if (!best || best.xs.length < 2) throw new Error("U " + fileName + " nema mjernih točaka.");
+  best.file = fileName.split("/").pop();
+  return { range: best, doc };
+}
+
+function parseRoute(route, datums) {
+  const si = kid(route, "ScanInformation");
+  const axes = kids(kid(si, "ScanAxes"), "ScanAxisInfo").map(a => ({
+    id: a.getAttribute("AxisId") || a.getAttribute("AxisName"),
+    name: a.getAttribute("VisibleName") || a.getAttribute("AxisName"),
+    unit: a.getAttribute("Unit") || "",
+    start: num(txt(kid(a, "Start"))), stop: num(txt(kid(a, "Stop"))), inc: num(txt(kid(a, "Increment")))
+  }));
+  const axisCols = {}; let intCol = -1, intLabel = "", blank = -9999, absCol = -1, timeCol = -1;
+  for (const v of kids(kid(route, "DataViews"), "RawDataView")) {
+    const type = xtype(v), start = parseInt(v.getAttribute("Start"), 10), lname = v.getAttribute("LogicName") || "";
+    if (type === "FixedRawDataView") {
+      if (lname === "AbsorptionFactor") absCol = start;
+      if (lname === "MeasuredTime") timeCol = start;
+    }
+    const vary = kid(v, "Varying");
+    if (vary) {
+      kids(vary, "FieldDefinitions").forEach((f, j) => { axisCols[f.getAttribute("AxisId") || f.getAttribute("FieldName")] = start + j; });
+      const b = num(txt(kid(vary, "BlankingValue"))); if (isNum(b)) blank = b;
+    }
+    const rec = kid(v, "Recording");
+    if (rec && intCol < 0 && /Count/i.test(rec.getAttribute("Category") || "") && type !== "ExternallyRecordedRawDataView") {
+      intCol = start; intLabel = rec.getAttribute("VisibleName") || "";
+    }
+  }
+  const xAxis = Object.assign({}, axes.find(a => a.id === "TwoTheta") || axes[0] || { id: "TwoTheta", name: "2Theta", unit: "°" });
+  if (xAxis.id === "TwoTheta") xAxis.name = "2θ";
+  let xCol = axisCols[xAxis.id];
+  if (xCol == null) { const c = Object.values(axisCols); xCol = c.length ? Math.min(...c) : 2; }
+  if (intCol < 0) { const c = Object.values(axisCols); intCol = c.length ? Math.max(...c) + 1 : 4; }
+  if (timeCol === intCol) timeCol = -1;
+  const maxCol = Math.max(xCol, intCol, absCol, timeCol);
+  let xs = [], ys = [], absNot1 = false;
+  for (const d of datums) {
+    const c = d.split(",", maxCol + 1);
+    const x = +c[xCol], y = +c[intCol];
+    if (!isNum(x) || !isNum(y) || x === blank || y === blank) continue;
+    if (absCol >= 0) { const a = +c[absCol]; if (a === 0) continue; if (a !== 1) absNot1 = true; }
+    xs.push(x); ys.push(y);
+  }
+  for (let i = 1; i < xs.length; i++) if (xs[i] < xs[i - 1]) {
+    const idx = xs.map((_, k) => k).sort((a, b) => xs[a] - xs[b]);
+    xs = idx.map(k => xs[k]); ys = idx.map(k => ys[k]); break;
+  }
+  let measuredSteps = 0, plannedSteps = 0;
+  for (const s of kids(kid(route, "SubScans"), "SubScanInfo")) {
+    measuredSteps += +s.getAttribute("MeasuredSteps") || 0; plannedSteps += +s.getAttribute("Steps") || 0;
+  }
+  const du = kid(si, "DetectorUsage");
+  return makeRange(xs, ys, {
+    flag: route.getAttribute("RouteFlag") || "", xAxis, intLabel, absNot1,
+    scanName: si ? (si.getAttribute("VisibleName") || si.getAttribute("ScanName") || "") : "",
+    scanMode: txt(kid(si, "ScanModeVisibleName")) || txt(kid(si, "ScanMode")),
+    timePerStep: num(txt(kid(si, "TimePerStep"))), timeEff: num(txt(kid(si, "TimePerStepEffective"))),
+    measuredSteps, plannedSteps,
+    detMode: du ? du.getAttribute("ModeResulting") || du.getAttribute("ModeOperating") : ""
+  });
+}
+
+function extractBrmlMeta(doc, dcDoc) {
+  const root = doc.documentElement, M = { groups: [], warnings: [] };
+  const info = {};
+  for (const it of doc.getElementsByTagName("InfoItem")) info[it.getAttribute("Name")] = it.getAttribute("Value");
+  // DIFFRAC.COMMANDER writes "COMMANDER Sample ID" when the Sample ID field was left at its default
+  const sampleDefault = /^\s*commander sample id\s*$/i.test(info.SampleName || "");
+  M.sample = sampleDefault ? "" : (info.SampleName || ""); M.status = txt(kid(root, "MeasurementStatus"));
+  M.started = txt(kid(root, "TimeStampStarted")); M.finished = txt(kid(root, "TimeStampFinished"));
+  M.dateShort = tsFmt(M.started).replace(/\s\d{2}:\d{2}:\d{2}$/, "");
+  const tube = first(doc, "Tube");
+  M.lambda = {
+    a1: num(pv(first(tube, "WaveLengthAlpha1"))?.v), a2: num(pv(first(tube, "WaveLengthAlpha2"))?.v),
+    avg: num(pv(first(tube, "WaveLengthAverage"))?.v), beta: num(pv(first(tube, "WaveLengthBeta"))?.v),
+    ratio: num(pv(first(tube, "WaveLengthRatio"))?.v), anode: txt(first(tube, "TubeMaterial"))
+  };
+  for (const el of doc.getElementsByTagName("*")) {
+    if (!/temperature/i.test(el.localName)) continue;
+    const v = num(el.getAttribute("Value") ?? txt(el));
+    if (isNum(v)) { const u = el.getAttribute("Unit") || ""; M.temperature = { v, unit: u, tag: el.localName }; break; }
+  }
+  if (!M.temperature) for (const [k, v] of Object.entries(info)) if (/temp/i.test(k) && isNum(num(v))) { M.temperature = { v: num(v), unit: "", tag: k }; break; }
+  const g = M.groups;
+  g.push({ title: "Uzorak", rows: [["Naziv uzorka", sampleDefault ? "nije upisan (u COMMANDER-u ostala zadana vrijednost „Sample ID”)" : info.SampleName], ["Korisnik", info.User], ["Pozicija", info.SamplePosition], ["Komentar", info.Comment]] });
+  const dur = (tsDate(M.finished) - tsDate(M.started)) / 1000;
+  if (M.temperature) g.push({ title: "Temperatura", rows: [["T", fmtN(M.temperature.v, 2) + " " + M.temperature.unit], ["Zapis", M.temperature.tag]] });
+  g.push({ title: "Vrijeme mjerenja", rows: [["Početak", tsFmt(M.started)], ["Kraj", tsFmt(M.finished)], ["Trajanje", durFmt(dur)],
+    ["Status", M.status === "Measured" ? "dovršeno" : (M.status || "")]] });
+  if (tube) {
+    const gen = first(tube, "Generator");
+    g.push({ title: "Rendgenska cijev", rows: [...lambdaRows(M.lambda),
+      ["Napon / struja", [pvStr(first(gen, "Voltage")), pvStr(first(gen, "Current"))].filter(Boolean).join(" / ")],
+      ["Fokus", txt(first(tube, "FocusOrientationText"))]] });
+  }
+  for (const d of kids(first(doc, "Detectors"), "InfoData")) {
+    const rows = [["Detektor", d.getAttribute("VisibleName") || d.getAttribute("LogicName")],
+                  ["Način", (d.getAttribute("DetectorMode") || "").replace("Mode", "")]];
+    const ao = kid(d, "AngularOpening"); if (ao) rows.push(["Kutni otvor", fmtN(num(pv(ao).v), 3) + " °"]);
+    const res = kid(d, "Resolution"); if (res) rows.push(["Rezolucija kanala", fmtN(num(pv(res).v), 5) + " °"]);
+    const dd = kid(d, "DetectorDistance"); if (dd) rows.push(["Udaljenost detektora", fmtN(num(pv(dd).v), 2) + " " + pv(dd).u]);
+    const roi2t = first(d, "ROITwoTheta"), roig = first(d, "ROIGamma");
+    if (roi2t) rows.push(["ROI 2θ × γ", fmtN(num(pv(roi2t).v), 2) + "° × " + fmtN(num(pv(roig)?.v), 2) + "°"]);
+    const bx = first(d, "BinningX"); if (bx) rows.push(["Binning 2θ", pvStr(bx)]);
+    const lld = kid(d, "LowerDiscriminator"), uld = kid(d, "UpperDiscriminator");
+    if (lld && uld) rows.push(["Diskriminator", pv(lld).v + " – " + pv(uld).v + " V"]);
+    g.push({ title: "Detektor", rows });
+  }
+  const instr = first(doc, "Instrument");
+  if (instr) {
+    const rows = [];
+    if (dcDoc) { rows.push(["Uređaj", txt(first(dcDoc, "InstrumentName"))]); rows.push(["Tip", txt(first(dcDoc, "DeviceTypeDesc"))]); }
+    rows.push(["Goniometar", [txt(kid(instr, "GoniometerType")).replace("_", "/"), txt(kid(instr, "Orientation")) === "Vertical" ? "vertikalni" : txt(kid(instr, "Orientation"))].filter(Boolean).join(", ")]);
+    const rP = first(first(instr, "PrimaryTracks"), "Radius"), rS = first(first(instr, "SecondaryTracks"), "Radius");
+    if (rP) M.radius = num(pv(rP).v);
+    rows.push(["Radijus prim. / sek.", [rP && fmtN(num(pv(rP).v), 1), rS && fmtN(num(pv(rS).v), 1)].filter(Boolean).join(" / ") + " mm"]);
+    const stage = first(instr, "Stage"); if (stage) rows.push(["Nosač uzorka", stage.getAttribute("LogicName")]);
+    for (const [tag, label] of [["PrimaryTracks", "Primarna optika"], ["SecondaryTracks", "Sekundarna optika"]]) {
+      const mo = first(first(instr, tag), "MountedOptics"), list = [];
+      for (const o of kids(mo, "InfoData")) {
+        if (/TubeMount|PlaceHolder/.test(xtype(o))) continue;
+        const name = (o.getAttribute("VisibleName") || o.getAttribute("LogicName") || "").replace(/\s*\[.*?\]\s*$/, "");
+        const det = [];
+        const sw = kid(o, "SlitWidth"); if (sw) det.push(pvStr(sw));
+        const ax = kid(o, "AxialDivergence"); if (ax && num(pv(ax).v) > 0) det.push("aks. " + pvStr(ax));
+        const eq = kid(o, "EquatorialDivergence"); if (eq && num(pv(eq).v) > 0) det.push("ekv. " + pvStr(eq));
+        const th = kid(o, "OpticThickness"); if (th && num(pv(th).v) > 0) det.push("deblj. " + pvStr(th));
+        const ua = kid(o, "UsedAbsorptionfactor"); if (ua) det.push("faktor " + txt(ua));
+        list.push(name + (det.length ? " (" + det.join(", ") + ")" : ""));
+      }
+      if (list.length) rows.push([label, list.join("; ")]);
+    }
+    g.push({ title: "Goniometar i optika", rows });
+  }
+  return M;
+}
+
+/* =====================================================================
+   Bruker binary RAW reader (v1 "RAW ", v2 "RAW2", v3 "RAW1.01", v4 "RAW4.00")
+   Offsets follow xylib (bruker_raw.cpp) and GSAS-II (G2pwd_BrukerRAW.py).
+   ===================================================================== */
+function readBrukerRaw(buf) {
+  const dv = new DataView(buf), n = buf.byteLength, lat = new TextDecoder("windows-1252");
+  const u8 = new Uint8Array(buf);
+  const str = (off, len) => off + len <= n ? lat.decode(u8.subarray(off, off + len)).split("\0")[0].trim() : "";
+  const u16 = o => dv.getUint16(o, true), u32 = o => dv.getUint32(o, true), f32 = o => dv.getFloat32(o, true), f64 = o => dv.getFloat64(o, true);
+  const need = (end, what) => { if (end > n) throw new Error("RAW datoteka je kraća od očekivanog (" + what + ")."); };
+  const floats = (off, count) => { need(off + 4 * count, "podaci"); const out = new Float64Array(count); for (let i = 0; i < count; i++) out[i] = f32(off + 4 * i); return out; };
+  const stepXs = (start, step, count) => { const xs = new Float64Array(count); for (let i = 0; i < count; i++) xs[i] = start + i * step; return xs; };
+  const plaus = (steps, start, step) => {
+    if (!(steps > 0 && steps < 1e7)) throw new Error("Neočekivan broj koraka u RAW zaglavlju (" + steps + ").");
+    if (!isNum(start) || !isNum(step) || !(Math.abs(step) > 0 && Math.abs(step) < 100)) throw new Error("Neočekivan početak/korak u RAW zaglavlju.");
+  };
+  const head7 = str(0, 7), head4 = lat.decode(u8.subarray(0, 4));
+  const M = { groups: [], warnings: [], lambda: {}, sample: "", status: "", started: "" };
+  const ranges = [];
+
+  if (head7 === "RAW4.00") {
+    M.format = "Bruker RAW v4 (RAW4.00, DIFFRAC.SUITE)";
+    const date = str(12, 12), time = str(24, 10);
+    M.dateShort = date; M.started = (date + " " + time).trim();
+    const kv = []; let anode = "";
+    // metadata records from byte 61 until a range marker (type 0 or 160)
+    let pos = 61;
+    const metaLen = n >= 60 ? u32(56) : 0;
+    while (pos + 8 <= n) {
+      const type = u32(pos);
+      if (type === 0 || type === 160) break;
+      const len = Math.max(u32(pos + 4), 8);
+      need(pos + len, "zapis zaglavlja");
+      if (type === 10 && len >= 36) {
+        const key = str(pos + 12, 24), val = str(pos + 36, len - 36);
+        if (key && val) kv.push([key, val]);
+      } else if (type === 30 && len >= 120) {
+        M.lambda = { avg: f64(pos + 72), a1: f64(pos + 80), a2: f64(pos + 88), beta: f64(pos + 96), ratio: f64(pos + 104), anode: str(pos + 116, 4) };
+        anode = M.lambda.anode;
+      }
+      pos += len;
+    }
+    if (pos + 8 > n && metaLen && 61 + metaLen < n) pos = 61 + metaLen;
+    // ranges
+    let k = 0;
+    while (pos + 160 <= n) {
+      const type = u32(pos);
+      if (type !== 0 && type !== 160) break;
+      const scanType = str(pos + 32, 24), start0 = f64(pos + 72), step = f64(pos + 80), steps = u32(pos + 88);
+      const tps = f32(pos + 92), kv_ = f32(pos + 100), ma = f32(pos + 104), usedL = f64(pos + 112);
+      const datum = u32(pos + 136), extra = u32(pos + 140);
+      plaus(steps, start0, step);
+      const dataOff = pos + 160 + extra, end = dataOff + steps * datum;
+      need(end, "raspon " + (k + 1));
+      // sub-records: type 50 = drive/axis with its start at +56
+      let tth = NaN, axes = [];
+      for (let r = pos + 160; r + 8 <= dataOff;) {
+        const t = u32(r), l = Math.max(u32(r + 4), 8);
+        if (t === 50 && l >= 64) { const nm = str(r + 12, 24); const st = f64(r + 56); axes.push([nm, st]); if (nm === "2Theta") tth = st; }
+        r += l;
+      }
+      if (datum === 4) {
+        const ys = floats(dataOff, steps);
+        let xAxis = { id: "TwoTheta", name: "2θ", unit: "°" }, start = start0;
+        const coupled = /Coupled|Detector|2Theta|TwoTheta/i.test(scanType);
+        if (isNum(tth) && Math.abs(tth - start0) < 1e-6) start = tth;
+        else if (!coupled) xAxis = { id: scanType || "x", name: scanType || "x", unit: "°" };
+        const xs = stepXs(start, step, steps);
+        const rg = makeRange(xs, ys, { scanName: scanType, timePerStep: tps, file: "raspon " + (k + 1) });
+        Object.assign(rg.xAxis, xAxis, { start, stop: xs[steps - 1], inc: step });
+        rg.extra = [["Napon / struja", isNum(kv_) && kv_ > 0 ? `${fmtN(kv_, 1)} kV / ${fmtN(ma, 1)} mA` : ""],
+                    ["Korištena λ", isNum(usedL) && usedL > 0 ? fmtN(usedL, 5) + " Å" : ""],
+                    ...axes.filter(([nm]) => nm && nm !== "2Theta").slice(0, 6).map(([nm, st]) => ["Početak: " + nm, fmtN(st, 4)])];
+        ranges.push(rg);
+      } else {
+        M.warnings.push(`Raspon ${k + 1} („${scanType}”) ima ${datum} bajta po točki i nije učitan.`);
+      }
+      pos = end; k++;
+    }
+    const map = Object.fromEntries(kv);
+    M.sample = map.SAMPLEID || map.SAMPLE || "";
+    M.groups.push({ title: "Uzorak", rows: [["Naziv uzorka", M.sample], ["Korisnik", map.USER], ["Mjesto", map.SITE], ["Komentar", map.COMMENT]] });
+    M.groups.push({ title: "Vrijeme mjerenja", rows: [["Datum", date], ["Vrijeme", time]] });
+    if (M.lambda.anode !== undefined || isNum(M.lambda.a1)) M.groups.push({ title: "Rendgenska cijev", rows: lambdaRows(M.lambda) });
+    const shown = new Set(["SAMPLEID", "SAMPLE", "USER", "SITE", "COMMENT"]);
+    const rest = kv.filter(([k_, v]) => !shown.has(k_) && v.length < 160);
+    if (rest.length) M.groups.push({ title: "Ostali zapisi zaglavlja", rows: rest });
+  }
+
+  else if (head7 === "RAW1.01" || head7 === "RAW1.02") {
+    M.format = "Bruker RAW v3 (" + head7 + ", DIFFRACplus)";
+    need(712, "zaglavlje");
+    const fstat = u32(8), nr = u32(12);
+    M.status = ({ 1: "Measured", 2: "active", 3: "aborted", 4: "interrupted" })[fstat] || "";
+    const date = str(16, 10), time = str(26, 10);
+    M.dateShort = date; M.started = (date + " " + time).trim();
+    M.sample = str(326, 60);
+    M.lambda = { anode: str(608, 4), avg: f64(616), a1: f64(624), a2: f64(632), beta: f64(640), ratio: f64(648) };
+    const radius = f32(564);
+    if (isNum(radius) && radius > 50 && radius < 2000) M.radius = radius;
+    let pos = 712, kvFirst = "";
+    for (let k = 0; k < nr && pos + 304 <= n; k++) {
+      const hl = u32(pos), steps = u32(pos + 4), start = f64(pos + 16), step = f64(pos + 176), tps = f32(pos + 192);
+      const supp = u32(pos + 256), kV = u32(pos + 224), mA = u32(pos + 228), usedL = f64(pos + 240), theta0 = f64(pos + 8);
+      plaus(steps, start, step);
+      let dataOff = pos + (hl || 304) + supp;
+      if (dataOff + 4 * steps > n) dataOff = pos + (hl || 304);   // tolerate an inconsistent supplementary size
+      const ys = floats(dataOff, steps), xs = stepXs(start, step, steps);
+      const rg = makeRange(xs, ys, { scanName: "", timePerStep: tps, file: "raspon " + (k + 1) });
+      Object.assign(rg.xAxis, { start, stop: xs[steps - 1], inc: step });
+      rg.extra = [["Napon / struja", kV > 0 && kV < 200 ? `${kV} kV / ${mA} mA` : ""],
+                  ["Korištena λ", isNum(usedL) && usedL > 0.1 && usedL < 10 ? fmtN(usedL, 5) + " Å" : ""],
+                  ["θ početak", isNum(theta0) ? fmtN(theta0, 4) + " °" : ""]];
+      if (!kvFirst && kV > 0 && kV < 200) kvFirst = `${kV} kV / ${mA} mA`;
+      ranges.push(rg);
+      pos = dataOff + 4 * steps;
+    }
+    M.groups.push({ title: "Uzorak", rows: [["Naziv uzorka", M.sample], ["Korisnik", str(36, 72)], ["Mjesto", str(108, 218)], ["Komentar", str(386, 160)]] });
+    M.groups.push({ title: "Vrijeme mjerenja", rows: [["Datum", date], ["Vrijeme", time],
+      ["Status", ({ 1: "dovršeno", 2: "u tijeku", 3: "prekinuto", 4: "prekinuto (interrupted)" })[fstat] || ""]] });
+    M.groups.push({ title: "Rendgenska cijev", rows: [...lambdaRows(M.lambda), ["Napon / struja", kvFirst]] });
+    if (isNum(radius) && radius > 50 && radius < 2000) M.groups.push({ title: "Goniometar", rows: [["Radijus", fmtN(radius, 1) + " mm"]] });
+    if (fstat > 2) M.warnings.push("Mjerenje u RAW datoteci označeno je kao prekinuto.");
+  }
+
+  else if (head4 === "RAW2") {
+    M.format = "Bruker RAW v2 (DIFFRAC-AT)";
+    need(256, "zaglavlje");
+    const nr = u16(4);
+    M.started = str(168, 20); M.dateShort = M.started;
+    M.lambda = { anode: str(188, 2), a1: f32(190), a2: f32(194), ratio: f32(198), beta: f32(206) };
+    const total = f32(210);
+    let pos = 256;
+    for (let k = 0; k < nr && pos + 48 <= n; k++) {
+      const hl = u16(pos), steps = u16(pos + 2), tps = f32(pos + 8), step = f32(pos + 12), start = f32(pos + 16), temp = u16(pos + 46);
+      if (hl <= 48) throw new Error("Neispravno zaglavlje raspona u RAW2 datoteci.");
+      plaus(steps, start, step);
+      const ys = floats(pos + hl, steps), xs = stepXs(start, step, steps);
+      const rg = makeRange(xs, ys, { timePerStep: tps, file: "raspon " + (k + 1) });
+      Object.assign(rg.xAxis, { start, stop: xs[steps - 1], inc: step });
+      if (temp > 0) rg.extra = [["Temperatura", temp + " K"]];
+      ranges.push(rg);
+      pos += hl + 4 * steps;
+    }
+    M.groups.push({ title: "Vrijeme mjerenja", rows: [["Datum i vrijeme", M.started], ["Ukupno trajanje", durFmt(total)]] });
+    M.groups.push({ title: "Rendgenska cijev", rows: lambdaRows(M.lambda) });
+  }
+
+  else if (head4 === "RAW ") {
+    M.format = "Bruker RAW v1 (DIFFRAC-AT)";
+    let pos = 4, following = 1, k = 0;
+    while (following && pos + 156 <= n) {
+      let steps = u32(pos);
+      if (k > 0 && lat.decode(u8.subarray(pos, pos + 4)) === "RAW ") { pos += 4; steps = u32(pos); }
+      const tps = f32(pos + 4), step = f32(pos + 8), start = f32(pos + 20);
+      const sample = str(pos + 36, 32), a1 = f32(pos + 68), a2 = f32(pos + 72);
+      following = u32(pos + 148);
+      plaus(steps, start, step);
+      const ys = floats(pos + 152, steps), xs = stepXs(start, step, steps);
+      const rg = makeRange(xs, ys, { timePerStep: tps, file: "raspon " + (k + 1) });
+      Object.assign(rg.xAxis, { start, stop: xs[steps - 1], inc: step });
+      ranges.push(rg);
+      if (!M.sample) { M.sample = sample; M.lambda = { a1, a2 }; }
+      pos += 152 + 4 * steps; k++;
+    }
+    M.groups.push({ title: "Uzorak", rows: [["Naziv uzorka", M.sample]] });
+    M.groups.push({ title: "Rendgenska cijev", rows: lambdaRows(M.lambda) });
+  }
+  else throw new Error("Nepoznata vrsta RAW datoteke (zaglavlje „" + head7.replace(/[^\x20-\x7e]/g, "?") + "”).");
+
+  if (!ranges.length) throw new Error("U RAW datoteci nije pronađen nijedan raspon s podacima.");
+  return { ranges, meta: M };
+}
+
+/* =====================================================================
+   Plain text two-column reader (.xy, .txt, .csv, .dat, ASCII exports)
+   ===================================================================== */
+function readText(buf) {
+  const text = new TextDecoder("utf-8").decode(buf);
+  const xs = [], ys = [], M = { groups: [], warnings: [], lambda: {}, sample: "", format: "Tekstna datoteka (stupci)" };
+  for (const line of text.split(/\r?\n/)) {
+    const s = line.trim();
+    if (!s || /^[#;!\[]/.test(s)) {
+      const m = /(KAlpha1|Alpha1|WL1|Lambda1?)\s*[=:]\s*([\d.]+)/i.exec(s); if (m && !isNum(M.lambda.a1)) M.lambda.a1 = +m[2];
+      continue;
+    }
+    if (s.includes("=")) {
+      const m = /^(KAlpha1|Alpha1|WL1|Lambda1?)\s*=\s*([\d.]+)/i.exec(s); if (m) M.lambda.a1 = +m[2];
+      const n = /^(SampleID|Sample|SAMPLE)\s*=\s*(.+)$/i.exec(s); if (n && !M.sample) M.sample = n[2].trim();
+      continue;
+    }
+    const parts = s.split(/[\s,;\t]+/);
+    if (parts.length < 2) continue;
+    let a = parseFloat(parts[0]), b = parseFloat(parts[1]);
+    if ((!isNum(a) || !isNum(b)) && /^-?\d+,\d+$/.test(parts[0])) { a = parseFloat(parts[0].replace(",", ".")); b = parseFloat(parts[1].replace(",", ".")); }
+    if (isNum(a) && isNum(b)) { xs.push(a); ys.push(b); }
+  }
+  if (xs.length < 3) throw new Error("U datoteci nisu prepoznati stupci s brojevima.");
+  let ok = true; for (let i = 1; i < xs.length; i++) if (xs[i] < xs[i - 1]) { ok = false; break; }
+  let X = xs, Y = ys;
+  if (!ok) { const idx = xs.map((_, k) => k).sort((p, q) => xs[p] - xs[q]); X = idx.map(k => xs[k]); Y = idx.map(k => ys[k]); }
+  M.groups.push({ title: "Uzorak", rows: [["Naziv uzorka", M.sample]] });
+  if (isNum(M.lambda.a1)) M.groups.push({ title: "Rendgenska cijev", rows: lambdaRows(M.lambda) });
+  else M.warnings.push("Tekstna datoteka ne navodi valnu duljinu; za d se koristi Cu Kα1 = 1.54060 Å.");
+  return { ranges: [makeRange(X, Y, { file: "" })], meta: M };
+}
+
+/* =====================================================================
+   PANalytical readers: XRDML (XML), Philips binary RD/SD (V3/V5), Philips UDF (text)
+   Formats follow the XRDML schema and the xylib / GSAS-II readers.
+   ===================================================================== */
+function readXrdml(text) {
+  const doc = parseXml(text, "XRDML");
+  const all = (el, n) => el ? Array.from(el.getElementsByTagNameNS("*", n)) : [];
+  const one = (el, n) => all(el, n)[0] || null;
+  const kidsNS = (el, n) => el ? Array.from(el.children).filter(c => c.localName === n) : [];
+  const t = el => el ? el.textContent.trim() : "";
+  const nm = el => num(t(el));
+  const M = { groups: [], warnings: [], format: "PANalytical XRDML", lambda: {} };
+  const root = doc.documentElement;
+  const sample = one(root, "sample");
+  M.sample = t(one(sample, "name")) || t(one(sample, "id"));
+  const comments = all(kidsNS(root, "comment")[0], "entry").map(t).filter(Boolean);
+  const cm = k => { const e = comments.find(c => c.startsWith(k + "=")); return e ? e.slice(k.length + 1).split(/[,;]/)[0].trim() : ""; };
+  const ranges = [];
+  let firstMeas = null, temps = [];
+  for (const meas of all(root, "xrdMeasurement")) {
+    if (!firstMeas) firstMeas = meas;
+    for (const scan of kidsNS(meas, "scan")) {
+      const dp = one(scan, "dataPoints"); if (!dp) continue;
+      const scanAxis = scan.getAttribute("scanAxis") || "2Theta";
+      const positions = kidsNS(dp, "positions");
+      const want = /gonio|2theta/i.test(scanAxis) ? "2Theta" : scanAxis;
+      const pos = positions.find(p => p.getAttribute("axis") === want) || positions.find(p => one(p, "startPosition") || one(p, "listPositions"));
+      let ysEl = kidsNS(dp, "intensities")[0] || kidsNS(dp, "counts")[0];
+      if (!pos || !ysEl) continue;
+      let ys = t(ysEl).split(/\s+/).map(Number).filter(isNum);
+      const att = kidsNS(dp, "beamAttenuationFactors")[0];
+      if (att) {
+        const f = t(att).split(/\s+/).map(Number);
+        if (f.length === ys.length && f.some(v => v !== 1)) { ys = ys.map((v, i) => v * f[i]); M.warnings.push("Intenziteti su pomnoženi faktorima atenuatora snopa (beamAttenuationFactors) iz datoteke."); }
+      }
+      let xs;
+      const lp = one(pos, "listPositions");
+      if (lp) xs = t(lp).split(/\s+/).map(Number);
+      else { const a = nm(one(pos, "startPosition")), b = nm(one(pos, "endPosition")), n = ys.length; xs = ys.map((_, i) => n > 1 ? a + (b - a) * i / (n - 1) : a); }
+      if (xs.length !== ys.length || xs.length < 2) continue;
+      const axis = pos.getAttribute("axis") || "2Theta", isTth = axis === "2Theta";
+      const ct = nm(kidsNS(dp, "commonCountingTime")[0]);
+      const rg = makeRange(xs, ys, { scanName: `${scan.getAttribute("mode") || ""} sken (${scanAxis})`.trim(), scanMode: scan.getAttribute("status") || "", timePerStep: ct,
+        intLabel: (ysEl.localName === "counts" ? "counts" : "intensities") + (ysEl.getAttribute("unit") ? " (" + ysEl.getAttribute("unit") + ")" : ""), file: "sken " + (ranges.length + 1) });
+      if (!isTth) Object.assign(rg.xAxis, { id: axis, name: axis, unit: pos.getAttribute("unit") === "deg" ? "°" : (pos.getAttribute("unit") || "") });
+      if (xs[xs.length - 1] < xs[0]) { rg.xs.reverse(); rg.ys.reverse(); }
+      Object.assign(rg.xAxis, { start: rg.xs[0], stop: rg.xs[rg.xs.length - 1] });
+      const st = scan.getAttribute("status"); if (st && st !== "Completed") M.warnings.push(`Sken ${ranges.length + 1} nije dovršen (status: ${st}).`);
+      ranges.push(rg);
+      const hdr = one(scan, "header");
+      if (!M.started) { M.started = t(one(hdr, "startTimeStamp")); M.finished = t(one(hdr, "endTimeStamp")); M.author = t(one(one(hdr, "author"), "name")); M.software = t(one(hdr, "applicationSoftware")); }
+      const na = one(scan, "nonAmbientPoints");
+      if (na && /temp/i.test(na.getAttribute("type") || "")) { const v = t(one(na, "nonAmbientValues")).split(/\s+/).map(Number).filter(isNum); if (v.length) temps.push({ v: v.reduce((a, b) => a + b, 0) / v.length, unit: na.getAttribute("unit") || "" }); }
+    }
+  }
+  if (!ranges.length) throw new Error("U XRDML datoteci nije pronađen sken s podacima.");
+  const wl = one(firstMeas, "usedWavelength");
+  M.lambda = { a1: nm(one(wl, "kAlpha1")), a2: nm(one(wl, "kAlpha2")), beta: nm(one(wl, "kBeta")), ratio: nm(one(wl, "ratioKAlpha2KAlpha1")), anode: t(one(firstMeas, "anodeMaterial")) };
+  if (isNum(M.lambda.a1) && isNum(M.lambda.a2) && isNum(M.lambda.ratio)) M.lambda.avg = (M.lambda.a1 + M.lambda.ratio * M.lambda.a2) / (1 + M.lambda.ratio);
+  const inc = one(firstMeas, "incidentBeamPath"), dif = one(firstMeas, "diffractedBeamPath"), tube = one(inc, "xRayTube");
+  const rIn = nm(one(inc, "radius")), rOut = nm(one(dif, "radius"));
+  if (isNum(rIn) && rIn > 50) M.radius = rIn;
+  if (temps.length) M.temperature = { v: temps[0].v, unit: temps[0].unit === "K" ? "K" : temps[0].unit, tag: "nonAmbientPoints" };
+  M.dateShort = tsFmt(M.started).replace(/\s\d{2}:\d{2}:\d{2}$/, "");
+  const vu = el => el ? (t(el) + (el.getAttribute("unit") ? " " + el.getAttribute("unit") : "")) : "";
+  const slit = el => { if (!el) return ""; const n = el.getAttribute("name") || ""; const a = one(el, "angle"), h = one(el, "height"); return (n || (a ? vu(a) : h ? vu(h) : "")) || ""; };
+  M.groups.push({ title: "Uzorak", rows: [["Naziv uzorka", M.sample], ["Oznaka (id)", t(one(sample, "id"))], ["Pripremio", t(one(sample, "preparedBy"))], ["Korisnik", M.author]] });
+  if (M.temperature) M.groups.push({ title: "Temperatura", rows: [["T", fmtN(M.temperature.v, 2) + " " + M.temperature.unit], ["Zapis", "nonAmbientPoints"]] });
+  const dur = (tsDate(M.finished) - tsDate(M.started)) / 1000;
+  M.groups.push({ title: "Vrijeme mjerenja", rows: [["Početak", tsFmt(M.started)], ["Kraj", tsFmt(M.finished)], ["Trajanje", durFmt(dur)]] });
+  M.groups.push({ title: "Rendgenska cijev", rows: [...lambdaRows(M.lambda), ["Napon / struja", [vu(one(tube, "tension")), vu(one(tube, "current"))].filter(Boolean).join(" / ")], ["Cijev", tube ? tube.getAttribute("name") || "" : ""]] });
+  const det = one(dif, "detector");
+  M.groups.push({ title: "Uređaj i optika", rows: [
+    ["Difraktometar", cm("Diffractometer system")], ["Goniometar", cm("Goniometer")], ["Konfiguracija", cm("Configuration")],
+    ["Radijus ul. / izl.", [rIn, rOut].filter(isNum).map(v => fmtN(v, 1)).join(" / ") + (isNum(rIn) || isNum(rOut) ? " mm" : "")],
+    ["Divergencijska pukotina", slit(one(inc, "divergenceSlit"))], ["Proturaspršna pukotina", slit(one(inc, "antiScatterSlit"))],
+    ["Ogledalo / monokromator", (one(inc, "xRayMirror") || one(inc, "monochromator") || {}).getAttribute?.("name") || ""],
+    ["Detektor", det ? det.getAttribute("name") || "" : ""], ["Način detektora", t(one(det, "mode"))], ["Program", M.software]] });
+  return { ranges, meta: M };
+}
+function readPhilipsRD(buf) {
+  const dv = new DataView(buf), u8 = new Uint8Array(buf), n = buf.byteLength, lat = new TextDecoder("windows-1252");
+  const str = (o, l) => o + l <= n ? lat.decode(u8.subarray(o, o + l)).split("\0")[0].trim() : "";
+  const ver = str(0, 2);
+  if (ver !== "V3" && ver !== "V5") throw new Error("Nepoznata Philips RD/SD datoteka.");
+  if (n < 250) throw new Error("Philips RD datoteka je prekratka.");
+  const types = ["PW1800", "PW1710", "PW1840", "PW3710", "nedefinirano", "X'Pert MPD"], anodes = ["Cu", "Mo", "Fe", "Cr", "ostalo"], focus = ["BF", "NF", "FF", "LFF"];
+  const step = dv.getFloat64(214, true), start = dv.getFloat64(222, true), end = dv.getFloat64(230, true);
+  if (!(step > 0 && step < 10) || !isNum(start) || !(end > start)) throw new Error("Neočekivano zaglavlje Philips RD datoteke.");
+  const cnt = Math.round((end - start) / step) + 1, off = ver === "V3" ? 250 : 810;
+  if (off + 2 * cnt > n) throw new Error("Philips RD datoteka je kraća od očekivanog.");
+  const xs = new Float64Array(cnt), ys = new Float64Array(cnt);
+  for (let i = 0; i < cnt; i++) { const p = dv.getUint16(off + 2 * i, true); xs[i] = start + i * step; ys[i] = Math.floor(0.01 * p * p); }
+  const anode = anodes[u8[85]] || "";
+  const L = { Cu: [1.54056, 1.54439], Mo: [0.70930, 0.71359], Fe: [1.93604, 1.93998], Cr: [2.28970, 2.29361] }[anode];
+  const M = { groups: [], warnings: [], format: `Philips binarni ${ver}RD/SD`, sample: str(146, 20), lambda: L ? { anode, a1: L[0], a2: L[1], ratio: 0.5 } : { anode } };
+  if (L) M.warnings.push(`Valna duljina nije zapisana u RD datoteci; korištene su tablične vrijednosti za anodu ${anode}.`);
+  M.groups.push({ title: "Uzorak", rows: [["Naziv uzorka", M.sample], ["Izvorno ime datoteke", str(138, 8)]] });
+  M.groups.push({ title: "Uređaj", rows: [["Difraktometar", types[u8[84]] || ""], ["Fokus cijevi", focus[u8[86]] || ""]] });
+  if (L) M.groups.push({ title: "Rendgenska cijev", rows: lambdaRows(M.lambda) });
+  const rg = makeRange(xs, ys, { file: "" }); Object.assign(rg.xAxis, { start, stop: xs[cnt - 1], inc: step });
+  return { ranges: [rg], meta: M };
+}
+function readUdf(text) {
+  const lines = text.split(/\r?\n/), kv = {};
+  let i = 0;
+  for (; i < lines.length; i++) {
+    const s = lines[i].trim(); if (s === "RawScan") { i++; break; }
+    const a = s.indexOf(","), b = s.lastIndexOf(",");
+    if (a > 0 && b > a) kv[s.slice(0, a).trim()] = s.slice(a + 1, b).trim();
+  }
+  const range = (kv.DataAngleRange || "").split(",").map(v => parseFloat(v));
+  const start = range[0], step = parseFloat(kv.ScanStepSize);
+  const ys = [];
+  for (; i < lines.length; i++) { const s = lines[i]; for (const tok of s.replace(/\//g, " ").split(/[\s,]+/)) { const v = parseFloat(tok); if (isNum(v)) ys.push(v); } if (s.includes("/")) break; }
+  if (!isNum(start) || !(step > 0) || ys.length < 3) throw new Error("UDF datoteka nema prepoznatljiv raspon kuta i podatke (RawScan).");
+  const xs = ys.map((_, k) => start + k * step);
+  const g = k => kv[k] || "";
+  const a1 = parseFloat(g("LambdaOne") || g("Lambda1")), a2 = parseFloat(g("LambdaTwo") || g("Lambda2")), ratio = parseFloat(g("RatioLambdaTwoOne") || g("IntensityRatio"));
+  const M = { groups: [], warnings: [], format: "Philips UDF (tekst)", sample: g("SampleIdent"), lambda: { a1, a2, ratio, anode: g("Anode") } };
+  M.groups.push({ title: "Uzorak", rows: [["Naziv uzorka", M.sample], ["Datum", g("Date")], ["Vrijeme", g("Time")]] });
+  if (isNum(a1)) M.groups.push({ title: "Rendgenska cijev", rows: lambdaRows(M.lambda) });
+  else M.warnings.push("UDF datoteka ne navodi valnu duljinu; za d se koristi Cu Kα1 = 1.54060 Å.");
+  const rest = Object.entries(kv).filter(([k]) => !["SampleIdent", "DataAngleRange", "ScanStepSize"].includes(k)).slice(0, 25);
+  if (rest.length) M.groups.push({ title: "Zaglavlje UDF", rows: rest });
+  const rg = makeRange(xs, ys, { file: "" }); Object.assign(rg.xAxis, { inc: step });
+  return { ranges: [rg], meta: M };
+}
+
+/* =====================================================================
+   Amorphous-content estimation (two-curve envelope method, EVA-like)
+   A(2θ): envelope of the non-Bragg intensity (amorphous halo + instrumental
+          background), Whittaker smoother with iterative exclusion of points
+          lying more than t·σ above the curve (σ from Poisson-scaled noise).
+   B(2θ): instrumental background, Chebyshev polynomial (+ c/2θ air-scatter
+          term, c ≥ 0) fitted to the lower side of A by asymmetric least squares.
+   I_c = ∫ (I − A) d2θ,  I_a = ∫ max(A − B, 0) d2θ,  X_am = K·I_a / (K·I_a + I_c)
+   ===================================================================== */
+const AM = {};
+
+// Savitzky–Golay (quadratic) coefficients for half-width m
+AM.sgCoef = function (m) {
+  const den = (2 * m - 1) * (2 * m + 1) * (2 * m + 3), c = [];
+  for (let j = -m; j <= m; j++) c.push((3 * (3 * m * m + 3 * m - 1) - 15 * j * j) / den);
+  return c;
+};
+AM.sgSmooth = function (y, m) {
+  const n = y.length, out = Float64Array.from(y);
+  if (m < 2) return { ys: out, red: 1 };
+  const c = AM.sgCoef(m);
+  for (let i = m; i < n - m; i++) { let s = 0; for (let j = -m; j <= m; j++) s += c[j + m] * y[i + j]; out[i] = s; }
+  return { ys: out, red: Math.sqrt(c.reduce((a, v) => a + v * v, 0)) };
+};
+AM.median = function (a) {
+  const s = Float64Array.from(a).sort(), n = s.length;
+  return n ? (n % 2 ? s[(n - 1) / 2] : 0.5 * (s[n / 2 - 1] + s[n / 2])) : NaN;
+};
+// noise scale c in σ = c·√I, from second differences of the raw counts
+AM.noiseC = function (y, floor) {
+  const n = y.length, r = new Float64Array(Math.max(0, n - 2));
+  for (let i = 1; i < n - 1; i++) r[i - 1] = Math.abs((y[i - 1] - 2 * y[i] + y[i + 1]) / Math.sqrt(Math.max(y[i], floor)));
+  return 1.4826 * AM.median(r) / Math.sqrt(6);
+};
+// standard normal pdf / cdf
+AM.phi = x => Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);
+AM.Phi = function (x) {   // Abramowitz–Stegun 7.1.26 via erf
+  const z = Math.abs(x) / Math.SQRT2, t = 1 / (1 + 0.3275911 * z);
+  const e = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-z * z);
+  return 0.5 * (1 + (x >= 0 ? e : -e));
+};
+
+// Whittaker smoother (2nd differences): (W + λ DᵀD) z = W y, banded LDLᵀ
+AM.whittaker = function (y, w, lam) {
+  const n = y.length;
+  const a0 = new Float64Array(n), a1 = new Float64Array(n), a2 = new Float64Array(n);
+  for (let i = 0; i < n - 2; i++) {
+    a0[i] += lam; a0[i + 1] += 4 * lam; a0[i + 2] += lam;
+    a1[i] -= 2 * lam; a1[i + 1] -= 2 * lam; a2[i] += lam;
+  }
+  for (let i = 0; i < n; i++) a0[i] += w[i];
+  const d = new Float64Array(n), l1 = new Float64Array(n), l2 = new Float64Array(n), z = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    let di = a0[i];
+    if (i >= 1) di -= l1[i - 1] * l1[i - 1] * d[i - 1];
+    if (i >= 2) di -= l2[i - 2] * l2[i - 2] * d[i - 2];
+    d[i] = di;
+    let ai = a1[i];
+    if (i >= 1) ai -= l2[i - 1] * l1[i - 1] * d[i - 1];
+    l1[i] = ai / di; l2[i] = a2[i] / di;
+  }
+  for (let i = 0; i < n; i++) {
+    let s = w[i] * y[i];
+    if (i >= 1) s -= l1[i - 1] * z[i - 1];
+    if (i >= 2) s -= l2[i - 2] * z[i - 2];
+    z[i] = s;
+  }
+  for (let i = 0; i < n; i++) z[i] /= d[i];
+  for (let i = n - 1; i >= 0; i--) {
+    if (i + 1 < n) z[i] -= l1[i] * z[i + 1];
+    if (i + 2 < n) z[i] -= l2[i] * z[i + 2];
+  }
+  return z;
+};
+AM.lambdaOf = (L, step) => Math.pow(L / step / (2 * Math.PI), 4);
+
+// envelope A of the non-Bragg intensity
+AM.envelope = function (x, y, o) {
+  const n = x.length, step = (x[n - 1] - x[0]) / (n - 1), lam = AM.lambdaOf(o.L, step);
+  let ymax = 0; for (const v of y) if (v > ymax) ymax = v;
+  const floor = Math.max(1e-9 * ymax, 1e-12);
+  const m = Math.max(0, Math.round(o.sw / step / 2));
+  const { ys, red } = AM.sgSmooth(y, m);
+  const cRaw = AM.noiseC(y, floor), c = cRaw * red;
+  let w = new Float64Array(n).fill(1), z = AM.whittaker(ys, w, lam), sig = new Float64Array(n);
+  for (let it = 0; it < 80; it++) {
+    for (let i = 0; i < n; i++) sig[i] = c * Math.sqrt(Math.max(z[i], floor));
+    const wn = new Float64Array(n); let changed = false, kept = 0;
+    for (let i = 0; i < n; i++) { wn[i] = ys[i] - z[i] < o.t * sig[i] ? 1 : 0; if (wn[i] !== w[i]) changed = true; kept += wn[i]; }
+    if (kept < 3) break;
+    if (it > 0 && !changed) break;
+    w = wn; z = AM.whittaker(ys, w, lam);
+  }
+  const corr = AM.phi(o.t) / AM.Phi(o.t);   // mean of the noise distribution truncated at +tσ
+  for (let i = 0; i < n; i++) z[i] += sig[i] * corr;
+  return { A: z, w, c, cRaw, ys };
+};
+
+// small dense least squares via normal equations (+ tiny ridge)
+AM.solveSym = function (M, b) {
+  const k = b.length, A = M.map((r, i) => [...r, b[i]]);
+  for (let i = 0; i < k; i++) A[i][i] += 1e-12 * (Math.abs(A[i][i]) + 1);
+  for (let c = 0; c < k; c++) {
+    let p = c; for (let r = c + 1; r < k; r++) if (Math.abs(A[r][c]) > Math.abs(A[p][c])) p = r;
+    [A[c], A[p]] = [A[p], A[c]];
+    for (let r = 0; r < k; r++) if (r !== c) { const f = A[r][c] / A[c][c]; for (let j = c; j <= k; j++) A[r][j] -= f * A[c][j]; }
+  }
+  return A.map((r, i) => r[k] / r[i]);
+};
+// instrumental background B: Chebyshev(deg) [+ x0/x], asymmetric LS to the lower side of A
+AM.instrumental = function (x, A, o) {
+  const n = x.length, x0 = x[0], x1 = x[n - 1], cols = [];
+  const u = Array.from(x, v => 2 * (v - x0) / (x1 - x0) - 1);
+  for (let k = 0; k <= o.deg; k++) cols.push(u.map(v => Math.cos(k * Math.acos(Math.max(-1, Math.min(1, v))))));
+  if (o.oneOverX) cols.push(Array.from(x, v => x0 / v));
+  const use = cols.map(() => true), p = 0.001;
+  let w = new Float64Array(n).fill(1), coef = new Array(cols.length).fill(0), B = new Float64Array(n);
+  for (let it = 0; it < 100; it++) {
+    const idx = cols.map((_, k) => k).filter(k => use[k]);
+    const M = idx.map(() => new Array(idx.length).fill(0)), b = new Array(idx.length).fill(0);
+    for (let i = 0; i < n; i++) {
+      const wi = w[i];
+      for (let a = 0; a < idx.length; a++) {
+        const ca = cols[idx[a]][i] * wi; b[a] += ca * A[i];
+        for (let q = a; q < idx.length; q++) M[a][q] += ca * cols[idx[q]][i];
+      }
+    }
+    for (let a = 0; a < idx.length; a++) for (let q = 0; q < a; q++) M[a][q] = M[q][a];
+    const s = AM.solveSym(M, b);
+    coef = new Array(cols.length).fill(0); idx.forEach((k, j) => coef[k] = s[j]);
+    if (o.oneOverX && use[cols.length - 1] && coef[cols.length - 1] < 0) { use[cols.length - 1] = false; continue; }
+    for (let i = 0; i < n; i++) { let v = 0; for (let k = 0; k < cols.length; k++) v += coef[k] * cols[k][i]; B[i] = v; }
+    let changed = false;
+    for (let i = 0; i < n; i++) { const wn = A[i] > B[i] ? p : 1; if (wn !== w[i]) { changed = true; w[i] = wn; } }
+    if (!changed && it > 2) break;
+  }
+  return { B, coef, airTerm: o.oneOverX && use[cols.length - 1] ? coef[cols.length - 1] : 0 };
+};
+
+// full analysis on the selected 2θ window
+AM.analyse = function (X, Y, o) {
+  let i0 = 0, i1 = X.length - 1;
+  while (i0 < X.length && X[i0] < o.lo) i0++;
+  while (i1 > 0 && X[i1] > o.hi) i1--;
+  if (i1 - i0 < 50) throw new Error("Odabrani raspon 2θ sadrži premalo točaka.");
+  const x = X.subarray(i0, i1 + 1), y = Y.subarray(i0, i1 + 1), n = x.length;
+  const env = AM.envelope(x, y, o), A = env.A;
+  const ins = AM.instrumental(x, A, o), B = ins.B;
+  let Ic = 0, Ia = 0, Ib = 0, mom = 0, best = -Infinity, xMax = NaN;
+  for (let i = 0; i < n; i++) {
+    const dx = i === 0 ? x[1] - x[0] : i === n - 1 ? x[n - 1] - x[n - 2] : 0.5 * (x[i + 1] - x[i - 1]);
+    const am = Math.max(A[i] - B[i], 0);
+    Ic += (y[i] - A[i]) * dx; Ia += am * dx; Ib += B[i] * dx; mom += am * x[i] * dx;
+    if (am > best) { best = am; xMax = x[i]; }
+  }
+  // a halo maximum next to the window edge is an edge effect, not a distinct halo
+  if (isFinite(xMax) && (xMax - x[0] < 0.5 * o.L || x[n - 1] - xMax < 0.5 * o.L)) xMax = NaN;
+  const K = o.K > 0 ? o.K : 1;
+  const X_am = K * Ia / (K * Ia + Ic);
+  return { x, y, A, B, ys: env.ys, w: env.w, c: env.cRaw, airTerm: ins.airTerm,
+           Ic, Ia, Ib, X_am, haloMax: xMax, haloCentroid: Ia > 0 ? mom / Ia : NaN, i0, i1 };
+};
+// sensitivity: L ×{0.75,1,1.25}, t ±0.5, polynomial degree ±1
+AM.sensitivity = function (X, Y, o) {
+  const vals = [];
+  for (const fL of [0.75, 1, 1.25]) for (const dt of [-0.5, 0, 0.5]) for (const dd of [-1, 0, 1]) {
+    const deg = o.deg + dd, t = o.t + dt;
+    if (deg < 0 || deg > 5 || t < 1) continue;
+    try { vals.push(AM.analyse(X, Y, Object.assign({}, o, { L: o.L * fL, t, deg })).X_am); } catch (e) { /* skip */ }
+  }
+  return vals.length ? { min: Math.min(...vals), max: Math.max(...vals), n: vals.length } : null;
+};
+if (typeof module !== "undefined") module.exports = AM;
+
+/* =====================================================================
+   Application
+   ===================================================================== */
+const DEF = { lo: 10, hi: NaN, hiDef: 80, L: 8, t: 2, sw: 0.15, deg: 2, oneOverX: true, K: 1 };
+const S = { samples: [], sel: null, p: Object.assign({}, DEF), view: null, yMode: "bg", cursor: null, sensToken: 0 };
+let seq = 0;
+try { const sv = JSON.parse(localStorage.getItem("amorf.params") || "null"); if (sv) Object.assign(S.p, sv, { lo: DEF.lo, hi: NaN }); } catch (e) { /* storage unavailable */ }
+const saveParams = () => { try { const { lo, hi, ...rest } = S.p; localStorage.setItem("amorf.params", JSON.stringify(rest)); } catch (e) { /* ignore */ } };
+const pct = (v, d = 1) => isNum(v) ? (100 * v).toFixed(d) : "—";
+const baseName = n => n.replace(/\.[^.]+$/, "");
+
+/* ---------- loading ---------- */
+async function readAny(name, buf) {
+  const b = new Uint8Array(buf, 0, Math.min(8, buf.byteLength)), sig = String.fromCharCode(...b);
+  if (sig.startsWith("PK")) return await readBrml(buf);
+  if (/^RAW[ 124]/.test(sig)) return readBrukerRaw(buf);
+  if (/^V[35]/.test(sig) && (/\.(rd|sd)$/i.test(name) || buf.byteLength > 250 && new Uint8Array(buf)[2] < 32)) return readPhilipsRD(buf);
+  const text = new TextDecoder("utf-8").decode(buf);
+  if (/<xrdMeasurements[\s>]/.test(text.slice(0, 4000))) return readXrdml(text);
+  if (/\.udf$/i.test(name) || /^\s*SampleIdent\s*,/m.test(text) && /RawScan/.test(text)) return readUdf(text);
+  if (/\.cif$/i.test(name)) throw new Error("CIF datoteke nisu potrebne za ovu analizu.");
+  return readText(buf);
+}
+async function loadFiles(list) {
+  const msgs = [];
+  for (const f of list) {
+    try {
+      const res = await readAny(f.name, await f.arrayBuffer());
+      const tt = res.ranges.filter(r => r.xAxis.id === "TwoTheta" || /2θ|2theta/i.test(r.xAxis.name));
+      const pool = tt.length ? tt : res.ranges;
+      const rg = pool.reduce((a, r) => r.xs.length > a.xs.length ? r : a, pool[0]);
+      const warn = [...(res.meta.warnings || [])];
+      if (res.ranges.length > 1) warn.push(`Datoteka sadrži ${res.ranges.length} raspona; analizira se najdulji (${rg.xs.length} točaka).`);
+      if (!tt.length) warn.push("Os x nije prepoznata kao 2θ; vrijednosti se tumače kao 2θ.");
+      let neg = 0; for (const v of rg.ys) if (v < 0) neg++;
+      if (neg > rg.ys.length * 0.01) warn.push("Podaci sadrže negativne intenzitete (moguće oduzeta pozadina); procjena šuma i ovojnice tada nije pouzdana.");
+      const sm = { id: ++seq, name: baseName(f.name), file: f.name, x: rg.xs, y: rg.ys, meta: res.meta, warn, res: null, sens: null, err: "" };
+      S.samples.push(sm);
+      warn.forEach(w => msgs.push({ k: "warn", t: `${sm.name}: ${w}` }));
+    } catch (e) { msgs.push({ k: "err", t: `${f.name}: ${e.message || e}` }); }
+  }
+  if (!S.samples.length) { showMsgs(msgs); return; }
+  if (!isNum(S.p.hi)) {
+    S.p.hi = Math.min(DEF.hiDef, ...S.samples.map(s => s.x[s.x.length - 1]));
+    S.p.lo = Math.max(S.p.lo, Math.max(...S.samples.map(s => s.x[0])));
+  }
+  $("empty").hidden = true; $("app").hidden = false; $("hdrAdd").hidden = false;
+  if (!S.sel) S.sel = S.samples[0];
+  showMsgs(msgs); syncInputs(); recomputeAll(); resetView(); renderAll();
+}
+function showMsgs(list) {
+  $("msgs").innerHTML = list.map(m => `<div class="banner ${m.k}">${esc(m.t)}</div>`).join("");
+}
+
+/* ---------- computation ---------- */
+function compute(sm) {
+  try { sm.res = AM.analyse(sm.x, sm.y, S.p); sm.err = ""; }
+  catch (e) { sm.res = null; sm.err = e.message || String(e); }
+  sm.sens = null;
+}
+function recomputeAll() {
+  for (const sm of S.samples) compute(sm);
+  scheduleSensitivity();
+}
+function scheduleSensitivity() {
+  const token = ++S.sensToken;
+  const queue = [S.sel, ...S.samples.filter(s => s !== S.sel)].filter(s => s && s.res);
+  const step = () => {
+    if (token !== S.sensToken || !queue.length) return;
+    const sm = queue.shift();
+    sm.sens = AM.sensitivity(sm.x, sm.y, S.p);
+    renderResult(); renderTable();
+    setTimeout(step, 0);
+  };
+  setTimeout(step, 30);
+}
+let recalcTimer = 0;
+function onParamChange(immediate) {
+  saveParams();
+  if (S.sel) compute(S.sel);
+  renderAll();
+  clearTimeout(recalcTimer);
+  recalcTimer = setTimeout(() => { for (const sm of S.samples) if (sm !== S.sel) compute(sm); renderTable(); scheduleSensitivity(); }, immediate ? 0 : 250);
+}
+
+/* ---------- parameter inputs ---------- */
+const PRM = [["L", "Lv", v => v.toFixed(1) + "°"], ["t", "tv", v => v.toFixed(1) + "σ"], ["sw", "swv", v => v.toFixed(2) + "°"], ["deg", "degv", v => String(v)]];
+function syncInputs() {
+  for (const [id, out, f] of PRM) { $(id).value = S.p[id]; $(out).textContent = f(S.p[id]); }
+  $("ox").checked = S.p.oneOverX; $("K").value = S.p.K;
+  $("lo").value = isNum(S.p.lo) ? +S.p.lo.toFixed(3) : ""; $("hi").value = isNum(S.p.hi) ? +S.p.hi.toFixed(3) : "";
+}
+for (const [id, out, f] of PRM) {
+  $(id).addEventListener("input", () => { S.p[id] = +$(id).value; $(out).textContent = f(S.p[id]); onParamChange(false); });
+}
+$("ox").addEventListener("change", () => { S.p.oneOverX = $("ox").checked; onParamChange(true); });
+$("K").addEventListener("change", () => { const v = +$("K").value; S.p.K = v > 0 ? v : 1; syncInputs(); onParamChange(true); });
+for (const id of ["lo", "hi"]) $(id).addEventListener("change", () => {
+  const v = parseFloat($(id).value);
+  if (isNum(v)) S.p[id] = v;
+  if (S.p.hi - S.p.lo < 5) { if (id === "lo") S.p.lo = S.p.hi - 5; else S.p.hi = S.p.lo + 5; }
+  syncInputs(); onParamChange(true);
+});
+$("defaults").addEventListener("click", () => {
+  const { lo, hi } = S.p; Object.assign(S.p, DEF, { lo: Math.max(DEF.lo, Math.max(...S.samples.map(s => s.x[0]))), hi: Math.min(DEF.hiDef, ...S.samples.map(s => s.x[s.x.length - 1])) });
+  syncInputs(); onParamChange(true);
+});
+
+/* ---------- rendering: samples, result, table ---------- */
+function renderAll() { renderSamples(); renderResult(); renderTable(); requestDraw(); }
+function renderSamples() {
+  $("samples").innerHTML = S.samples.map(s => `<button class="chip${s === S.sel ? " sel" : ""}" data-id="${s.id}">${esc(s.name)} <b>${s.res ? pct(s.res.X_am) + " %" : "—"}</b><span class="x" data-del="${s.id}" title="Ukloni">×</span></button>`).join("");
+}
+$("samples").addEventListener("click", e => {
+  const del = e.target.closest("[data-del]");
+  if (del) { removeSample(+del.dataset.del); return; }
+  const c = e.target.closest("[data-id]"); if (c) selectSample(+c.dataset.id);
+});
+function selectSample(id) {
+  const sm = S.samples.find(s => s.id === id); if (!sm || sm === S.sel) return;
+  S.sel = sm; S.cursor = null; resetView(); renderAll();
+  if (!sm.sens) scheduleSensitivity();
+}
+function removeSample(id) {
+  S.samples = S.samples.filter(s => s.id !== id);
+  if (!S.samples.length) { S.sel = null; $("app").hidden = true; $("empty").hidden = false; $("hdrAdd").hidden = true; S.p.hi = NaN; S.p.lo = DEF.lo; return; }
+  if (!S.samples.includes(S.sel)) { S.sel = S.samples[0]; resetView(); }
+  renderAll();
+}
+function lambdaOf(sm) { const a = sm && sm.meta.lambda && sm.meta.lambda.a1; return isNum(a) && a > 0.1 && a < 10 ? a : 1.5406; }
+const dOf = (tth, lam) => lam / (2 * Math.sin(tth * Math.PI / 360));
+function renderResult() {
+  const sm = S.sel; if (!sm) return;
+  $("resName").textContent = sm.name + (sm.meta.sample && sm.meta.sample !== sm.name ? " · " + sm.meta.sample : "");
+  const r = sm.res;
+  if (!r) { $("resVal").textContent = "—"; $("resBand").textContent = sm.err; $("resKv").innerHTML = ""; return; }
+  $("resVal").innerHTML = `${pct(r.X_am)}<small> %</small>`;
+  $("resBand").textContent = sm.sens ? `raspon osjetljivosti ${pct(sm.sens.min)}–${pct(sm.sens.max)} %` : "računam raspon osjetljivosti…";
+  const lam = lambdaOf(sm);
+  const rows = [
+    ["I_c (kristalno)", r.Ic.toExponential(3) + " · °"],
+    ["I_a (amorfno)", r.Ia.toExponential(3) + " · °"],
+    ["I_a / I_c", (r.Ia / r.Ic).toFixed(3)],
+    ["Maksimum haloa", isNum(r.haloMax) ? `${r.haloMax.toFixed(2)}° (d = ${dOf(r.haloMax, lam).toFixed(3)} Å)` : "nije izražen"],
+    ["Težište haloa", isNum(r.haloCentroid) ? `${r.haloCentroid.toFixed(2)}° 2θ` : "—"],
+    ["Faktor šuma c", r.c.toFixed(2) + (Math.abs(r.c - 1) < 0.25 ? " (Poissonov)" : "")],
+    ["Član c/2θ", S.p.oneOverX ? (r.airTerm > 0 ? "uključen" : "odbačen (c < 0)") : "isključen"],
+    ["Raspon / točke", `${r.x[0].toFixed(2)}–${r.x[r.x.length - 1].toFixed(2)}° · ${r.x.length}`],
+    ["λ", lam.toFixed(5) + " Å"]
+  ];
+  $("resKv").innerHTML = rows.map(([k, v]) => `<span>${esc(k).replace(/_(\w)/g, "<sub>$1</sub>")}</span><span>${esc(v)}</span>`).join("");
+}
+function renderTable() {
+  $("tbody").innerHTML = S.samples.map(s => {
+    const r = s.res;
+    if (!r) return `<tr data-id="${s.id}" class="${s === S.sel ? "sel" : ""}"><td>${esc(s.name)}</td><td colspan="5">${esc(s.err)}</td></tr>`;
+    return `<tr data-id="${s.id}" class="${s === S.sel ? "sel" : ""}"><td>${esc(s.name)}</td><td><b>${pct(r.X_am)}</b></td>
+      <td>${s.sens ? pct(s.sens.min) + "–" + pct(s.sens.max) : "…"}</td><td>${isNum(r.haloMax) ? r.haloMax.toFixed(1) : "—"}</td>
+      <td>${r.Ic.toExponential(2)}</td><td>${r.Ia.toExponential(2)}</td></tr>`;
+  }).join("");
+  renderSamples();
+}
+$("tbody").addEventListener("click", e => { const tr = e.target.closest("tr[data-id]"); if (tr) selectSample(+tr.dataset.id); });
+
+/* ---------- export ---------- */
+let pending = null;
+function download(name, text, type = "text/csv") {
+  pending = { name, text, type };
+  $("mTitle").textContent = name; $("mText").value = text; $("mNote").textContent = ""; $("modal").hidden = false;
+}
+$("mClose").addEventListener("click", () => { $("modal").hidden = true; });
+$("modal").addEventListener("click", e => { if (e.target === $("modal")) $("modal").hidden = true; });
+$("mCopy").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText($("mText").value); $("mNote").textContent = "Kopirano u međuspremnik."; }
+  catch (e) { $("mText").select(); $("mNote").textContent = "Kopiranje nije dopušteno; tekst je označen."; }
+});
+let dlNs;   // undefined: not asked yet; null: not available (stand-alone page or capability absent)
+const dlReady = (window.claude && typeof window.claude.use === "function")
+  ? window.claude.use("downloads").then(ns => { dlNs = ns; }, () => { dlNs = null; }) : Promise.resolve(dlNs = null);
+$("mSave").addEventListener("click", async () => {
+  if (!pending) return;
+  await dlReady;
+  if (dlNs) {
+    try { await dlNs.save({ filename: pending.name, data: "\ufeff" + pending.text }); $("mNote").textContent = "Datoteka je spremljena."; }
+    catch (e) { $("mNote").textContent = e && e.code === "declined" ? "Spremanje je otkazano." : "Spremanje nije uspjelo; upotrijebite Kopiraj."; }
+    return;
+  }
+  try {
+    const url = URL.createObjectURL(new Blob(["\ufeff" + pending.text], { type: pending.type + ";charset=utf-8" }));
+    const el = document.createElement("a"); el.href = url; el.download = pending.name; document.body.appendChild(el); el.click(); el.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    $("mNote").textContent = "Ako preuzimanje nije počelo, upotrijebite Kopiraj.";
+  } catch (e) { $("mNote").textContent = "Preuzimanje nije dopušteno; upotrijebite Kopiraj."; }
+});
+function paramLine() {
+  const p = S.p;
+  return `2θ ${p.lo}–${p.hi}°; L = ${p.L}°; t = ${p.t}σ; predglađivanje ${p.sw}°; Čebišev ${p.deg}. stupnja${p.oneOverX ? " + c/2θ (c ≥ 0)" : ""}; K = ${p.K}`;
+}
+$("csvAll").addEventListener("click", () => {
+  const head = "uzorak;datoteka;X_am_%;X_am_min_%;X_am_max_%;maks_haloa_2theta;tezište_haloa_2theta;I_c;I_a;faktor_suma_c";
+  const rows = S.samples.map(s => {
+    const r = s.res; if (!r) return `${s.name};${s.file};;;;;;;;`;
+    return [s.name, s.file, pct(r.X_am, 2), s.sens ? pct(s.sens.min, 2) : "", s.sens ? pct(s.sens.max, 2) : "",
+      isNum(r.haloMax) ? r.haloMax.toFixed(3) : "", isNum(r.haloCentroid) ? r.haloCentroid.toFixed(3) : "", r.Ic.toPrecision(6), r.Ia.toPrecision(6), r.c.toFixed(3)].join(";");
+  });
+  download("amorfni_udio.csv", `# ${paramLine()}\n${head}\n${rows.join("\n")}\n`);
+});
+$("csvCurves").addEventListener("click", () => {
+  const sm = S.sel; if (!sm || !sm.res) return;
+  const r = sm.res, out = ["2theta;I;A_ovojnica;B_instrumentalna;I_minus_A_kristalno;A_minus_B_amorfno"];
+  for (let i = 0; i < r.x.length; i++) out.push([r.x[i].toFixed(4), r.y[i].toFixed(2), r.A[i].toFixed(2), r.B[i].toFixed(2), (r.y[i] - r.A[i]).toFixed(2), Math.max(r.A[i] - r.B[i], 0).toFixed(2)].join(";"));
+  download(sm.name + "_krivulje.csv", `# ${sm.name}; ${paramLine()}\n${out.join("\n")}\n`);
+});
+$("report").addEventListener("click", () => {
+  const L = [];
+  L.push("Semikvantitativna procjena udjela amorfne faze iz difraktograma praha");
+  L.push("Metoda: dvije krivulje (ovojnica nebraggovskog intenziteta A i instrumentalna pozadina B), integracija po 2θ");
+  L.push("Parametri: " + paramLine());
+  L.push("X_am = K·I_a/(K·I_a + I_c); raspon osjetljivosti: L × (0,75; 1; 1,25), t ± 0,5, stupanj ± 1");
+  L.push("");
+  for (const s of S.samples) {
+    const r = s.res;
+    if (!r) { L.push(`${s.name}: ${s.err}`); continue; }
+    L.push(`${s.name} (${s.file})`);
+    L.push(`  X_am = ${pct(r.X_am)} %` + (s.sens ? `  (raspon osjetljivosti ${pct(s.sens.min)}–${pct(s.sens.max)} %)` : ""));
+    L.push(`  I_c = ${r.Ic.toPrecision(5)}, I_a = ${r.Ia.toPrecision(5)}; maksimum haloa ${isNum(r.haloMax) ? r.haloMax.toFixed(2) + "° 2θ (d = " + dOf(r.haloMax, lambdaOf(s)).toFixed(3) + " Å)" : "nije izražen"}; faktor šuma c = ${r.c.toFixed(2)}`);
+  }
+  L.push("");
+  L.push("Napomena: X_am je udio integriranog intenziteta, a ne maseni udio; jednaki su samo uz jednaku srednju raspršnu moć po jedinici mase obiju komponenti.");
+  download("amorfni_udio_izvjestaj.txt", L.join("\n") + "\n", "text/plain");
+});
+
+/* ---------- plot ---------- */
+const cv = $("cv"), ctx = cv.getContext("2d");
+let cssCache = null;
+const col = n => { if (!cssCache) cssCache = getComputedStyle(document.documentElement); return cssCache.getPropertyValue(n).trim(); };
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { cssCache = null; requestDraw(); });
+new MutationObserver(() => { cssCache = null; requestDraw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+const G = { W: 0, H: 0, m: { l: 56, r: 12, t: 12, b: 34 } };
+function resetView() { const sm = S.sel; if (!sm) return; S.view = { x0: sm.x[0], x1: sm.x[sm.x.length - 1] }; }
+let rafPending = false;
+function requestDraw() { if (rafPending) return; rafPending = true; requestAnimationFrame(() => { rafPending = false; draw(); }); }
+new ResizeObserver(requestDraw).observe(cv);
+function niceStep(range, count) { const raw = range / Math.max(count, 1), mag = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / mag; return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * mag; }
+function yRange(sm) {
+  const r = sm.res, { x0, x1 } = S.view;
+  let ymax = -Infinity, ymin = Infinity, amax = -Infinity, bmin = Infinity;
+  for (let i = 0; i < sm.x.length; i++) if (sm.x[i] >= x0 && sm.x[i] <= x1) { ymax = Math.max(ymax, sm.y[i]); ymin = Math.min(ymin, sm.y[i]); }
+  if (r) for (let i = 0; i < r.x.length; i++) if (r.x[i] >= x0 && r.x[i] <= x1) { amax = Math.max(amax, r.A[i]); bmin = Math.min(bmin, r.B[i]); }
+  if (!isFinite(ymax)) { ymax = 1; ymin = 0; }
+  if (S.yMode === "bg" && isFinite(amax)) {
+    const lo = Math.max(0, Math.min(bmin, ymin) - 0.3 * (amax - Math.min(bmin, ymin)));
+    return { y0: lo, y1: Math.min(ymax * 1.03, amax + 1.4 * (amax - lo)), f: v => v, inv: v => v };
+  }
+  if (S.yMode === "sqrt") return { y0: 0, y1: Math.sqrt(Math.max(ymax, 1)) * 1.03, f: v => Math.sqrt(Math.max(v, 0)), inv: v => v * v };
+  return { y0: 0, y1: ymax * 1.04, f: v => v, inv: v => v };
+}
+function draw() {
+  const rect = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  if (!rect.width) return;
+  G.W = rect.width; G.H = rect.height;
+  cv.width = Math.round(G.W * dpr); cv.height = Math.round(G.H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, G.W, G.H);
+  const sm = S.sel; if (!sm || !S.view) return;
+  const { l, r: mr, t, b } = G.m, pw = G.W - l - mr, ph = G.H - t - b;
+  const { x0, x1 } = S.view, Y = yRange(sm);
+  G.Y = Y;
+  const X = v => l + (v - x0) / (x1 - x0) * pw, Yp = v => t + ph - (Y.f(v) - Y.y0) / (Y.y1 - Y.y0) * ph;
+  ctx.font = "12px -apple-system, Segoe UI, Roboto, sans-serif";
+  // grid & ticks
+  ctx.strokeStyle = col("--grid"); ctx.fillStyle = col("--muted"); ctx.lineWidth = 1;
+  const xs = niceStep(x1 - x0, Math.max(3, pw / 80));
+  ctx.textAlign = "center"; ctx.textBaseline = "top";
+  for (let v = Math.ceil(x0 / xs) * xs; v <= x1 + 1e-9; v += xs) { const px = X(v); ctx.beginPath(); ctx.moveTo(px, t); ctx.lineTo(px, t + ph); ctx.stroke(); ctx.fillText(+v.toFixed(6) + "", px, t + ph + 6); }
+  const ys = niceStep(Y.y1 - Y.y0, Math.max(3, ph / 55));
+  ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  for (let v = Math.ceil(Y.y0 / ys) * ys; v <= Y.y1 + 1e-9; v += ys) {
+    const py = t + ph - (v - Y.y0) / (Y.y1 - Y.y0) * ph; ctx.beginPath(); ctx.moveTo(l, py); ctx.lineTo(l + pw, py); ctx.stroke();
+    const lab = S.yMode === "sqrt" ? Math.round(v * v) : v; ctx.fillText(Math.abs(lab) >= 1e5 ? lab.toExponential(1) : +lab.toFixed(6) + "", l - 6, py);
+  }
+  ctx.save(); ctx.translate(14, t + ph / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = "center"; ctx.fillText(S.yMode === "sqrt" ? "Intenzitet (√ skala)" : "Intenzitet", 0, 0); ctx.restore();
+  ctx.textAlign = "right"; ctx.textBaseline = "bottom"; ctx.fillText("2θ / °", l + pw, G.H - 1);
+  ctx.save(); ctx.beginPath(); ctx.rect(l, t, pw, ph); ctx.clip();
+  const res = sm.res;
+  // excluded regions
+  if (res) {
+    ctx.fillStyle = col("--grid");
+    const a = res.x[0], z = res.x[res.x.length - 1];
+    if (a > x0) ctx.fillRect(l, t, X(a) - l, ph);
+    if (z < x1) ctx.fillRect(X(z), t, l + pw - X(z), ph);
+  }
+  const vis = (arrX, i) => arrX[i] >= x0 - (x1 - x0) * 0.01 && arrX[i] <= x1 + (x1 - x0) * 0.01;
+  if (res) {
+    const n = res.x.length;
+    let i0 = 0, i1 = n - 1; while (i0 < n - 1 && !vis(res.x, i0)) i0++; while (i1 > 0 && !vis(res.x, i1)) i1--;
+    // crystalline fill (I above A)
+    ctx.fillStyle = col("--cryst"); ctx.globalAlpha = 0.18; ctx.beginPath();
+    for (let i = i0; i <= i1; i++) ctx.lineTo(X(res.x[i]), Yp(Math.max(res.y[i], res.A[i])));
+    for (let i = i1; i >= i0; i--) ctx.lineTo(X(res.x[i]), Yp(res.A[i]));
+    ctx.closePath(); ctx.fill();
+    // amorphous fill (between B and A)
+    ctx.fillStyle = col("--amor"); ctx.globalAlpha = 0.32; ctx.beginPath();
+    for (let i = i0; i <= i1; i++) ctx.lineTo(X(res.x[i]), Yp(Math.max(res.A[i], res.B[i])));
+    for (let i = i1; i >= i0; i--) ctx.lineTo(X(res.x[i]), Yp(res.B[i]));
+    ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+  }
+  // data
+  ctx.strokeStyle = col("--ink"); ctx.lineWidth = 0.9; ctx.beginPath();
+  let started = false;
+  for (let i = 0; i < sm.x.length; i++) { if (!vis(sm.x, i)) continue; const px = X(sm.x[i]), py = Yp(sm.y[i]); if (!started) { ctx.moveTo(px, py); started = true; } else ctx.lineTo(px, py); }
+  ctx.stroke();
+  if (res) {
+    const line = (arr, c, w) => { ctx.strokeStyle = c; ctx.lineWidth = w; ctx.beginPath(); let s = false;
+      for (let i = 0; i < res.x.length; i++) { if (!vis(res.x, i)) continue; const px = X(res.x[i]), py = Yp(arr[i]); if (!s) { ctx.moveTo(px, py); s = true; } else ctx.lineTo(px, py); } ctx.stroke(); };
+    line(res.A, col("--amor"), 2); line(res.B, col("--instr"), 2);
+    if (isNum(res.haloMax) && res.haloMax >= x0 && res.haloMax <= x1) {
+      const i = res.x.findIndex(v => v >= res.haloMax);
+      ctx.fillStyle = col("--amor"); ctx.beginPath(); ctx.arc(X(res.haloMax), Yp(res.A[i]), 4, 0, 2 * Math.PI); ctx.fill();
+    }
+  }
+  if (S.cursor != null && S.cursor >= x0 && S.cursor <= x1) {
+    ctx.strokeStyle = col("--cursor"); ctx.lineWidth = 1; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(X(S.cursor), t); ctx.lineTo(X(S.cursor), t + ph); ctx.stroke(); ctx.setLineDash([]);
+  }
+  ctx.restore();
+  ctx.strokeStyle = col("--axis"); ctx.lineWidth = 1; ctx.strokeRect(l + 0.5, t + 0.5, pw, ph);
+}
+function updateReadout() {
+  const sm = S.sel; if (!sm || S.cursor == null) return;
+  const tth = S.cursor, near = (xs, v) => { let lo = 0, hi = xs.length - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (xs[m] < v) lo = m; else hi = m; } return Math.abs(xs[lo] - v) < Math.abs(xs[hi] - v) ? lo : hi; };
+  const i = near(sm.x, tth), r = sm.res;
+  let s = `2θ <b>${sm.x[i].toFixed(3)}°</b> · d <b>${dOf(sm.x[i], lambdaOf(sm)).toFixed(4)} Å</b> · I <b>${sm.y[i].toFixed(0)}</b>`;
+  if (r && tth >= r.x[0] && tth <= r.x[r.x.length - 1]) { const j = near(r.x, tth); s += ` · A <b>${r.A[j].toFixed(0)}</b> · B <b>${r.B[j].toFixed(0)}</b>`; }
+  $("readout").innerHTML = s;
+}
+// interaction: tap = cursor, drag = pan, pinch / wheel = zoom, double tap = reset
+const ptrs = new Map(); let gesture = null, lastTap = 0;
+const pxToX = px => { const pw = G.W - G.m.l - G.m.r; return S.view.x0 + (px - G.m.l) / pw * (S.view.x1 - S.view.x0); };
+function clampView() {
+  const sm = S.sel; if (!sm) return;
+  const a = sm.x[0], z = sm.x[sm.x.length - 1], minW = 0.5;
+  let { x0, x1 } = S.view; if (x1 - x0 < minW) { const c = (x0 + x1) / 2; x0 = c - minW / 2; x1 = c + minW / 2; }
+  if (x1 - x0 > z - a) { x0 = a; x1 = z; }
+  if (x0 < a) { x1 += a - x0; x0 = a; } if (x1 > z) { x0 -= x1 - z; x1 = z; }
+  S.view = { x0, x1 };
+}
+cv.addEventListener("pointerdown", e => {
+  cv.setPointerCapture(e.pointerId);
+  const r = cv.getBoundingClientRect(); ptrs.set(e.pointerId, { x: e.clientX - r.left, y: e.clientY - r.top });
+  gesture = { view: { ...S.view }, pts: [...ptrs.values()].map(p => ({ ...p })), moved: false };
+});
+cv.addEventListener("pointermove", e => {
+  if (!ptrs.has(e.pointerId) || !gesture) return;
+  const r = cv.getBoundingClientRect(); ptrs.set(e.pointerId, { x: e.clientX - r.left, y: e.clientY - r.top });
+  const pts = [...ptrs.values()], pw = G.W - G.m.l - G.m.r, v = gesture.view, span = v.x1 - v.x0;
+  if (pts.length === 1 && gesture.pts.length === 1) {
+    const dx = pts[0].x - gesture.pts[0].x;
+    if (Math.abs(dx) > 4) gesture.moved = true;
+    if (gesture.moved) { const d = -dx / pw * span; S.view = { x0: v.x0 + d, x1: v.x1 + d }; clampView(); requestDraw(); }
+  } else if (pts.length >= 2 && gesture.pts.length >= 2) {
+    gesture.moved = true;
+    const d0 = Math.abs(gesture.pts[0].x - gesture.pts[1].x) || 1, d1 = Math.abs(pts[0].x - pts[1].x) || 1;
+    const c0 = (gesture.pts[0].x + gesture.pts[1].x) / 2, c1 = (pts[0].x + pts[1].x) / 2;
+    const xc = v.x0 + (c0 - G.m.l) / pw * span, ns = span * d0 / d1;
+    const nx0 = xc - (c1 - G.m.l) / pw * ns;
+    S.view = { x0: nx0, x1: nx0 + ns }; clampView(); requestDraw();
+  }
+});
+function endPtr(e) {
+  if (!ptrs.has(e.pointerId)) return;
+  const p = ptrs.get(e.pointerId); ptrs.delete(e.pointerId);
+  if (gesture && !gesture.moved && gesture.pts.length === 1 && ptrs.size === 0) {
+    const now = Date.now();
+    if (now - lastTap < 320) { resetView(); S.cursor = null; requestDraw(); lastTap = 0; }
+    else { lastTap = now; if (p.x >= G.m.l && p.x <= G.W - G.m.r) { S.cursor = pxToX(p.x); updateReadout(); requestDraw(); } }
+  }
+  gesture = ptrs.size ? { view: { ...S.view }, pts: [...ptrs.values()].map(q => ({ ...q })), moved: true } : null;
+}
+cv.addEventListener("pointerup", endPtr); cv.addEventListener("pointercancel", endPtr);
+cv.addEventListener("wheel", e => {
+  if (!S.view) return; e.preventDefault();
+  const r = cv.getBoundingClientRect(), xc = pxToX(e.clientX - r.left), f = Math.exp(e.deltaY * 0.0015);
+  S.view = { x0: xc - (xc - S.view.x0) * f, x1: xc + (S.view.x1 - xc) * f }; clampView(); requestDraw();
+}, { passive: false });
+$("yMode").addEventListener("click", e => {
+  const b = e.target.closest("button[data-v]"); if (!b) return;
+  S.yMode = b.dataset.v; for (const x of $("yMode").children) x.classList.toggle("on", x === b); requestDraw();
+});
+
+/* ---------- file input & drag-drop ---------- */
+$("pick").addEventListener("click", () => $("file").click());
+$("hdrAdd").addEventListener("click", () => $("file").click());
+$("file").addEventListener("change", async () => { const fl = [...$("file").files]; $("file").value = ""; if (fl.length) await loadFiles(fl); });
+document.addEventListener("dragover", e => { e.preventDefault(); document.body.classList.add("drag"); });
+document.addEventListener("dragleave", e => { if (e.target === document.documentElement || e.clientX <= 0) document.body.classList.remove("drag"); });
+document.addEventListener("drop", async e => { e.preventDefault(); document.body.classList.remove("drag"); const fl = [...(e.dataTransfer?.files || [])]; if (fl.length) await loadFiles(fl); });
+syncInputs();
+
+if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost"))
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
-// Offline cache for the BRML viewer. Network first (so updates arrive), cache as fallback.
-const CACHE = "brml-preglednik-v15";
-const FILES = ["./", "./index.html", "./manifest.webmanifest", "./apple-touch-icon.png", "./icon-192.png", "./icon-512.png"];
+// Offline cache for the BRML viewer and the amorphous-content app. Network first (so updates arrive), cache as fallback.
+const CACHE = "brml-preglednik-v16";
+const FILES = ["./", "./index.html", "./manifest.webmanifest", "./apple-touch-icon.png", "./icon-192.png", "./icon-512.png", "./amorfno.html", "./amorfno.webmanifest"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener("activate", e => {
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))));
