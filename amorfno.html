@@ -148,8 +148,9 @@
           <div class="plotwrap"><canvas class="plot" id="cv"></canvas></div>
           <div class="legend" id="legend"></div>
           <div class="plotbar">
-            <div class="readout" id="readout">Dodir ili klik: očitanje · povlačenje: pomak · dva prsta / kotačić: zum · dvostruki dodir: cijeli prikaz</div>
-            <div class="seg" id="yMode"><button data-v="bg" class="on">Pozadina</button><button data-v="full">Cijelo</button><button data-v="sqrt">√I</button></div>
+            <div class="readout" id="readout">Zum: dva prsta (vodoravno 2θ, okomito intenzitet) ili kotačić (uz Shift intenzitet) · pomak: jedan prst · dodir: očitanje · dvostruki dodir: početni prikaz</div>
+            <div class="seg" id="yMode"><button data-v="full" class="on">Puni intenzitet</button><button data-v="bg">Pozadina</button><button data-v="sqrt">√I</button></div>
+            <button class="btn sm" id="zoomReset" title="Početni prikaz">↺ Početni prikaz</button>
           </div>
         </div>
 
@@ -1366,11 +1367,12 @@ const PRESETS = {
   cryst: { label: "Pretežno kristalni", lo: 20, L: 12, t: 2, deg: 3, oneOverX: true, nHalo: 1,
            note: "Klinker, cement, filer: raspon od 20° (bez porasta pri niskim kutovima), L = 12°, Čebišev 3. stupnja. Namijenjeno postupku ovojnice; prilagodba profila daje realne vrijednosti i uz zadane postavke." }
 };
-const S = { samples: [], sel: null, p: Object.assign({}, DEF), method: "env", view: null, yMode: "bg", cursor: null, sensToken: 0, profToken: 0 };
+const S = { samples: [], sel: null, p: Object.assign({}, DEF), method: "env", view: null, autoY: true, yMode: "full", cursor: null, sensToken: 0, profToken: 0 };
 let seq = 0;
 try {
   const sv = JSON.parse(localStorage.getItem("amorf.params") || "null"); if (sv) Object.assign(S.p, sv, { lo: DEF.lo, hi: NaN });
   const m = localStorage.getItem("amorf.method"); if (m === "env" || m === "prof") S.method = m;
+  const ym = localStorage.getItem("amorf.ymode"); if (["full", "bg", "sqrt"].includes(ym)) S.yMode = ym;
 } catch (e) { /* storage unavailable */ }
 const saveParams = () => { try { const { lo, hi, ...rest } = S.p; localStorage.setItem("amorf.params", JSON.stringify(rest)); localStorage.setItem("amorf.method", S.method); } catch (e) { /* ignore */ } };
 const pct = (v, d = 1) => isNum(v) ? (100 * v).toFixed(d) : "—";
@@ -1730,11 +1732,12 @@ const col = n => { if (!cssCache) cssCache = getComputedStyle(document.documentE
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { cssCache = null; requestDraw(); });
 new MutationObserver(() => { cssCache = null; requestDraw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 const G = { W: 0, H: 0, m: { l: 56, r: 12, t: 12, b: 34 } };
-function resetView() { const sm = S.sel; if (!sm) return; S.view = { x0: sm.x[0], x1: sm.x[sm.x.length - 1] }; }
+function resetView() { const sm = S.sel; if (!sm) return; S.view = { x0: sm.x[0], x1: sm.x[sm.x.length - 1], y0: 0, y1: 1 }; S.autoY = true; }
 let rafPending = false;
 function requestDraw() { if (rafPending) return; rafPending = true; requestAnimationFrame(() => { rafPending = false; draw(); }); }
 new ResizeObserver(requestDraw).observe(cv);
 function niceStep(range, count) { const raw = range / Math.max(count, 1), mag = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / mag; return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * mag; }
+const yF = () => S.yMode === "sqrt" ? (v => Math.sqrt(Math.max(v, 0))) : (v => v);
 function yRange(sm, r) {
   const { x0, x1 } = S.view;
   let ymax = -Infinity, ymin = Infinity, amax = -Infinity, bmin = Infinity;
@@ -1758,7 +1761,10 @@ function draw() {
   const res = cur(sm), prof = S.method === "prof" && res;
   const { l, r: mr, t, b } = G.m, pw = G.W - l - mr, phAll = G.H - t - b;
   const stripH = prof ? Math.round(phAll * 0.18) : 0, gap = prof ? 8 : 0, ph = phAll - stripH - gap;
-  const { x0, x1 } = S.view, Y = yRange(sm, res);
+  const { x0, x1 } = S.view;
+  let Y = yRange(sm, res);
+  if (S.autoY) { S.view.y0 = Y.y0; S.view.y1 = Y.y1; } else Y = { y0: S.view.y0, y1: S.view.y1, f: yF() };
+  G.plot = { l, t, pw, ph };
   const X = v => l + (v - x0) / (x1 - x0) * pw, Yp = v => t + ph - (Y.f(v) - Y.y0) / (Y.y1 - Y.y0) * ph;
   ctx.font = "12px -apple-system, Segoe UI, Roboto, sans-serif";
   ctx.strokeStyle = col("--grid"); ctx.fillStyle = col("--muted"); ctx.lineWidth = 1;
@@ -1841,58 +1847,88 @@ function updateReadout() {
   }
   $("readout").innerHTML = s;
 }
-// interaction: tap = cursor, drag = pan, pinch / wheel = zoom, double tap = reset
-const ptrs = new Map(); let gesture = null, lastTap = 0;
-const pxToX = px => { const pw = G.W - G.m.l - G.m.r; return S.view.x0 + (px - G.m.l) / pw * (S.view.x1 - S.view.x0); };
+// interaction (as in BRML preglednik): one finger pans, two fingers zoom (horizontal spread → 2θ,
+// vertical spread → intensity), wheel zooms 2θ (Shift/Alt: intensity), tap sets the cursor, double tap resets
+const ptrs = new Map(); let gs = null, tap = null, lastTap = { t: 0, x: 0, y: 0 };
+const localXY = e => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+const pxToX = px => { const P = G.plot; return S.view.x0 + (px - P.l) / P.pw * (S.view.x1 - S.view.x0); };
+function beginGesture() { gs = { view: { ...S.view }, pts: [...ptrs.values()].map(q => ({ ...q })) }; }
 function clampView() {
   const sm = S.sel; if (!sm) return;
-  const a = sm.x[0], z = sm.x[sm.x.length - 1], minW = 0.5;
-  let { x0, x1 } = S.view; if (x1 - x0 < minW) { const c = (x0 + x1) / 2; x0 = c - minW / 2; x1 = c + minW / 2; }
-  if (x1 - x0 > z - a) { x0 = a; x1 = z; }
-  if (x0 < a) { x1 += a - x0; x0 = a; } if (x1 > z) { x0 -= x1 - z; x1 = z; }
-  S.view = { x0, x1 };
+  const a = sm.x[0], z = sm.x[sm.x.length - 1], minW = 0.2, v = S.view;
+  if (v.x1 - v.x0 < minW) { const c = (v.x0 + v.x1) / 2; v.x0 = c - minW / 2; v.x1 = c + minW / 2; }
+  if (v.x1 - v.x0 > z - a) { v.x0 = a; v.x1 = z; }
+  if (v.x0 < a) { v.x1 += a - v.x0; v.x0 = a; } if (v.x1 > z) { v.x0 -= v.x1 - z; v.x1 = z; }
+  if (!(v.y1 - v.y0 > 1e-9)) v.y1 = v.y0 + 1e-6;
 }
 cv.addEventListener("pointerdown", e => {
+  if (!S.view || !G.plot) return;
   cv.setPointerCapture(e.pointerId);
-  const r = cv.getBoundingClientRect(); ptrs.set(e.pointerId, { x: e.clientX - r.left, y: e.clientY - r.top });
-  gesture = { view: { ...S.view }, pts: [...ptrs.values()].map(p => ({ ...p })), moved: false };
+  const q = localXY(e); ptrs.set(e.pointerId, q); beginGesture();
+  tap = ptrs.size === 1 ? { x: q.x, y: q.y, t: performance.now(), moved: false } : null;
 });
 cv.addEventListener("pointermove", e => {
-  if (!ptrs.has(e.pointerId) || !gesture) return;
-  const r = cv.getBoundingClientRect(); ptrs.set(e.pointerId, { x: e.clientX - r.left, y: e.clientY - r.top });
-  const pts = [...ptrs.values()], pw = G.W - G.m.l - G.m.r, v = gesture.view, span = v.x1 - v.x0;
-  if (pts.length === 1 && gesture.pts.length === 1) {
-    const dx = pts[0].x - gesture.pts[0].x;
-    if (Math.abs(dx) > 4) gesture.moved = true;
-    if (gesture.moved) { const d = -dx / pw * span; S.view = { x0: v.x0 + d, x1: v.x1 + d }; clampView(); requestDraw(); }
-  } else if (pts.length >= 2 && gesture.pts.length >= 2) {
-    gesture.moved = true;
-    const d0 = Math.abs(gesture.pts[0].x - gesture.pts[1].x) || 1, d1 = Math.abs(pts[0].x - pts[1].x) || 1;
-    const c0 = (gesture.pts[0].x + gesture.pts[1].x) / 2, c1 = (pts[0].x + pts[1].x) / 2;
-    const xc = v.x0 + (c0 - G.m.l) / pw * span, ns = span * d0 / d1;
-    const nx0 = xc - (c1 - G.m.l) / pw * ns;
-    S.view = { x0: nx0, x1: nx0 + ns }; clampView(); requestDraw();
+  if (!ptrs.has(e.pointerId) || !gs) return;
+  const q = localXY(e); ptrs.set(e.pointerId, q);
+  const P = G.plot, v0 = gs.view, v = S.view, pts = [...ptrs.values()];
+  if (tap && Math.hypot(q.x - tap.x, q.y - tap.y) > 8) tap.moved = true;
+  if (pts.length === 1 && gs.pts.length === 1) {
+    if (tap && !tap.moved) return;
+    const ddx = pts[0].x - gs.pts[0].x, ddy = pts[0].y - gs.pts[0].y;
+    const kx = (v0.x1 - v0.x0) / P.pw; v.x0 = v0.x0 - ddx * kx; v.x1 = v0.x1 - ddx * kx;
+    if (!S.autoY) { const ky = (v0.y1 - v0.y0) / P.ph; v.y0 = v0.y0 + ddy * ky; v.y1 = v0.y1 + ddy * ky; }
+  } else if (pts.length >= 2 && gs.pts.length >= 2) {
+    const [a0, b0] = gs.pts, [a1, b1] = pts;
+    const m0 = { x: (a0.x + b0.x) / 2, y: (a0.y + b0.y) / 2 }, m1 = { x: (a1.x + b1.x) / 2, y: (a1.y + b1.y) / 2 };
+    const sx0 = Math.abs(a0.x - b0.x), sx1 = Math.abs(a1.x - b1.x), sy0 = Math.abs(a0.y - b0.y), sy1 = Math.abs(a1.y - b1.y);
+    const fx = sx0 > 24 ? sx0 / Math.max(sx1, 1) : 1;
+    const xr0 = v0.x1 - v0.x0, xA = v0.x0 + (m0.x - P.l) / P.pw * xr0, xr = xr0 * fx;
+    v.x0 = xA - (m1.x - P.l) / P.pw * xr; v.x1 = v.x0 + xr;
+    if (sy0 > 40) {
+      if (S.autoY && Math.abs(sy1 - sy0) > 12) S.autoY = false;
+      if (!S.autoY) {
+        const fy = sy0 / Math.max(sy1, 1), yr0 = v0.y1 - v0.y0, yA = v0.y0 + (P.t + P.ph - m0.y) / P.ph * yr0, yr = yr0 * fy;
+        v.y0 = yA - (P.t + P.ph - m1.y) / P.ph * yr; v.y1 = v.y0 + yr;
+      }
+    }
   }
+  clampView(); requestDraw();
 });
 function endPtr(e) {
   if (!ptrs.has(e.pointerId)) return;
-  const p = ptrs.get(e.pointerId); ptrs.delete(e.pointerId);
-  if (gesture && !gesture.moved && gesture.pts.length === 1 && ptrs.size === 0) {
-    const now = Date.now();
-    if (now - lastTap < 320) { resetView(); S.cursor = null; requestDraw(); lastTap = 0; }
-    else { lastTap = now; if (p.x >= G.m.l && p.x <= G.W - G.m.r) { S.cursor = pxToX(p.x); updateReadout(); requestDraw(); } }
+  ptrs.delete(e.pointerId);
+  if (tap && !tap.moved && ptrs.size === 0 && performance.now() - tap.t < 450) {
+    const now = performance.now();
+    if (now - lastTap.t < 320 && Math.hypot(tap.x - lastTap.x, tap.y - lastTap.y) < 30) { resetView(); S.cursor = null; lastTap.t = 0; }
+    else {
+      const P = G.plot;
+      if (tap.x >= P.l && tap.x <= P.l + P.pw) { S.cursor = pxToX(tap.x); updateReadout(); }
+      lastTap = { t: now, x: tap.x, y: tap.y };
+    }
+    requestDraw();
   }
-  gesture = ptrs.size ? { view: { ...S.view }, pts: [...ptrs.values()].map(q => ({ ...q })), moved: true } : null;
+  tap = null;
+  if (ptrs.size) beginGesture(); else gs = null;
 }
 cv.addEventListener("pointerup", endPtr); cv.addEventListener("pointercancel", endPtr);
 cv.addEventListener("wheel", e => {
-  if (!S.view) return; e.preventDefault();
-  const r = cv.getBoundingClientRect(), xc = pxToX(e.clientX - r.left), f = Math.exp(e.deltaY * 0.0015);
-  S.view = { x0: xc - (xc - S.view.x0) * f, x1: xc + (S.view.x1 - xc) * f }; clampView(); requestDraw();
+  if (!S.view || !G.plot) return; e.preventDefault();
+  const q = localXY(e), P = G.plot, v = S.view;
+  if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && !e.ctrlKey) { const k = (v.x1 - v.x0) / P.pw; v.x0 += e.deltaX * k; v.x1 += e.deltaX * k; }
+  else {
+    const f = Math.exp(e.deltaY * (e.ctrlKey ? 0.01 : 0.0015));
+    if (e.shiftKey || e.altKey) { S.autoY = false; const ya = v.y0 + (P.t + P.ph - q.y) / P.ph * (v.y1 - v.y0); v.y0 = ya - (ya - v.y0) * f; v.y1 = ya + (v.y1 - ya) * f; }
+    else { const xa = pxToX(q.x); v.x0 = xa - (xa - v.x0) * f; v.x1 = xa + (v.x1 - xa) * f; }
+  }
+  clampView(); requestDraw();
 }, { passive: false });
+// iOS Safari: keep pinch gestures on the plot from zooming the whole page
+["gesturestart", "gesturechange"].forEach(t => document.addEventListener(t, e => e.preventDefault()));
+$("zoomReset").addEventListener("click", () => { resetView(); requestDraw(); });
 $("yMode").addEventListener("click", e => {
   const b = e.target.closest("button[data-v]"); if (!b) return;
-  S.yMode = b.dataset.v; for (const x of $("yMode").children) x.classList.toggle("on", x === b); requestDraw();
+  S.yMode = b.dataset.v; S.autoY = true; try { localStorage.setItem("amorf.ymode", S.yMode); } catch (err) { /* ignore */ }
+  for (const x of $("yMode").children) x.classList.toggle("on", x === b); requestDraw();
 });
 
 /* ---------- file input & drag-drop ---------- */
@@ -1902,6 +1938,7 @@ document.addEventListener("dragover", e => { e.preventDefault(); document.body.c
 document.addEventListener("dragleave", e => { if (e.target === document.documentElement || e.clientX <= 0) document.body.classList.remove("drag"); });
 document.addEventListener("drop", async e => { e.preventDefault(); document.body.classList.remove("drag"); const fl = [...(e.dataTransfer?.files || [])]; if (fl.length) await loadFiles(fl); });
 startWorker();
+for (const x of $("yMode").children) x.classList.toggle("on", x.dataset.v === S.yMode);
 syncInputs(); renderLegend();
 
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost"))
