@@ -134,7 +134,7 @@
 <main>
   <section id="empty" class="card">
     <h1>Procjena udjela amorfne faze</h1>
-    <p>Učitajte difraktograme (.brml, .raw, .xrdml, .xy …). Za svaki se određuju ovojnica nebraggovskog intenziteta i instrumentalna pozadina; omjer integriranih površina daje udio amorfnog intenziteta, bez strukturnog modela i bez CIF-a.</p>
+    <p>Učitajte difraktograme (.brml, .raw, .xrdml, .xy …). Udio amorfnog intenziteta određuje se bez strukturnog modela i bez CIF-a, na dva načina: postupkom ovojnice (kao u EVA-i) i prilagodbom profila maksimuma, haloa i pozadine.</p>
     <p class="muted" style="font-size:13px">Datoteke se obrađuju isključivo lokalno, u pregledniku.</p>
     <label class="btn primary" id="pick">Odaberi datoteke<input type="file" id="file2" multiple hidden></label>
   </section>
@@ -146,12 +146,7 @@
       <div>
         <div class="card plotcard">
           <div class="plotwrap"><canvas class="plot" id="cv"></canvas></div>
-          <div class="legend">
-            <span><i style="background:var(--ink);height:2px;vertical-align:3px"></i>izmjereno</span>
-            <span><i style="background:color-mix(in srgb,var(--amor) 35%,transparent);border:1px solid var(--amor)"></i>amorfni doprinos (A − B)</span>
-            <span><i style="background:color-mix(in srgb,var(--cryst) 22%,transparent)"></i>kristalni doprinos (I − A)</span>
-            <span><i style="background:var(--instr);height:2px;vertical-align:3px"></i>instrumentalna pozadina B</span>
-          </div>
+          <div class="legend" id="legend"></div>
           <div class="plotbar">
             <div class="readout" id="readout">Dodir ili klik: očitanje · povlačenje: pomak · dva prsta / kotačić: zum · dvostruki dodir: cijeli prikaz</div>
             <div class="seg" id="yMode"><button data-v="bg" class="on">Pozadina</button><button data-v="full">Cijelo</button><button data-v="sqrt">√I</button></div>
@@ -162,6 +157,7 @@
 
       <div>
         <div class="card result">
+          <div class="seg" id="method" style="margin-bottom:10px"><button data-v="env" class="on">Ovojnica (EVA)</button><button data-v="prof">Prilagodba profila</button></div>
           <div class="lbl" id="resName">—</div>
           <div class="big" id="resVal">—</div>
           <div class="lbl">udio amorfnog intenziteta, X<sub>am</sub></div>
@@ -171,6 +167,12 @@
 
         <div class="card sect" style="margin-top:12px">
           <h2>Parametri</h2>
+          <div class="row" id="presets">
+            <span class="note" style="margin:0">Predložak:</span>
+            <button class="btn sm" data-preset="glass">Staklasti uzorak</button>
+            <button class="btn sm" data-preset="cryst">Pretežno kristalni</button>
+          </div>
+          <div class="note" id="presetNote" style="margin-top:-2px"></div>
           <div class="row">
             <label>2θ od <input type="number" id="lo" step="0.5"></label>
             <label>do <input type="number" id="hi" step="0.5"></label>
@@ -188,6 +190,12 @@
           <div class="prm"><label for="deg">Stupanj Čebiševljeva polinoma</label><output id="degv"></output>
             <input type="range" id="deg" min="0" max="5" step="1"></div>
           <div class="row"><label><input type="checkbox" id="ox"> član c/2θ (raspršenje u zraku), c ≥ 0</label></div>
+          <h4>Prilagodba profila</h4>
+          <div class="prm"><label for="Hmax">Najveća FWHM kristalnog maksimuma</label><output id="Hmaxv"></output>
+            <input type="range" id="Hmax" min="0.3" max="2" step="0.05">
+            <div class="hint">°2θ; širi doprinosi pripisuju se haloima (njihova FWHM ≥ max(3·FWHM<sub>max</sub>, 2,5°))</div></div>
+          <div class="row"><span>Broj haloa</span><div class="seg" id="nHalo"><button data-v="1">1</button><button data-v="2">2</button></div>
+            <label><input type="checkbox" id="ka2"> Kα2 dublet</label></div>
           <h4>Kalibracija</h4>
           <div class="row"><label>Faktor K <input type="number" id="K" step="0.01" min="0.01"></label>
             <span class="note">X<sub>am</sub> = K·I<sub>a</sub> / (K·I<sub>a</sub> + I<sub>c</sub>)</span></div>
@@ -197,15 +205,23 @@
         <div class="card sect">
           <details class="method">
             <summary>Metoda i ograničenja</summary>
-            <p>Postupak slijedi logiku procjene kristalnosti u programu DIFFRAC.EVA: dvije krivulje dijele izmjereni intenzitet na kristalni i amorfni doprinos te instrumentalnu pozadinu.</p>
+            <p><b>Postupak ovojnice</b> slijedi logiku procjene kristalnosti u programu DIFFRAC.EVA: dvije krivulje dijele izmjereni intenzitet na kristalni i amorfni doprinos te instrumentalnu pozadinu.</p>
             <ul>
               <li><b>Ovojnica A(2θ)</b>: Whittakerovo izglađivanje (penalizacija drugih diferencija, granična duljina L) s iterativnim isključivanjem točaka koje leže više od t·σ iznad krivulje; σ = c·√A, gdje se c procjenjuje iz drugih diferencija sirovih podataka (c ≈ 1 za neskalirane brojeve impulsa). Pomak zbog odrezivanja raspodjele šuma ispravlja se članom σ·φ(t)/Φ(t).</li>
               <li><b>Instrumentalna pozadina B(2θ)</b>: Čebiševljev polinom (i, po izboru, član c/2θ s c ≥ 0) prilagođen donjoj strani ovojnice asimetričnim najmanjim kvadratima (p = 0,001).</li>
               <li><b>Rezultat</b>: I<sub>c</sub> = ∫(I − A) d2θ, I<sub>a</sub> = ∫max(A − B, 0) d2θ; X<sub>am</sub> = K·I<sub>a</sub>/(K·I<sub>a</sub> + I<sub>c</sub>).</li>
               <li><b>Raspon osjetljivosti</b>: najmanja i najveća vrijednost X<sub>am</sub> uz L × (0,75; 1; 1,25), t ± 0,5 i stupanj polinoma ± 1 (do 27 izračuna).</li>
             </ul>
+            <p><b>Prilagodba profila</b> opisuje cijeli difraktogram modelom bez strukture:</p>
+            <div class="eq">I(2θ) = Σ<sub>k</sub> a<sub>k</sub>[pV(x<sub>k</sub>, H<sub>k</sub>, η) + R·pV(x<sub>k</sub>′, H<sub>k</sub>, η)] + Σ<sub>h</sub> b<sub>h</sub>G(c<sub>h</sub>, W<sub>h</sub>) + Σ<sub>j</sub> d<sub>j</sub>T<sub>j</sub> + e·2θ<sub>0</sub>/2θ</div>
+            <ul>
+              <li>Maksimumi su pseudo-Voigtove funkcije s Kα1/Kα2 dubletom (R i λ<sub>2</sub>/λ<sub>1</sub> iz datoteke), pojedinačnim položajem i širinom H<sub>k</sub> ≤ FWHM<sub>max</sub> te zajedničkim η. Lorentzovi repovi i preklopljene skupine refleksa time se pripisuju kristalnom doprinosu.</li>
+              <li>Halo je jedna ili dvije Gaussove funkcije širine W<sub>h</sub> ≥ max(3·FWHM<sub>max</sub>, 2,5°); granica kristalno/amorfno je dakle operativna i određena širinom profila.</li>
+              <li>Linearni koeficijenti (a, b, e ≥ 0; d slobodni) rješavaju se nenegativnim težinskim najmanjim kvadratima (w = 1/σ²), a nelinearni parametri lokalnim prigušenim Gauss–Newtonovim koracima (varijabilna projekcija). Maksimumi se dodaju iz ostatka (prag t + 0,5 σ) i uklanjaju kad im površina iščezne.</li>
+              <li>I<sub>c</sub> i I<sub>a</sub> su integrali kristalnih i haloskih komponenata u odabranom rasponu. Navodi se statistička nesigurnost σ(X<sub>am</sub>) iz kovarijance linearnih koeficijenata te raspon uz stupanj polinoma ± 1 i t ± 0,5. Glavna sustavna nesigurnost potječe od razdvajanja haloa i polinomne pozadine.</li>
+            </ul>
             <p>X<sub>am</sub> je udio integriranog intenziteta, a ne maseni udio. Jednaki su samo kad amorfna i kristalna faza imaju jednaku srednju raspršnu moć po jedinici mase; inače se primjenjuje faktor K određen na smjesama poznatog sastava. Integracija se provodi po 2θ, bez Lorentz-polarizacijske korekcije, kao u EVA-i.</p>
-            <p>Lorentzovi repovi jakih maksimuma i gusto preklopljene skupine refleksa djelomično ulaze u ovojnicu, pa se kod gotovo potpuno kristalnih uzoraka dobiva sustavni pozitivni pomak od nekoliko postotaka. Nanokristalne faze s vrlo širokim maksimumima pribrajaju se amorfnom doprinosu. Za kvantitativan rezultat preporučuje se metoda unutarnjeg standarda s Rietveldovim utočnjavanjem.</p>
+            <p>Kod postupka ovojnice Lorentzovi repovi jakih maksimuma i gusto preklopljene skupine refleksa djelomično ulaze u ovojnicu, pa se kod pretežno kristalnih uzoraka (klinker, filer) dobiva sustavni pozitivni pomak; za takve uzorke prednost ima prilagodba profila ili predložak „Pretežno kristalni”. Nanokristalne faze s vrlo širokim maksimumima pribrajaju se amorfnom doprinosu. Za kvantitativan rezultat preporučuje se metoda unutarnjeg standarda s Rietveldovim utočnjavanjem.</p>
           </details>
         </div>
       </div>
@@ -213,7 +229,7 @@
         <div class="card sect" style="margin-top:12px">
       <h2>Svi uzorci (isti parametri)</h2>
       <div class="tablewrap"><table>
-        <thead><tr><th>Uzorak</th><th>X<sub>am</sub> / %</th><th>raspon osjetljivosti / %</th><th>maks. haloa / °2θ</th><th>I<sub>c</sub></th><th>I<sub>a</sub></th></tr></thead>
+        <thead><tr><th>Uzorak</th><th>ovojnica X<sub>am</sub> / %</th><th>raspon / %</th><th>profil X<sub>am</sub> / %</th><th>raspon / %</th><th>R<sub>wp</sub> / %</th><th>halo / °2θ</th></tr></thead>
         <tbody id="tbody"></tbody>
       </table></div>
       <div class="row" style="margin-top:10px">
@@ -1018,13 +1034,345 @@ AM.sensitivity = function (X, Y, o) {
 if (typeof module !== "undefined") module.exports = AM;
 
 /* =====================================================================
+   Profile fitting without a structural model ("Prilagodba profila")
+   I(2θ) = Σ_k a_k·[pV(2θ; x_k, H_k, η) + R·pV(2θ; x_k', H_k, η)]      Bragg peaks (Kα1 + Kα2)
+         + Σ_h b_h·G(2θ; c_h, W_h)                                    amorphous halo(s)
+         + Σ_j d_j·T_j(u) + e·2θ_0/2θ                                 instrumental background
+   Linear coefficients (a ≥ 0, b ≥ 0, e ≥ 0, d free) are obtained by weighted
+   non-negative least squares for given non-linear parameters (variable
+   projection); x_k, H_k, η, c_h, W_h are refined by damped local Gauss–Newton
+   steps. Peaks are added from the residual and removed when their area
+   vanishes. A component counts as crystalline when its FWHM ≤ Hmax; halo
+   widths are kept ≥ Wmin, so the operational boundary is the profile width.
+   ===================================================================== */
+const PF = {};
+PF.LN2 = Math.log(2);
+PF.CL = 2 / Math.PI; PF.CG = 2 * Math.sqrt(Math.log(2) / Math.PI);
+PF.pv = function (dx, H, eta) {
+  const t = dx / H, t2 = 4 * t * t;
+  return (eta * PF.CL / (1 + t2) + (1 - eta) * PF.CG * Math.exp(-PF.LN2 * t2)) / H;
+};
+PF.WIN = 25;   // half-window in units of FWHM (Lorentzian area outside ±25H: 1.3 %·η)
+PF.gauss = (dx, W) => (2 / W) * Math.sqrt(PF.LN2 / Math.PI) * Math.exp(-4 * PF.LN2 * dx * dx / (W * W));
+PF.ka2Pos = (x, r) => 360 / Math.PI * Math.asin(Math.min(1, r * Math.sin(x * Math.PI / 360)));
+
+PF.fit = function (X, Y, o, seed) {
+  // o: lo, hi, deg, oneOverX, t, sw, Hmax, nHalo, ka2 {on, lr (λ2/λ1), ratio}, maxCycles
+  let i0 = 0, i1 = X.length - 1;
+  while (i0 < X.length && X[i0] < o.lo) i0++;
+  while (i1 > 0 && X[i1] > o.hi) i1--;
+  const x = X.subarray(i0, i1 + 1), y = Y.subarray(i0, i1 + 1), n = x.length;
+  const step = (x[n - 1] - x[0]) / (n - 1);
+  let ymax = 0; for (const v of y) if (v > ymax) ymax = v;
+  const floor = Math.max(1e-9 * ymax, 1e-12);
+  const cN = AM.noiseC(y, floor);
+  const wt = new Float64Array(n); for (let i = 0; i < n; i++) wt[i] = 1 / (cN * cN * Math.max(y[i], floor));
+  const ka2 = o.ka2 && o.ka2.on ? o.ka2 : null;
+  const Hmax = o.Hmax, Hmin = Math.max(2 * step, 0.01), Wmin = Math.max(3 * Hmax, 2.5), Wmax = 40;
+  const idx = v => Math.max(0, Math.min(n - 1, Math.round((v - x[0]) / step)));
+
+  // ---- background / halo dense columns ----
+  const u = Array.from(x, v => 2 * (v - x[0]) / (x[n - 1] - x[0]) - 1);
+  const bgCols = [];
+  for (let k = 0; k <= o.deg; k++) bgCols.push({ v: Float64Array.from(u, q => Math.cos(k * Math.acos(Math.max(-1, Math.min(1, q))))), nonneg: false });
+  if (o.oneOverX) bgCols.push({ v: Float64Array.from(x, q => x[0] / q), nonneg: true, air: true });
+
+  // ---- initial peaks from the envelope residual ----
+  const env = seed;   // result of AM.analyse with the same window
+  const Hinit = PF.estimateWidth(x, y, env.A) || 0.1;
+  let eta = 0.5;
+  let peaks = PF.findPeaks(x, PF.smooth(y, env.A, o.sw, step), env.A, cN, o.t, [], Hinit, step).map(p => ({ x: p, H: Hinit, a: 0, dead: 0 }));
+  // ---- initial halos ----
+  const halos = [];
+  const hc = isFinite(env.haloMax) ? env.haloMax : (isFinite(env.haloCentroid) ? env.haloCentroid : x[0] + 0.3 * (x[n - 1] - x[0]));
+  halos.push({ c: hc, W: Math.min(Wmax, Math.max(Wmin, 12)), b: 0 });
+  if (o.nHalo > 1) halos.push({ c: Math.min(x[n - 1] - 5, hc + 18), W: Math.min(Wmax, Math.max(Wmin, 15)), b: 0 });
+
+  const peakVals = (p, eh = eta) => {   // values over the peak window (Kα1 + Kα2)
+    const half = PF.WIN * p.H, j0 = idx(p.x - half), j1 = idx((ka2 ? PF.ka2Pos(p.x, ka2.lr) : p.x) + half);
+    const v = new Float64Array(j1 - j0 + 1), x2 = ka2 ? PF.ka2Pos(p.x, ka2.lr) : 0;
+    for (let j = j0; j <= j1; j++) { let s = PF.pv(x[j] - p.x, p.H, eh); if (ka2) s += ka2.ratio * PF.pv(x[j] - x2, p.H, eh); v[j - j0] = s; }
+    return { j0, j1, v };
+  };
+  // values and analytic derivatives (x0, H, η) of one peak over its window
+  const peakDer = p => {
+    const half = PF.WIN * p.H, x2 = ka2 ? PF.ka2Pos(p.x, ka2.lr) : 0;
+    const j0 = idx(p.x - half), j1 = idx((ka2 ? x2 : p.x) + half), m = j1 - j0 + 1;
+    const dx2 = ka2 ? ka2.lr * Math.cos(p.x * Math.PI / 360) / Math.cos(x2 * Math.PI / 360) : 0;
+    const v = new Float64Array(m), dX = new Float64Array(m), dH = new Float64Array(m), dE = new Float64Array(m), H = p.H;
+    const comp = (d, wgt, dpos, j) => {
+      const q = 4 * d * d / (H * H), L = PF.CL / H / (1 + q), G = PF.CG / H * Math.exp(-PF.LN2 * q);
+      const dLx = L * (8 * d / (H * H)) / (1 + q), dGx = G * 8 * PF.LN2 * d / (H * H);
+      const dLH = -L / H + L * (2 * q / H) / (1 + q), dGH = -G / H + G * 2 * PF.LN2 * q / H;
+      v[j] += wgt * (eta * L + (1 - eta) * G); dX[j] += wgt * dpos * (eta * dLx + (1 - eta) * dGx);
+      dH[j] += wgt * (eta * dLH + (1 - eta) * dGH); dE[j] += wgt * (L - G);
+    };
+    for (let j = 0; j < m; j++) { const xx = x[j0 + j]; comp(xx - p.x, 1, 1, j); if (ka2) comp(xx - x2, ka2.ratio, dx2, j); }
+    return { j0, j1, v, dX, dH, dE };
+  };
+  const haloVals = h => Float64Array.from(x, q => PF.gauss(q - h.c, h.W));
+
+  let model = new Float64Array(n), cols = null, coef = null, active = null, lastM = null;
+  function linearSolve() {
+    // columns: bg (dense), halos (dense, ≥0), peaks (sparse, ≥0)
+    cols = [];
+    for (const b of bgCols) cols.push({ kind: "bg", j0: 0, j1: n - 1, v: b.v, nonneg: b.nonneg, air: !!b.air });
+    for (const h of halos) cols.push({ kind: "halo", ref: h, j0: 0, j1: n - 1, v: haloVals(h), nonneg: true });
+    for (const p of peaks) { const pv = peakVals(p); cols.push({ kind: "peak", ref: p, j0: pv.j0, j1: pv.j1, v: pv.v, nonneg: true }); }
+    const m = cols.length;
+    active = new Uint8Array(m).fill(1);
+    // full normal matrix once (columns are ordered: dense first, then peaks by position)
+    const Mf = new Float64Array(m * m), rf = new Float64Array(m);
+    let ptr = 0; const cover = [], cv = new Float64Array(m), ci = new Int32Array(m);
+    for (let i = 0; i < n; i++) {
+      while (ptr < m && cols[ptr].j0 <= i) cover.push(ptr++);
+      for (let q = cover.length - 1; q >= 0; q--) if (cols[cover[q]].j1 < i) cover.splice(q, 1);
+      const wi = wt[i], nc = cover.length;
+      for (let a = 0; a < nc; a++) { const k = cover[a]; ci[a] = k; cv[a] = cols[k].v[i - cols[k].j0]; }
+      for (let a = 0; a < nc; a++) {
+        const va = cv[a] * wi, ra = ci[a] * m; rf[ci[a]] += va * y[i];
+        for (let b = a; b < nc; b++) Mf[ra + ci[b]] += va * cv[b];
+      }
+    }
+    let sol = null, map = null, p = 0, M = null;
+    for (let round = 0; round < 25; round++) {
+      map = []; for (let k = 0; k < m; k++) if (active[k]) map.push(k);
+      p = map.length; M = new Float64Array(p * p); const rhs = new Float64Array(p);
+      for (let r = 0; r < p; r++) { rhs[r] = rf[map[r]]; const rr = map[r] * m; for (let c = r; c < p; c++) { const v = c === r ? Mf[rr + map[c]] : Mf[rr + map[c]] + Mf[map[c] * m + map[r]]; M[r * p + c] = v; M[c * p + r] = v; } }
+      sol = PF.cholSolve(M, rhs, p);
+      let worst = -1, wv = 0;
+      for (let q = 0; q < p; q++) { const k = map[q]; if (cols[k].nonneg && sol[q] < wv) { wv = sol[q]; worst = k; } }
+      if (worst < 0) break;
+      let dropped = 0;
+      for (let q = 0; q < p; q++) { const k = map[q]; if (cols[k].nonneg && sol[q] < 0 && cols[k].kind === "peak") { active[k] = 0; dropped++; } }
+      if (!dropped) active[worst] = 0;
+    }
+    lastM = { M, map, p };
+    coef = new Float64Array(cols.length);
+    map.forEach((k, q) => coef[k] = sol[q]);
+    model = new Float64Array(n);
+    cols.forEach((c, k) => { if (!coef[k]) return; for (let j = c.j0; j <= c.j1; j++) model[j] += coef[k] * c.v[j - c.j0]; });
+    cols.forEach((c, k) => { if (c.kind === "peak") c.ref.a = coef[k]; if (c.kind === "halo") c.ref.b = coef[k]; });
+  }
+  function chi2() { let s = 0; for (let i = 0; i < n; i++) { const r = y[i] - model[i]; s += wt[i] * r * r; } return s; }
+
+  function localSteps() {
+    const r = Float64Array.from(y, (v, i) => v - model[i]);
+    // peaks: 3×3 (a, x, H) damped Gauss–Newton on the window, Jacobi style; also accumulates ∂model/∂η
+    const dm = new Float64Array(n);
+    for (const p of peaks) {
+      if (!(p.a > 0)) continue;
+      const D = peakDer(p);
+      const A = [[0, 0, 0], [0, 0, 0], [0, 0, 0]], g = [0, 0, 0];
+      for (let j = D.j0; j <= D.j1; j++) {
+        const k = j - D.j0, J0 = D.v[k], J1 = p.a * D.dX[k], J2 = p.a * D.dH[k], w = wt[j], rr = r[j];
+        dm[j] += p.a * D.dE[k];
+        g[0] += w * J0 * rr; g[1] += w * J1 * rr; g[2] += w * J2 * rr;
+        A[0][0] += w * J0 * J0; A[0][1] += w * J0 * J1; A[0][2] += w * J0 * J2;
+        A[1][1] += w * J1 * J1; A[1][2] += w * J1 * J2; A[2][2] += w * J2 * J2;
+      }
+      A[1][0] = A[0][1]; A[2][0] = A[0][2]; A[2][1] = A[1][2];
+      for (let a = 0; a < 3; a++) A[a][a] *= 1.5;  // damping
+      const d = PF.solve3(A, g); if (!d) continue;
+      const nx = p.x + 0.7 * Math.max(-0.5 * p.H, Math.min(0.5 * p.H, d[1]));
+      const nH = p.H * Math.exp(0.7 * Math.max(-0.4, Math.min(0.4, d[2] / p.H)));
+      p.x = nx; p.H = Math.max(Hmin, Math.min(Hmax, nH));
+    }
+    // halos: 3×3 (b, c, W)
+    for (const h of halos) {
+      if (!(h.b > 0)) continue;
+      const dc = 0.02 * h.W, dW = 0.02 * h.W;
+      const A = [[0, 0, 0], [0, 0, 0], [0, 0, 0]], g = [0, 0, 0];
+      for (let j = 0; j < n; j++) {
+        const q = x[j];
+        const J = [PF.gauss(q - h.c, h.W), h.b * (PF.gauss(q - h.c - dc, h.W) - PF.gauss(q - h.c + dc, h.W)) / (2 * dc),
+                   h.b * (PF.gauss(q - h.c, h.W + dW) - PF.gauss(q - h.c, h.W - dW)) / (2 * dW)];
+        for (let a = 0; a < 3; a++) { g[a] += wt[j] * J[a] * r[j]; for (let b = 0; b < 3; b++) A[a][b] += wt[j] * J[a] * J[b]; }
+      }
+      for (let a = 0; a < 3; a++) A[a][a] *= 1.5;
+      const d = PF.solve3(A, g); if (!d) continue;
+      h.c = Math.max(x[0] - 5, Math.min(x[n - 1] + 5, h.c + 0.7 * Math.max(-3, Math.min(3, d[1]))));
+      h.W = Math.max(Wmin, Math.min(Wmax, h.W * Math.exp(0.7 * Math.max(-0.3, Math.min(0.3, d[2] / h.W)))));
+    }
+    // global η: 1-D Gauss–Newton
+    let num = 0, den = 0;
+    for (let j = 0; j < n; j++) { num += wt[j] * dm[j] * r[j]; den += wt[j] * dm[j] * dm[j]; }
+    if (den > 0) eta = Math.max(0, Math.min(1, eta + 0.7 * Math.max(-0.15, Math.min(0.15, num / den))));
+  }
+  function housekeeping(addNew) {
+    // remove dead peaks, merge near-duplicates
+    for (const p of peaks) p.dead = p.a > 0 ? 0 : p.dead + 1;
+    peaks = peaks.filter(p => p.dead < 2);
+    peaks.sort((a, b) => a.x - b.x);
+    const kept = [];
+    for (const p of peaks) {
+      const q = kept[kept.length - 1];
+      if (q && p.x - q.x < 0.35 * Math.min(p.H, q.H)) { if (p.a > q.a) kept[kept.length - 1] = p; }
+      else kept.push(p);
+    }
+    peaks = kept;
+    if (addNew && peaks.length < 600) {
+      const res = Float64Array.from(y, (v, i) => v - model[i]);
+      const base = Float64Array.from(model);
+      const sm = PF.smooth(Float64Array.from(res, (v, i) => v + base[i]), base, o.sw, step);
+      const Hm = PF.median(peaks.map(p => p.H)) || Hinit;
+      const add = PF.findPeaks(x, sm, base, cN, o.t + 0.5, peaks.map(p => p.x), Hm, step);
+      for (const xa of add) peaks.push({ x: xa, H: Hm, a: 0, dead: 0 });
+      peaks.sort((a, b) => a.x - b.x);
+      return add.length;
+    }
+    return 0;
+  }
+
+  const maxC = o.maxCycles || 24;
+  let prev = Infinity, cyc = 0;
+  for (cyc = 0; cyc < maxC; cyc++) {
+    linearSolve();
+    const c2 = chi2();
+    let added = 0;
+    if (cyc % 4 === 3 && cyc < maxC - 4) added = housekeeping(true); else housekeeping(false);
+    if (!added && cyc > 8 && prev - c2 < 1e-4 * prev) break;
+    prev = c2;
+    localSteps();
+  }
+  linearSolve();
+
+  // ---- integrals over the window ----
+  let Ic = 0, Ia = 0, Rw = 0, Wy = 0;
+  const dxs = Float64Array.from(x, (_, i) => i === 0 ? x[1] - x[0] : i === n - 1 ? x[n - 1] - x[n - 2] : 0.5 * (x[i + 1] - x[i - 1]));
+  const cryst = new Float64Array(n), amor = new Float64Array(n), bg = new Float64Array(n);
+  cols.forEach((c, k) => {
+    const a = coef[k]; if (!a) return;
+    const tgt = c.kind === "peak" ? cryst : c.kind === "halo" ? amor : bg;
+    for (let j = c.j0; j <= c.j1; j++) tgt[j] += a * c.v[j - c.j0];
+  });
+  for (let i = 0; i < n; i++) { Ic += cryst[i] * dxs[i]; Ia += amor[i] * dxs[i]; const r = y[i] - model[i]; Rw += wt[i] * r * r; Wy += wt[i] * y[i] * y[i]; }
+  // statistical σ(X_am) from the covariance of the linear coefficients
+  let sigX = NaN;
+  try {
+    const { M, map, p } = lastM, dof = Math.max(1, n - p), s2 = Rw / dof;
+    const unitI = map.map(k => { const c = cols[k]; let s = 0; for (let j = c.j0; j <= c.j1; j++) s += c.v[j - c.j0] * dxs[j]; return s; });
+    const tot = Ia + Ic, grad = new Float64Array(p);
+    map.forEach((k, q) => { const kind = cols[k].kind; grad[q] = kind === "halo" ? unitI[q] * Ic / (tot * tot) : kind === "peak" ? -unitI[q] * Ia / (tot * tot) : 0; });
+    const z = PF.cholSolve(M, grad, p);
+    let v = 0; for (let q = 0; q < p; q++) v += grad[q] * z[q];
+    sigX = Math.sqrt(Math.max(0, v * s2));
+  } catch (e) { /* leave NaN */ }
+  const K = o.K > 0 ? o.K : 1;
+  const live = peaks.filter(p => p.a > 0);
+  return {
+    x, y, model, cryst, amor, bg, Ic, Ia, X_am: K * Ia / (K * Ia + Ic), sigX,
+    Rwp: Math.sqrt(Rw / Wy), gof: Math.sqrt(Rw / Math.max(1, n - cols.length)), eta,
+    nPeaks: live.length, Hmed: PF.median(live.map(p => p.H)), halos: halos.filter(h => h.b > 0).map(h => ({ c: h.c, W: h.W })),
+    cycles: cyc, c: cN, i0, i1
+  };
+};
+
+// helpers
+PF.median = a => { if (!a.length) return NaN; const s = a.slice().sort((p, q) => p - q), n = s.length; return n % 2 ? s[(n - 1) / 2] : 0.5 * (s[n / 2 - 1] + s[n / 2]); };
+PF.smooth = function (y, base, sw, step) { const m = Math.max(0, Math.round(sw / step / 2)); return AM.sgSmooth(y, m).ys; };
+// local maxima of (ys − base) above t·σ, plus shoulders (minima of the 2nd derivative)
+PF.findPeaks = function (x, ys, base, c, t, existing, H, step) {
+  const n = x.length, out = [], d = Float64Array.from(ys, (v, i) => v - base[i]);
+  const sig = i => c * Math.sqrt(Math.max(base[i], 1e-9));
+  const m = Math.max(1, Math.round(0.5 * H / step));
+  const d2 = new Float64Array(n);
+  for (let i = m; i < n - m; i++) d2[i] = ys[i - m] - 2 * ys[i] + ys[i + m];
+  const far = xv => existing.every(e => Math.abs(e - xv) > 0.6 * H) && out.every(e => Math.abs(e - xv) > 0.6 * H);
+  for (let i = m; i < n - m; i++) {
+    if (d[i] < t * sig(i)) continue;
+    let isMax = true, isShoulder = true;
+    for (let k = 1; k <= m; k++) { if (d[i] < d[i - k] || d[i] < d[i + k]) isMax = false; if (d2[i] > d2[i - k] || d2[i] > d2[i + k]) isShoulder = false; }
+    if ((isMax || (isShoulder && d2[i] < -t * sig(i))) && far(x[i])) out.push(x[i]);
+  }
+  return out;
+};
+// FWHM of the strongest isolated peaks of (y − A)
+PF.estimateWidth = function (x, y, A) {
+  const n = x.length, d = Float64Array.from(y, (v, i) => v - A[i]);
+  const cand = [];
+  for (let i = 2; i < n - 2; i++) if (d[i] > d[i - 1] && d[i] >= d[i + 1] && d[i] > d[i - 2] && d[i] >= d[i + 2]) cand.push(i);
+  cand.sort((a, b) => d[b] - d[a]);
+  const ws = [];
+  for (const i of cand.slice(0, 12)) {
+    const h = d[i] / 2; let l = i, r = i;
+    while (l > 0 && d[l] > h) l--; while (r < n - 1 && d[r] > h) r++;
+    const w = x[r] - x[l]; if (w > 0 && w < 1) ws.push(w);
+  }
+  return ws.length ? PF.median(ws) : NaN;
+};
+PF.solve3 = function (A, g) {
+  const M = A.map((r, i) => [...r, g[i]]);
+  for (let c = 0; c < 3; c++) {
+    let p = c; for (let r = c + 1; r < 3; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;
+    if (Math.abs(M[p][c]) < 1e-300) return null;
+    [M[c], M[p]] = [M[p], M[c]];
+    for (let r = 0; r < 3; r++) if (r !== c) { const f = M[r][c] / M[c][c]; for (let j = c; j < 4; j++) M[r][j] -= f * M[c][j]; }
+  }
+  return M.map((r, i) => r[3] / r[i]);
+};
+// dense Cholesky with diagonal scaling and a tiny ridge
+PF.cholSolve = function (M0, b, p) {
+  const s = new Float64Array(p);
+  for (let i = 0; i < p; i++) s[i] = 1 / Math.sqrt(Math.max(M0[i * p + i], 1e-300));
+  const L = new Float64Array(p * p);
+  for (let i = 0; i < p; i++) for (let j = 0; j <= i; j++) L[i * p + j] = M0[i * p + j] * s[i] * s[j];
+  for (let i = 0; i < p; i++) L[i * p + i] += 1e-10;
+  for (let j = 0; j < p; j++) {
+    let d = L[j * p + j];
+    for (let k = 0; k < j; k++) d -= L[j * p + k] * L[j * p + k];
+    d = Math.sqrt(Math.max(d, 1e-14)); L[j * p + j] = d;
+    for (let i = j + 1; i < p; i++) {
+      let v = L[i * p + j];
+      for (let k = 0; k < j; k++) v -= L[i * p + k] * L[j * p + k];
+      L[i * p + j] = v / d;
+    }
+  }
+  const z = new Float64Array(p);
+  for (let i = 0; i < p; i++) { let v = b[i] * s[i]; for (let k = 0; k < i; k++) v -= L[i * p + k] * z[k]; z[i] = v / L[i * p + i]; }
+  for (let i = p - 1; i >= 0; i--) { let v = z[i]; for (let k = i + 1; k < p; k++) v -= L[k * p + i] * z[k]; z[i] = v / L[i * p + i]; }
+  for (let i = 0; i < p; i++) z[i] *= s[i];
+  return z;
+};
+if (typeof module !== "undefined") module.exports = PF;
+
+/* jobs shared by the Web Worker and the main-thread fallback */
+const WORK = {
+  fit(X, Y, o) {
+    const env = AM.analyse(X, Y, o), r = PF.fit(X, Y, o, env);
+    delete r.x; delete r.y;
+    return r;
+  },
+  // sensitivity of the profile result: polynomial degree ± 1, peak threshold t ± 0.5
+  sens(X, Y, o) {
+    const vals = [];
+    for (const v of [{}, { deg: o.deg - 1 }, { deg: o.deg + 1 }, { t: o.t - 0.5 }, { t: o.t + 0.5 }]) {
+      const q = Object.assign({}, o, v);
+      if (q.deg < 0 || q.deg > 5 || q.t < 1) continue;
+      try { vals.push(PF.fit(X, Y, q, AM.analyse(X, Y, q)).X_am); } catch (e) { /* skip */ }
+    }
+    return vals.length ? { min: Math.min(...vals), max: Math.max(...vals), n: vals.length } : null;
+  }
+};
+
+const WORKER_SRC = "\"use strict\";\n/* =====================================================================\n   Amorphous-content estimation (two-curve envelope method, EVA-like)\n   A(2\u03b8): envelope of the non-Bragg intensity (amorphous halo + instrumental\n          background), Whittaker smoother with iterative exclusion of points\n          lying more than t\u00b7\u03c3 above the curve (\u03c3 from Poisson-scaled noise).\n   B(2\u03b8): instrumental background, Chebyshev polynomial (+ c/2\u03b8 air-scatter\n          term, c \u2265 0) fitted to the lower side of A by asymmetric least squares.\n   I_c = \u222b (I \u2212 A) d2\u03b8,  I_a = \u222b max(A \u2212 B, 0) d2\u03b8,  X_am = K\u00b7I_a / (K\u00b7I_a + I_c)\n   ===================================================================== */\nconst AM = {};\n\n// Savitzky\u2013Golay (quadratic) coefficients for half-width m\nAM.sgCoef = function (m) {\n  const den = (2 * m - 1) * (2 * m + 1) * (2 * m + 3), c = [];\n  for (let j = -m; j <= m; j++) c.push((3 * (3 * m * m + 3 * m - 1) - 15 * j * j) / den);\n  return c;\n};\nAM.sgSmooth = function (y, m) {\n  const n = y.length, out = Float64Array.from(y);\n  if (m < 2) return { ys: out, red: 1 };\n  const c = AM.sgCoef(m);\n  for (let i = m; i < n - m; i++) { let s = 0; for (let j = -m; j <= m; j++) s += c[j + m] * y[i + j]; out[i] = s; }\n  return { ys: out, red: Math.sqrt(c.reduce((a, v) => a + v * v, 0)) };\n};\nAM.median = function (a) {\n  const s = Float64Array.from(a).sort(), n = s.length;\n  return n ? (n % 2 ? s[(n - 1) / 2] : 0.5 * (s[n / 2 - 1] + s[n / 2])) : NaN;\n};\n// noise scale c in \u03c3 = c\u00b7\u221aI, from second differences of the raw counts\nAM.noiseC = function (y, floor) {\n  const n = y.length, r = new Float64Array(Math.max(0, n - 2));\n  for (let i = 1; i < n - 1; i++) r[i - 1] = Math.abs((y[i - 1] - 2 * y[i] + y[i + 1]) / Math.sqrt(Math.max(y[i], floor)));\n  return 1.4826 * AM.median(r) / Math.sqrt(6);\n};\n// standard normal pdf / cdf\nAM.phi = x => Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);\nAM.Phi = function (x) {   // Abramowitz\u2013Stegun 7.1.26 via erf\n  const z = Math.abs(x) / Math.SQRT2, t = 1 / (1 + 0.3275911 * z);\n  const e = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-z * z);\n  return 0.5 * (1 + (x >= 0 ? e : -e));\n};\n\n// Whittaker smoother (2nd differences): (W + \u03bb D\u1d40D) z = W y, banded LDL\u1d40\nAM.whittaker = function (y, w, lam) {\n  const n = y.length;\n  const a0 = new Float64Array(n), a1 = new Float64Array(n), a2 = new Float64Array(n);\n  for (let i = 0; i < n - 2; i++) {\n    a0[i] += lam; a0[i + 1] += 4 * lam; a0[i + 2] += lam;\n    a1[i] -= 2 * lam; a1[i + 1] -= 2 * lam; a2[i] += lam;\n  }\n  for (let i = 0; i < n; i++) a0[i] += w[i];\n  const d = new Float64Array(n), l1 = new Float64Array(n), l2 = new Float64Array(n), z = new Float64Array(n);\n  for (let i = 0; i < n; i++) {\n    let di = a0[i];\n    if (i >= 1) di -= l1[i - 1] * l1[i - 1] * d[i - 1];\n    if (i >= 2) di -= l2[i - 2] * l2[i - 2] * d[i - 2];\n    d[i] = di;\n    let ai = a1[i];\n    if (i >= 1) ai -= l2[i - 1] * l1[i - 1] * d[i - 1];\n    l1[i] = ai / di; l2[i] = a2[i] / di;\n  }\n  for (let i = 0; i < n; i++) {\n    let s = w[i] * y[i];\n    if (i >= 1) s -= l1[i - 1] * z[i - 1];\n    if (i >= 2) s -= l2[i - 2] * z[i - 2];\n    z[i] = s;\n  }\n  for (let i = 0; i < n; i++) z[i] /= d[i];\n  for (let i = n - 1; i >= 0; i--) {\n    if (i + 1 < n) z[i] -= l1[i] * z[i + 1];\n    if (i + 2 < n) z[i] -= l2[i] * z[i + 2];\n  }\n  return z;\n};\nAM.lambdaOf = (L, step) => Math.pow(L / step / (2 * Math.PI), 4);\n\n// envelope A of the non-Bragg intensity\nAM.envelope = function (x, y, o) {\n  const n = x.length, step = (x[n - 1] - x[0]) / (n - 1), lam = AM.lambdaOf(o.L, step);\n  let ymax = 0; for (const v of y) if (v > ymax) ymax = v;\n  const floor = Math.max(1e-9 * ymax, 1e-12);\n  const m = Math.max(0, Math.round(o.sw / step / 2));\n  const { ys, red } = AM.sgSmooth(y, m);\n  const cRaw = AM.noiseC(y, floor), c = cRaw * red;\n  let w = new Float64Array(n).fill(1), z = AM.whittaker(ys, w, lam), sig = new Float64Array(n);\n  for (let it = 0; it < 80; it++) {\n    for (let i = 0; i < n; i++) sig[i] = c * Math.sqrt(Math.max(z[i], floor));\n    const wn = new Float64Array(n); let changed = false, kept = 0;\n    for (let i = 0; i < n; i++) { wn[i] = ys[i] - z[i] < o.t * sig[i] ? 1 : 0; if (wn[i] !== w[i]) changed = true; kept += wn[i]; }\n    if (kept < 3) break;\n    if (it > 0 && !changed) break;\n    w = wn; z = AM.whittaker(ys, w, lam);\n  }\n  const corr = AM.phi(o.t) / AM.Phi(o.t);   // mean of the noise distribution truncated at +t\u03c3\n  for (let i = 0; i < n; i++) z[i] += sig[i] * corr;\n  return { A: z, w, c, cRaw, ys };\n};\n\n// small dense least squares via normal equations (+ tiny ridge)\nAM.solveSym = function (M, b) {\n  const k = b.length, A = M.map((r, i) => [...r, b[i]]);\n  for (let i = 0; i < k; i++) A[i][i] += 1e-12 * (Math.abs(A[i][i]) + 1);\n  for (let c = 0; c < k; c++) {\n    let p = c; for (let r = c + 1; r < k; r++) if (Math.abs(A[r][c]) > Math.abs(A[p][c])) p = r;\n    [A[c], A[p]] = [A[p], A[c]];\n    for (let r = 0; r < k; r++) if (r !== c) { const f = A[r][c] / A[c][c]; for (let j = c; j <= k; j++) A[r][j] -= f * A[c][j]; }\n  }\n  return A.map((r, i) => r[k] / r[i]);\n};\n// instrumental background B: Chebyshev(deg) [+ x0/x], asymmetric LS to the lower side of A\nAM.instrumental = function (x, A, o) {\n  const n = x.length, x0 = x[0], x1 = x[n - 1], cols = [];\n  const u = Array.from(x, v => 2 * (v - x0) / (x1 - x0) - 1);\n  for (let k = 0; k <= o.deg; k++) cols.push(u.map(v => Math.cos(k * Math.acos(Math.max(-1, Math.min(1, v))))));\n  if (o.oneOverX) cols.push(Array.from(x, v => x0 / v));\n  const use = cols.map(() => true), p = 0.001;\n  let w = new Float64Array(n).fill(1), coef = new Array(cols.length).fill(0), B = new Float64Array(n);\n  for (let it = 0; it < 100; it++) {\n    const idx = cols.map((_, k) => k).filter(k => use[k]);\n    const M = idx.map(() => new Array(idx.length).fill(0)), b = new Array(idx.length).fill(0);\n    for (let i = 0; i < n; i++) {\n      const wi = w[i];\n      for (let a = 0; a < idx.length; a++) {\n        const ca = cols[idx[a]][i] * wi; b[a] += ca * A[i];\n        for (let q = a; q < idx.length; q++) M[a][q] += ca * cols[idx[q]][i];\n      }\n    }\n    for (let a = 0; a < idx.length; a++) for (let q = 0; q < a; q++) M[a][q] = M[q][a];\n    const s = AM.solveSym(M, b);\n    coef = new Array(cols.length).fill(0); idx.forEach((k, j) => coef[k] = s[j]);\n    if (o.oneOverX && use[cols.length - 1] && coef[cols.length - 1] < 0) { use[cols.length - 1] = false; continue; }\n    for (let i = 0; i < n; i++) { let v = 0; for (let k = 0; k < cols.length; k++) v += coef[k] * cols[k][i]; B[i] = v; }\n    let changed = false;\n    for (let i = 0; i < n; i++) { const wn = A[i] > B[i] ? p : 1; if (wn !== w[i]) { changed = true; w[i] = wn; } }\n    if (!changed && it > 2) break;\n  }\n  return { B, coef, airTerm: o.oneOverX && use[cols.length - 1] ? coef[cols.length - 1] : 0 };\n};\n\n// full analysis on the selected 2\u03b8 window\nAM.analyse = function (X, Y, o) {\n  let i0 = 0, i1 = X.length - 1;\n  while (i0 < X.length && X[i0] < o.lo) i0++;\n  while (i1 > 0 && X[i1] > o.hi) i1--;\n  if (i1 - i0 < 50) throw new Error(\"Odabrani raspon 2\u03b8 sadr\u017ei premalo to\u010daka.\");\n  const x = X.subarray(i0, i1 + 1), y = Y.subarray(i0, i1 + 1), n = x.length;\n  const env = AM.envelope(x, y, o), A = env.A;\n  const ins = AM.instrumental(x, A, o), B = ins.B;\n  let Ic = 0, Ia = 0, Ib = 0, mom = 0, best = -Infinity, xMax = NaN;\n  for (let i = 0; i < n; i++) {\n    const dx = i === 0 ? x[1] - x[0] : i === n - 1 ? x[n - 1] - x[n - 2] : 0.5 * (x[i + 1] - x[i - 1]);\n    const am = Math.max(A[i] - B[i], 0);\n    Ic += (y[i] - A[i]) * dx; Ia += am * dx; Ib += B[i] * dx; mom += am * x[i] * dx;\n    if (am > best) { best = am; xMax = x[i]; }\n  }\n  // a halo maximum next to the window edge is an edge effect, not a distinct halo\n  if (isFinite(xMax) && (xMax - x[0] < 0.5 * o.L || x[n - 1] - xMax < 0.5 * o.L)) xMax = NaN;\n  const K = o.K > 0 ? o.K : 1;\n  const X_am = K * Ia / (K * Ia + Ic);\n  return { x, y, A, B, ys: env.ys, w: env.w, c: env.cRaw, airTerm: ins.airTerm,\n           Ic, Ia, Ib, X_am, haloMax: xMax, haloCentroid: Ia > 0 ? mom / Ia : NaN, i0, i1 };\n};\n// sensitivity: L \u00d7{0.75,1,1.25}, t \u00b10.5, polynomial degree \u00b11\nAM.sensitivity = function (X, Y, o) {\n  const vals = [];\n  for (const fL of [0.75, 1, 1.25]) for (const dt of [-0.5, 0, 0.5]) for (const dd of [-1, 0, 1]) {\n    const deg = o.deg + dd, t = o.t + dt;\n    if (deg < 0 || deg > 5 || t < 1) continue;\n    try { vals.push(AM.analyse(X, Y, Object.assign({}, o, { L: o.L * fL, t, deg })).X_am); } catch (e) { /* skip */ }\n  }\n  return vals.length ? { min: Math.min(...vals), max: Math.max(...vals), n: vals.length } : null;\n};\nif (typeof module !== \"undefined\") module.exports = AM;\n\n/* =====================================================================\n   Profile fitting without a structural model (\"Prilagodba profila\")\n   I(2\u03b8) = \u03a3_k a_k\u00b7[pV(2\u03b8; x_k, H_k, \u03b7) + R\u00b7pV(2\u03b8; x_k', H_k, \u03b7)]      Bragg peaks (K\u03b11 + K\u03b12)\n         + \u03a3_h b_h\u00b7G(2\u03b8; c_h, W_h)                                    amorphous halo(s)\n         + \u03a3_j d_j\u00b7T_j(u) + e\u00b72\u03b8_0/2\u03b8                                 instrumental background\n   Linear coefficients (a \u2265 0, b \u2265 0, e \u2265 0, d free) are obtained by weighted\n   non-negative least squares for given non-linear parameters (variable\n   projection); x_k, H_k, \u03b7, c_h, W_h are refined by damped local Gauss\u2013Newton\n   steps. Peaks are added from the residual and removed when their area\n   vanishes. A component counts as crystalline when its FWHM \u2264 Hmax; halo\n   widths are kept \u2265 Wmin, so the operational boundary is the profile width.\n   ===================================================================== */\nconst PF = {};\nPF.LN2 = Math.log(2);\nPF.CL = 2 / Math.PI; PF.CG = 2 * Math.sqrt(Math.log(2) / Math.PI);\nPF.pv = function (dx, H, eta) {\n  const t = dx / H, t2 = 4 * t * t;\n  return (eta * PF.CL / (1 + t2) + (1 - eta) * PF.CG * Math.exp(-PF.LN2 * t2)) / H;\n};\nPF.WIN = 25;   // half-window in units of FWHM (Lorentzian area outside \u00b125H: 1.3 %\u00b7\u03b7)\nPF.gauss = (dx, W) => (2 / W) * Math.sqrt(PF.LN2 / Math.PI) * Math.exp(-4 * PF.LN2 * dx * dx / (W * W));\nPF.ka2Pos = (x, r) => 360 / Math.PI * Math.asin(Math.min(1, r * Math.sin(x * Math.PI / 360)));\n\nPF.fit = function (X, Y, o, seed) {\n  // o: lo, hi, deg, oneOverX, t, sw, Hmax, nHalo, ka2 {on, lr (\u03bb2/\u03bb1), ratio}, maxCycles\n  let i0 = 0, i1 = X.length - 1;\n  while (i0 < X.length && X[i0] < o.lo) i0++;\n  while (i1 > 0 && X[i1] > o.hi) i1--;\n  const x = X.subarray(i0, i1 + 1), y = Y.subarray(i0, i1 + 1), n = x.length;\n  const step = (x[n - 1] - x[0]) / (n - 1);\n  let ymax = 0; for (const v of y) if (v > ymax) ymax = v;\n  const floor = Math.max(1e-9 * ymax, 1e-12);\n  const cN = AM.noiseC(y, floor);\n  const wt = new Float64Array(n); for (let i = 0; i < n; i++) wt[i] = 1 / (cN * cN * Math.max(y[i], floor));\n  const ka2 = o.ka2 && o.ka2.on ? o.ka2 : null;\n  const Hmax = o.Hmax, Hmin = Math.max(2 * step, 0.01), Wmin = Math.max(3 * Hmax, 2.5), Wmax = 40;\n  const idx = v => Math.max(0, Math.min(n - 1, Math.round((v - x[0]) / step)));\n\n  // ---- background / halo dense columns ----\n  const u = Array.from(x, v => 2 * (v - x[0]) / (x[n - 1] - x[0]) - 1);\n  const bgCols = [];\n  for (let k = 0; k <= o.deg; k++) bgCols.push({ v: Float64Array.from(u, q => Math.cos(k * Math.acos(Math.max(-1, Math.min(1, q))))), nonneg: false });\n  if (o.oneOverX) bgCols.push({ v: Float64Array.from(x, q => x[0] / q), nonneg: true, air: true });\n\n  // ---- initial peaks from the envelope residual ----\n  const env = seed;   // result of AM.analyse with the same window\n  const Hinit = PF.estimateWidth(x, y, env.A) || 0.1;\n  let eta = 0.5;\n  let peaks = PF.findPeaks(x, PF.smooth(y, env.A, o.sw, step), env.A, cN, o.t, [], Hinit, step).map(p => ({ x: p, H: Hinit, a: 0, dead: 0 }));\n  // ---- initial halos ----\n  const halos = [];\n  const hc = isFinite(env.haloMax) ? env.haloMax : (isFinite(env.haloCentroid) ? env.haloCentroid : x[0] + 0.3 * (x[n - 1] - x[0]));\n  halos.push({ c: hc, W: Math.min(Wmax, Math.max(Wmin, 12)), b: 0 });\n  if (o.nHalo > 1) halos.push({ c: Math.min(x[n - 1] - 5, hc + 18), W: Math.min(Wmax, Math.max(Wmin, 15)), b: 0 });\n\n  const peakVals = (p, eh = eta) => {   // values over the peak window (K\u03b11 + K\u03b12)\n    const half = PF.WIN * p.H, j0 = idx(p.x - half), j1 = idx((ka2 ? PF.ka2Pos(p.x, ka2.lr) : p.x) + half);\n    const v = new Float64Array(j1 - j0 + 1), x2 = ka2 ? PF.ka2Pos(p.x, ka2.lr) : 0;\n    for (let j = j0; j <= j1; j++) { let s = PF.pv(x[j] - p.x, p.H, eh); if (ka2) s += ka2.ratio * PF.pv(x[j] - x2, p.H, eh); v[j - j0] = s; }\n    return { j0, j1, v };\n  };\n  // values and analytic derivatives (x0, H, \u03b7) of one peak over its window\n  const peakDer = p => {\n    const half = PF.WIN * p.H, x2 = ka2 ? PF.ka2Pos(p.x, ka2.lr) : 0;\n    const j0 = idx(p.x - half), j1 = idx((ka2 ? x2 : p.x) + half), m = j1 - j0 + 1;\n    const dx2 = ka2 ? ka2.lr * Math.cos(p.x * Math.PI / 360) / Math.cos(x2 * Math.PI / 360) : 0;\n    const v = new Float64Array(m), dX = new Float64Array(m), dH = new Float64Array(m), dE = new Float64Array(m), H = p.H;\n    const comp = (d, wgt, dpos, j) => {\n      const q = 4 * d * d / (H * H), L = PF.CL / H / (1 + q), G = PF.CG / H * Math.exp(-PF.LN2 * q);\n      const dLx = L * (8 * d / (H * H)) / (1 + q), dGx = G * 8 * PF.LN2 * d / (H * H);\n      const dLH = -L / H + L * (2 * q / H) / (1 + q), dGH = -G / H + G * 2 * PF.LN2 * q / H;\n      v[j] += wgt * (eta * L + (1 - eta) * G); dX[j] += wgt * dpos * (eta * dLx + (1 - eta) * dGx);\n      dH[j] += wgt * (eta * dLH + (1 - eta) * dGH); dE[j] += wgt * (L - G);\n    };\n    for (let j = 0; j < m; j++) { const xx = x[j0 + j]; comp(xx - p.x, 1, 1, j); if (ka2) comp(xx - x2, ka2.ratio, dx2, j); }\n    return { j0, j1, v, dX, dH, dE };\n  };\n  const haloVals = h => Float64Array.from(x, q => PF.gauss(q - h.c, h.W));\n\n  let model = new Float64Array(n), cols = null, coef = null, active = null, lastM = null;\n  function linearSolve() {\n    // columns: bg (dense), halos (dense, \u22650), peaks (sparse, \u22650)\n    cols = [];\n    for (const b of bgCols) cols.push({ kind: \"bg\", j0: 0, j1: n - 1, v: b.v, nonneg: b.nonneg, air: !!b.air });\n    for (const h of halos) cols.push({ kind: \"halo\", ref: h, j0: 0, j1: n - 1, v: haloVals(h), nonneg: true });\n    for (const p of peaks) { const pv = peakVals(p); cols.push({ kind: \"peak\", ref: p, j0: pv.j0, j1: pv.j1, v: pv.v, nonneg: true }); }\n    const m = cols.length;\n    active = new Uint8Array(m).fill(1);\n    // full normal matrix once (columns are ordered: dense first, then peaks by position)\n    const Mf = new Float64Array(m * m), rf = new Float64Array(m);\n    let ptr = 0; const cover = [], cv = new Float64Array(m), ci = new Int32Array(m);\n    for (let i = 0; i < n; i++) {\n      while (ptr < m && cols[ptr].j0 <= i) cover.push(ptr++);\n      for (let q = cover.length - 1; q >= 0; q--) if (cols[cover[q]].j1 < i) cover.splice(q, 1);\n      const wi = wt[i], nc = cover.length;\n      for (let a = 0; a < nc; a++) { const k = cover[a]; ci[a] = k; cv[a] = cols[k].v[i - cols[k].j0]; }\n      for (let a = 0; a < nc; a++) {\n        const va = cv[a] * wi, ra = ci[a] * m; rf[ci[a]] += va * y[i];\n        for (let b = a; b < nc; b++) Mf[ra + ci[b]] += va * cv[b];\n      }\n    }\n    let sol = null, map = null, p = 0, M = null;\n    for (let round = 0; round < 25; round++) {\n      map = []; for (let k = 0; k < m; k++) if (active[k]) map.push(k);\n      p = map.length; M = new Float64Array(p * p); const rhs = new Float64Array(p);\n      for (let r = 0; r < p; r++) { rhs[r] = rf[map[r]]; const rr = map[r] * m; for (let c = r; c < p; c++) { const v = c === r ? Mf[rr + map[c]] : Mf[rr + map[c]] + Mf[map[c] * m + map[r]]; M[r * p + c] = v; M[c * p + r] = v; } }\n      sol = PF.cholSolve(M, rhs, p);\n      let worst = -1, wv = 0;\n      for (let q = 0; q < p; q++) { const k = map[q]; if (cols[k].nonneg && sol[q] < wv) { wv = sol[q]; worst = k; } }\n      if (worst < 0) break;\n      let dropped = 0;\n      for (let q = 0; q < p; q++) { const k = map[q]; if (cols[k].nonneg && sol[q] < 0 && cols[k].kind === \"peak\") { active[k] = 0; dropped++; } }\n      if (!dropped) active[worst] = 0;\n    }\n    lastM = { M, map, p };\n    coef = new Float64Array(cols.length);\n    map.forEach((k, q) => coef[k] = sol[q]);\n    model = new Float64Array(n);\n    cols.forEach((c, k) => { if (!coef[k]) return; for (let j = c.j0; j <= c.j1; j++) model[j] += coef[k] * c.v[j - c.j0]; });\n    cols.forEach((c, k) => { if (c.kind === \"peak\") c.ref.a = coef[k]; if (c.kind === \"halo\") c.ref.b = coef[k]; });\n  }\n  function chi2() { let s = 0; for (let i = 0; i < n; i++) { const r = y[i] - model[i]; s += wt[i] * r * r; } return s; }\n\n  function localSteps() {\n    const r = Float64Array.from(y, (v, i) => v - model[i]);\n    // peaks: 3\u00d73 (a, x, H) damped Gauss\u2013Newton on the window, Jacobi style; also accumulates \u2202model/\u2202\u03b7\n    const dm = new Float64Array(n);\n    for (const p of peaks) {\n      if (!(p.a > 0)) continue;\n      const D = peakDer(p);\n      const A = [[0, 0, 0], [0, 0, 0], [0, 0, 0]], g = [0, 0, 0];\n      for (let j = D.j0; j <= D.j1; j++) {\n        const k = j - D.j0, J0 = D.v[k], J1 = p.a * D.dX[k], J2 = p.a * D.dH[k], w = wt[j], rr = r[j];\n        dm[j] += p.a * D.dE[k];\n        g[0] += w * J0 * rr; g[1] += w * J1 * rr; g[2] += w * J2 * rr;\n        A[0][0] += w * J0 * J0; A[0][1] += w * J0 * J1; A[0][2] += w * J0 * J2;\n        A[1][1] += w * J1 * J1; A[1][2] += w * J1 * J2; A[2][2] += w * J2 * J2;\n      }\n      A[1][0] = A[0][1]; A[2][0] = A[0][2]; A[2][1] = A[1][2];\n      for (let a = 0; a < 3; a++) A[a][a] *= 1.5;  // damping\n      const d = PF.solve3(A, g); if (!d) continue;\n      const nx = p.x + 0.7 * Math.max(-0.5 * p.H, Math.min(0.5 * p.H, d[1]));\n      const nH = p.H * Math.exp(0.7 * Math.max(-0.4, Math.min(0.4, d[2] / p.H)));\n      p.x = nx; p.H = Math.max(Hmin, Math.min(Hmax, nH));\n    }\n    // halos: 3\u00d73 (b, c, W)\n    for (const h of halos) {\n      if (!(h.b > 0)) continue;\n      const dc = 0.02 * h.W, dW = 0.02 * h.W;\n      const A = [[0, 0, 0], [0, 0, 0], [0, 0, 0]], g = [0, 0, 0];\n      for (let j = 0; j < n; j++) {\n        const q = x[j];\n        const J = [PF.gauss(q - h.c, h.W), h.b * (PF.gauss(q - h.c - dc, h.W) - PF.gauss(q - h.c + dc, h.W)) / (2 * dc),\n                   h.b * (PF.gauss(q - h.c, h.W + dW) - PF.gauss(q - h.c, h.W - dW)) / (2 * dW)];\n        for (let a = 0; a < 3; a++) { g[a] += wt[j] * J[a] * r[j]; for (let b = 0; b < 3; b++) A[a][b] += wt[j] * J[a] * J[b]; }\n      }\n      for (let a = 0; a < 3; a++) A[a][a] *= 1.5;\n      const d = PF.solve3(A, g); if (!d) continue;\n      h.c = Math.max(x[0] - 5, Math.min(x[n - 1] + 5, h.c + 0.7 * Math.max(-3, Math.min(3, d[1]))));\n      h.W = Math.max(Wmin, Math.min(Wmax, h.W * Math.exp(0.7 * Math.max(-0.3, Math.min(0.3, d[2] / h.W)))));\n    }\n    // global \u03b7: 1-D Gauss\u2013Newton\n    let num = 0, den = 0;\n    for (let j = 0; j < n; j++) { num += wt[j] * dm[j] * r[j]; den += wt[j] * dm[j] * dm[j]; }\n    if (den > 0) eta = Math.max(0, Math.min(1, eta + 0.7 * Math.max(-0.15, Math.min(0.15, num / den))));\n  }\n  function housekeeping(addNew) {\n    // remove dead peaks, merge near-duplicates\n    for (const p of peaks) p.dead = p.a > 0 ? 0 : p.dead + 1;\n    peaks = peaks.filter(p => p.dead < 2);\n    peaks.sort((a, b) => a.x - b.x);\n    const kept = [];\n    for (const p of peaks) {\n      const q = kept[kept.length - 1];\n      if (q && p.x - q.x < 0.35 * Math.min(p.H, q.H)) { if (p.a > q.a) kept[kept.length - 1] = p; }\n      else kept.push(p);\n    }\n    peaks = kept;\n    if (addNew && peaks.length < 600) {\n      const res = Float64Array.from(y, (v, i) => v - model[i]);\n      const base = Float64Array.from(model);\n      const sm = PF.smooth(Float64Array.from(res, (v, i) => v + base[i]), base, o.sw, step);\n      const Hm = PF.median(peaks.map(p => p.H)) || Hinit;\n      const add = PF.findPeaks(x, sm, base, cN, o.t + 0.5, peaks.map(p => p.x), Hm, step);\n      for (const xa of add) peaks.push({ x: xa, H: Hm, a: 0, dead: 0 });\n      peaks.sort((a, b) => a.x - b.x);\n      return add.length;\n    }\n    return 0;\n  }\n\n  const maxC = o.maxCycles || 24;\n  let prev = Infinity, cyc = 0;\n  for (cyc = 0; cyc < maxC; cyc++) {\n    linearSolve();\n    const c2 = chi2();\n    let added = 0;\n    if (cyc % 4 === 3 && cyc < maxC - 4) added = housekeeping(true); else housekeeping(false);\n    if (!added && cyc > 8 && prev - c2 < 1e-4 * prev) break;\n    prev = c2;\n    localSteps();\n  }\n  linearSolve();\n\n  // ---- integrals over the window ----\n  let Ic = 0, Ia = 0, Rw = 0, Wy = 0;\n  const dxs = Float64Array.from(x, (_, i) => i === 0 ? x[1] - x[0] : i === n - 1 ? x[n - 1] - x[n - 2] : 0.5 * (x[i + 1] - x[i - 1]));\n  const cryst = new Float64Array(n), amor = new Float64Array(n), bg = new Float64Array(n);\n  cols.forEach((c, k) => {\n    const a = coef[k]; if (!a) return;\n    const tgt = c.kind === \"peak\" ? cryst : c.kind === \"halo\" ? amor : bg;\n    for (let j = c.j0; j <= c.j1; j++) tgt[j] += a * c.v[j - c.j0];\n  });\n  for (let i = 0; i < n; i++) { Ic += cryst[i] * dxs[i]; Ia += amor[i] * dxs[i]; const r = y[i] - model[i]; Rw += wt[i] * r * r; Wy += wt[i] * y[i] * y[i]; }\n  // statistical \u03c3(X_am) from the covariance of the linear coefficients\n  let sigX = NaN;\n  try {\n    const { M, map, p } = lastM, dof = Math.max(1, n - p), s2 = Rw / dof;\n    const unitI = map.map(k => { const c = cols[k]; let s = 0; for (let j = c.j0; j <= c.j1; j++) s += c.v[j - c.j0] * dxs[j]; return s; });\n    const tot = Ia + Ic, grad = new Float64Array(p);\n    map.forEach((k, q) => { const kind = cols[k].kind; grad[q] = kind === \"halo\" ? unitI[q] * Ic / (tot * tot) : kind === \"peak\" ? -unitI[q] * Ia / (tot * tot) : 0; });\n    const z = PF.cholSolve(M, grad, p);\n    let v = 0; for (let q = 0; q < p; q++) v += grad[q] * z[q];\n    sigX = Math.sqrt(Math.max(0, v * s2));\n  } catch (e) { /* leave NaN */ }\n  const K = o.K > 0 ? o.K : 1;\n  const live = peaks.filter(p => p.a > 0);\n  return {\n    x, y, model, cryst, amor, bg, Ic, Ia, X_am: K * Ia / (K * Ia + Ic), sigX,\n    Rwp: Math.sqrt(Rw / Wy), gof: Math.sqrt(Rw / Math.max(1, n - cols.length)), eta,\n    nPeaks: live.length, Hmed: PF.median(live.map(p => p.H)), halos: halos.filter(h => h.b > 0).map(h => ({ c: h.c, W: h.W })),\n    cycles: cyc, c: cN, i0, i1\n  };\n};\n\n// helpers\nPF.median = a => { if (!a.length) return NaN; const s = a.slice().sort((p, q) => p - q), n = s.length; return n % 2 ? s[(n - 1) / 2] : 0.5 * (s[n / 2 - 1] + s[n / 2]); };\nPF.smooth = function (y, base, sw, step) { const m = Math.max(0, Math.round(sw / step / 2)); return AM.sgSmooth(y, m).ys; };\n// local maxima of (ys \u2212 base) above t\u00b7\u03c3, plus shoulders (minima of the 2nd derivative)\nPF.findPeaks = function (x, ys, base, c, t, existing, H, step) {\n  const n = x.length, out = [], d = Float64Array.from(ys, (v, i) => v - base[i]);\n  const sig = i => c * Math.sqrt(Math.max(base[i], 1e-9));\n  const m = Math.max(1, Math.round(0.5 * H / step));\n  const d2 = new Float64Array(n);\n  for (let i = m; i < n - m; i++) d2[i] = ys[i - m] - 2 * ys[i] + ys[i + m];\n  const far = xv => existing.every(e => Math.abs(e - xv) > 0.6 * H) && out.every(e => Math.abs(e - xv) > 0.6 * H);\n  for (let i = m; i < n - m; i++) {\n    if (d[i] < t * sig(i)) continue;\n    let isMax = true, isShoulder = true;\n    for (let k = 1; k <= m; k++) { if (d[i] < d[i - k] || d[i] < d[i + k]) isMax = false; if (d2[i] > d2[i - k] || d2[i] > d2[i + k]) isShoulder = false; }\n    if ((isMax || (isShoulder && d2[i] < -t * sig(i))) && far(x[i])) out.push(x[i]);\n  }\n  return out;\n};\n// FWHM of the strongest isolated peaks of (y \u2212 A)\nPF.estimateWidth = function (x, y, A) {\n  const n = x.length, d = Float64Array.from(y, (v, i) => v - A[i]);\n  const cand = [];\n  for (let i = 2; i < n - 2; i++) if (d[i] > d[i - 1] && d[i] >= d[i + 1] && d[i] > d[i - 2] && d[i] >= d[i + 2]) cand.push(i);\n  cand.sort((a, b) => d[b] - d[a]);\n  const ws = [];\n  for (const i of cand.slice(0, 12)) {\n    const h = d[i] / 2; let l = i, r = i;\n    while (l > 0 && d[l] > h) l--; while (r < n - 1 && d[r] > h) r++;\n    const w = x[r] - x[l]; if (w > 0 && w < 1) ws.push(w);\n  }\n  return ws.length ? PF.median(ws) : NaN;\n};\nPF.solve3 = function (A, g) {\n  const M = A.map((r, i) => [...r, g[i]]);\n  for (let c = 0; c < 3; c++) {\n    let p = c; for (let r = c + 1; r < 3; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;\n    if (Math.abs(M[p][c]) < 1e-300) return null;\n    [M[c], M[p]] = [M[p], M[c]];\n    for (let r = 0; r < 3; r++) if (r !== c) { const f = M[r][c] / M[c][c]; for (let j = c; j < 4; j++) M[r][j] -= f * M[c][j]; }\n  }\n  return M.map((r, i) => r[3] / r[i]);\n};\n// dense Cholesky with diagonal scaling and a tiny ridge\nPF.cholSolve = function (M0, b, p) {\n  const s = new Float64Array(p);\n  for (let i = 0; i < p; i++) s[i] = 1 / Math.sqrt(Math.max(M0[i * p + i], 1e-300));\n  const L = new Float64Array(p * p);\n  for (let i = 0; i < p; i++) for (let j = 0; j <= i; j++) L[i * p + j] = M0[i * p + j] * s[i] * s[j];\n  for (let i = 0; i < p; i++) L[i * p + i] += 1e-10;\n  for (let j = 0; j < p; j++) {\n    let d = L[j * p + j];\n    for (let k = 0; k < j; k++) d -= L[j * p + k] * L[j * p + k];\n    d = Math.sqrt(Math.max(d, 1e-14)); L[j * p + j] = d;\n    for (let i = j + 1; i < p; i++) {\n      let v = L[i * p + j];\n      for (let k = 0; k < j; k++) v -= L[i * p + k] * L[j * p + k];\n      L[i * p + j] = v / d;\n    }\n  }\n  const z = new Float64Array(p);\n  for (let i = 0; i < p; i++) { let v = b[i] * s[i]; for (let k = 0; k < i; k++) v -= L[i * p + k] * z[k]; z[i] = v / L[i * p + i]; }\n  for (let i = p - 1; i >= 0; i--) { let v = z[i]; for (let k = i + 1; k < p; k++) v -= L[k * p + i] * z[k]; z[i] = v / L[i * p + i]; }\n  for (let i = 0; i < p; i++) z[i] *= s[i];\n  return z;\n};\nif (typeof module !== \"undefined\") module.exports = PF;\n\n/* jobs shared by the Web Worker and the main-thread fallback */\nconst WORK = {\n  fit(X, Y, o) {\n    const env = AM.analyse(X, Y, o), r = PF.fit(X, Y, o, env);\n    delete r.x; delete r.y;\n    return r;\n  },\n  // sensitivity of the profile result: polynomial degree \u00b1 1, peak threshold t \u00b1 0.5\n  sens(X, Y, o) {\n    const vals = [];\n    for (const v of [{}, { deg: o.deg - 1 }, { deg: o.deg + 1 }, { t: o.t - 0.5 }, { t: o.t + 0.5 }]) {\n      const q = Object.assign({}, o, v);\n      if (q.deg < 0 || q.deg > 5 || q.t < 1) continue;\n      try { vals.push(PF.fit(X, Y, q, AM.analyse(X, Y, q)).X_am); } catch (e) { /* skip */ }\n    }\n    return vals.length ? { min: Math.min(...vals), max: Math.max(...vals), n: vals.length } : null;\n  }\n};\n\nself.onmessage = e => { const { id, kind, X, Y, o } = e.data; try { self.postMessage({ id, out: WORK[kind](X, Y, o) }); } catch (err) { self.postMessage({ id, error: String((err && err.message) || err) }); } };";
+/* =====================================================================
    Application
    ===================================================================== */
-const DEF = { lo: 10, hi: NaN, hiDef: 80, L: 8, t: 2, sw: 0.15, deg: 2, oneOverX: true, K: 1 };
-const S = { samples: [], sel: null, p: Object.assign({}, DEF), view: null, yMode: "bg", cursor: null, sensToken: 0 };
+const DEF = { lo: 10, hi: NaN, hiDef: 80, L: 8, t: 2, sw: 0.15, deg: 2, oneOverX: true, K: 1, Hmax: 1.0, nHalo: 1, ka2: true };
+const PRESETS = {
+  glass: { label: "Staklasti uzorak", lo: 10, L: 8, t: 2, deg: 2, oneOverX: true, nHalo: 1,
+           note: "Leteći pepeo, staklo, staklokeramika: raspon od 10°, L = 8°, Čebišev 2. stupnja. Zadane postavke, prikladne za oba postupka." },
+  cryst: { label: "Pretežno kristalni", lo: 20, L: 12, t: 2, deg: 3, oneOverX: true, nHalo: 1,
+           note: "Klinker, cement, filer: raspon od 20° (bez porasta pri niskim kutovima), L = 12°, Čebišev 3. stupnja. Namijenjeno postupku ovojnice; prilagodba profila daje realne vrijednosti i uz zadane postavke." }
+};
+const S = { samples: [], sel: null, p: Object.assign({}, DEF), method: "env", view: null, yMode: "bg", cursor: null, sensToken: 0, profToken: 0 };
 let seq = 0;
-try { const sv = JSON.parse(localStorage.getItem("amorf.params") || "null"); if (sv) Object.assign(S.p, sv, { lo: DEF.lo, hi: NaN }); } catch (e) { /* storage unavailable */ }
-const saveParams = () => { try { const { lo, hi, ...rest } = S.p; localStorage.setItem("amorf.params", JSON.stringify(rest)); } catch (e) { /* ignore */ } };
+try {
+  const sv = JSON.parse(localStorage.getItem("amorf.params") || "null"); if (sv) Object.assign(S.p, sv, { lo: DEF.lo, hi: NaN });
+  const m = localStorage.getItem("amorf.method"); if (m === "env" || m === "prof") S.method = m;
+} catch (e) { /* storage unavailable */ }
+const saveParams = () => { try { const { lo, hi, ...rest } = S.p; localStorage.setItem("amorf.params", JSON.stringify(rest)); localStorage.setItem("amorf.method", S.method); } catch (e) { /* ignore */ } };
 const pct = (v, d = 1) => isNum(v) ? (100 * v).toFixed(d) : "—";
 const baseName = n => n.replace(/\.[^.]+$/, "");
 
@@ -1053,7 +1401,8 @@ async function loadFiles(list) {
       if (!tt.length) warn.push("Os x nije prepoznata kao 2θ; vrijednosti se tumače kao 2θ.");
       let neg = 0; for (const v of rg.ys) if (v < 0) neg++;
       if (neg > rg.ys.length * 0.01) warn.push("Podaci sadrže negativne intenzitete (moguće oduzeta pozadina); procjena šuma i ovojnice tada nije pouzdana.");
-      const sm = { id: ++seq, name: baseName(f.name), file: f.name, x: rg.xs, y: rg.ys, meta: res.meta, warn, res: null, sens: null, err: "" };
+      const sm = { id: ++seq, name: baseName(f.name), file: f.name, x: rg.xs, y: rg.ys, meta: res.meta, warn, res: null, sens: null, err: "",
+                   prof: null, profSens: null, profErr: "" };
       S.samples.push(sm);
       warn.forEach(w => msgs.push({ k: "warn", t: `${sm.name}: ${w}` }));
     } catch (e) { msgs.push({ k: "err", t: `${f.name}: ${e.message || e}` }); }
@@ -1067,11 +1416,9 @@ async function loadFiles(list) {
   if (!S.sel) S.sel = S.samples[0];
   showMsgs(msgs); syncInputs(); recomputeAll(); resetView(); renderAll();
 }
-function showMsgs(list) {
-  $("msgs").innerHTML = list.map(m => `<div class="banner ${m.k}">${esc(m.t)}</div>`).join("");
-}
+function showMsgs(list) { $("msgs").innerHTML = list.map(m => `<div class="banner ${m.k}">${esc(m.t)}</div>`).join(""); }
 
-/* ---------- computation ---------- */
+/* ---------- envelope method (main thread, fast) ---------- */
 function compute(sm) {
   try { sm.res = AM.analyse(sm.x, sm.y, S.p); sm.err = ""; }
   catch (e) { sm.res = null; sm.err = e.message || String(e); }
@@ -1079,7 +1426,7 @@ function compute(sm) {
 }
 function recomputeAll() {
   for (const sm of S.samples) compute(sm);
-  scheduleSensitivity();
+  scheduleSensitivity(); scheduleProfile();
 }
 function scheduleSensitivity() {
   const token = ++S.sensToken;
@@ -1093,42 +1440,132 @@ function scheduleSensitivity() {
   };
   setTimeout(step, 30);
 }
+
+/* ---------- profile method (Web Worker when available) ---------- */
+let W = null, wJobs = new Map(), wSeq = 0;
+function workerOptions(sm) {
+  const L = sm.meta.lambda || {};
+  const a1 = isNum(L.a1) && L.a1 > 0.1 ? L.a1 : 1.5406, a2 = isNum(L.a2) && L.a2 > a1 ? L.a2 : 1.54439;
+  const ratio = isNum(L.ratio) && L.ratio > 0 && L.ratio < 1 ? L.ratio : 0.5;
+  return Object.assign({}, S.p, { ka2: { on: !!S.p.ka2, lr: a2 / a1, ratio } });
+}
+function startWorker() {
+  try {
+    W = new Worker(URL.createObjectURL(new Blob([WORKER_SRC], { type: "text/javascript" })));
+    W.onmessage = e => { const j = wJobs.get(e.data.id); if (j) { wJobs.delete(e.data.id); e.data.error ? j.reject(new Error(e.data.error)) : j.resolve(e.data.out); } };
+    W.onerror = () => { for (const j of wJobs.values()) j.reject(new Error("Pogreška u pozadinskom izračunu.")); wJobs.clear(); W = null; };
+  } catch (e) { W = null; }
+}
+function runJob(kind, sm) {
+  const o = workerOptions(sm);
+  if (W) return new Promise((resolve, reject) => { const id = ++wSeq; wJobs.set(id, { resolve, reject }); W.postMessage({ id, kind, X: sm.x, Y: sm.y, o }); });
+  return new Promise((resolve, reject) => setTimeout(() => { try { resolve(WORK[kind](sm.x, sm.y, o)); } catch (e) { reject(e); } }, 0));
+}
+let profTimer = 0;
+function scheduleProfile(delay = 0) {
+  clearTimeout(profTimer);
+  const token = ++S.profToken;
+  for (const sm of S.samples) { sm.prof = null; sm.profSens = null; sm.profErr = ""; }
+  if (W && wJobs.size) { W.terminate(); for (const j of wJobs.values()) j.reject(new Error("cancelled")); wJobs.clear(); startWorker(); }
+  renderTable(); renderResult(); requestDraw();
+  profTimer = setTimeout(async () => {
+    const order = [S.sel, ...S.samples.filter(s => s !== S.sel)].filter(Boolean);
+    for (const sm of order) {
+      if (token !== S.profToken) return;
+      try { const r = await runJob("fit", sm); if (token !== S.profToken) return; attachProfile(sm, r); }
+      catch (e) { if (token !== S.profToken) return; sm.profErr = e.message || String(e); }
+      renderTable(); if (sm === S.sel) { renderResult(); requestDraw(); }
+    }
+    for (const sm of order) {
+      if (token !== S.profToken || !sm.prof) continue;
+      try { const s = await runJob("sens", sm); if (token !== S.profToken) return; sm.profSens = s; } catch (e) { /* keep without range */ }
+      renderTable(); if (sm === S.sel) renderResult();
+    }
+  }, delay);
+}
+function attachProfile(sm, r) {
+  r.x = sm.x.subarray(r.i0, r.i1 + 1); r.y = sm.y.subarray(r.i0, r.i1 + 1);
+  r.B = r.bg; r.A = Float64Array.from(r.bg, (v, i) => v + r.amor[i]);
+  sm.prof = r; sm.profErr = "";
+}
+const cur = sm => S.method === "prof" ? sm.prof : sm.res;
+const curSens = sm => S.method === "prof" ? sm.profSens : sm.sens;
+
 let recalcTimer = 0;
-function onParamChange(immediate) {
-  saveParams();
+function onParamChange(immediate, envOnly) {
+  saveParams(); markPreset();
   if (S.sel) compute(S.sel);
   renderAll();
   clearTimeout(recalcTimer);
   recalcTimer = setTimeout(() => { for (const sm of S.samples) if (sm !== S.sel) compute(sm); renderTable(); scheduleSensitivity(); }, immediate ? 0 : 250);
+  if (!envOnly) scheduleProfile(immediate ? 50 : 600);
 }
 
 /* ---------- parameter inputs ---------- */
-const PRM = [["L", "Lv", v => v.toFixed(1) + "°"], ["t", "tv", v => v.toFixed(1) + "σ"], ["sw", "swv", v => v.toFixed(2) + "°"], ["deg", "degv", v => String(v)]];
+const PRM = [["L", "Lv", v => v.toFixed(1) + "°"], ["t", "tv", v => v.toFixed(1) + "σ"], ["sw", "swv", v => v.toFixed(2) + "°"],
+             ["deg", "degv", v => String(v)], ["Hmax", "Hmaxv", v => v.toFixed(2) + "°"]];
 function syncInputs() {
   for (const [id, out, f] of PRM) { $(id).value = S.p[id]; $(out).textContent = f(S.p[id]); }
-  $("ox").checked = S.p.oneOverX; $("K").value = S.p.K;
+  $("ox").checked = S.p.oneOverX; $("K").value = S.p.K; $("ka2").checked = S.p.ka2;
   $("lo").value = isNum(S.p.lo) ? +S.p.lo.toFixed(3) : ""; $("hi").value = isNum(S.p.hi) ? +S.p.hi.toFixed(3) : "";
+  for (const b of $("nHalo").children) b.classList.toggle("on", +b.dataset.v === S.p.nHalo);
+  for (const b of $("method").children) b.classList.toggle("on", b.dataset.v === S.method);
+  markPreset();
 }
 for (const [id, out, f] of PRM) {
-  $(id).addEventListener("input", () => { S.p[id] = +$(id).value; $(out).textContent = f(S.p[id]); onParamChange(false); });
+  $(id).addEventListener("input", () => { S.p[id] = +$(id).value; $(out).textContent = f(S.p[id]); onParamChange(false, id === "Hmax" ? false : false); });
 }
 $("ox").addEventListener("change", () => { S.p.oneOverX = $("ox").checked; onParamChange(true); });
-$("K").addEventListener("change", () => { const v = +$("K").value; S.p.K = v > 0 ? v : 1; syncInputs(); onParamChange(true); });
+$("ka2").addEventListener("change", () => { S.p.ka2 = $("ka2").checked; saveParams(); scheduleProfile(50); });
+$("K").addEventListener("change", () => {
+  const v = +$("K").value; S.p.K = v > 0 ? v : 1; syncInputs();
+  for (const sm of S.samples) if (sm.prof) { const r = sm.prof; r.X_am = S.p.K * r.Ia / (S.p.K * r.Ia + r.Ic); }
+  onParamChange(true, true);
+});
 for (const id of ["lo", "hi"]) $(id).addEventListener("change", () => {
   const v = parseFloat($(id).value);
   if (isNum(v)) S.p[id] = v;
   if (S.p.hi - S.p.lo < 5) { if (id === "lo") S.p.lo = S.p.hi - 5; else S.p.hi = S.p.lo + 5; }
   syncInputs(); onParamChange(true);
 });
+$("nHalo").addEventListener("click", e => { const b = e.target.closest("button[data-v]"); if (!b) return; S.p.nHalo = +b.dataset.v; syncInputs(); saveParams(); scheduleProfile(50); });
+$("method").addEventListener("click", e => {
+  const b = e.target.closest("button[data-v]"); if (!b) return;
+  S.method = b.dataset.v; saveParams(); syncInputs(); renderAll();
+});
+const dataLo = () => Math.max(...S.samples.map(s => s.x[0])), dataHi = () => Math.min(DEF.hiDef, ...S.samples.map(s => s.x[s.x.length - 1]));
 $("defaults").addEventListener("click", () => {
-  const { lo, hi } = S.p; Object.assign(S.p, DEF, { lo: Math.max(DEF.lo, Math.max(...S.samples.map(s => s.x[0]))), hi: Math.min(DEF.hiDef, ...S.samples.map(s => s.x[s.x.length - 1])) });
+  Object.assign(S.p, DEF, { lo: Math.max(DEF.lo, dataLo()), hi: dataHi() });
   syncInputs(); onParamChange(true);
 });
+$("presets").addEventListener("click", e => {
+  const b = e.target.closest("button[data-preset]"); if (!b) return;
+  const P = PRESETS[b.dataset.preset];
+  Object.assign(S.p, { lo: Math.max(P.lo, dataLo()), L: P.L, t: P.t, deg: P.deg, oneOverX: P.oneOverX, nHalo: P.nHalo });
+  syncInputs(); onParamChange(true);
+});
+function markPreset() {
+  let hit = null;
+  for (const [k, P] of Object.entries(PRESETS))
+    if (Math.abs(S.p.lo - Math.max(P.lo, S.samples.length ? dataLo() : P.lo)) < 1e-6 && S.p.L === P.L && S.p.t === P.t && S.p.deg === P.deg && S.p.oneOverX === P.oneOverX && S.p.nHalo === P.nHalo) hit = k;
+  for (const b of $("presets").querySelectorAll("button")) b.classList.toggle("primary", b.dataset.preset === hit);
+  $("presetNote").textContent = hit ? PRESETS[hit].note : "Prilagođene postavke.";
+}
 
 /* ---------- rendering: samples, result, table ---------- */
-function renderAll() { renderSamples(); renderResult(); renderTable(); requestDraw(); }
+function renderAll() { renderLegend(); renderSamples(); renderResult(); renderTable(); requestDraw(); }
+function renderLegend() {
+  const sw = (bg, extra = "") => `<i style="${bg}${extra}"></i>`, line = c => sw(`background:${c};height:2px;vertical-align:3px`);
+  const items = S.method === "prof"
+    ? [[line("var(--ink)"), "izmjereno"], [line("var(--cursor)"), "izračunato"], [sw("background:color-mix(in srgb,var(--amor) 35%,transparent);border:1px solid var(--amor)"), "halo (amorfni doprinos)"],
+       [sw("background:color-mix(in srgb,var(--cryst) 22%,transparent)"), "maksimumi (kristalni doprinos)"], [line("var(--instr)"), "instrumentalna pozadina"], [line("var(--muted)"), "razlika (dolje)"]]
+    : [[line("var(--ink)"), "izmjereno"], [sw("background:color-mix(in srgb,var(--amor) 35%,transparent);border:1px solid var(--amor)"), "amorfni doprinos (A − B)"],
+       [sw("background:color-mix(in srgb,var(--cryst) 22%,transparent)"), "kristalni doprinos (I − A)"], [line("var(--instr)"), "instrumentalna pozadina B"]];
+  $("legend").innerHTML = items.map(([i, t]) => `<span>${i}${t}</span>`).join("");
+}
 function renderSamples() {
-  $("samples").innerHTML = S.samples.map(s => `<button class="chip${s === S.sel ? " sel" : ""}" data-id="${s.id}">${esc(s.name)} <b>${s.res ? pct(s.res.X_am) + " %" : "—"}</b><span class="x" data-del="${s.id}" title="Ukloni">×</span></button>`).join("");
+  $("samples").innerHTML = S.samples.map(s => { const r = cur(s);
+    return `<button class="chip${s === S.sel ? " sel" : ""}" data-id="${s.id}">${esc(s.name)} <b>${r ? pct(r.X_am) + " %" : "…"}</b><span class="x" data-del="${s.id}" title="Ukloni">×</span></button>`; }).join("");
 }
 $("samples").addEventListener("click", e => {
   const del = e.target.closest("[data-del]");
@@ -1138,11 +1575,10 @@ $("samples").addEventListener("click", e => {
 function selectSample(id) {
   const sm = S.samples.find(s => s.id === id); if (!sm || sm === S.sel) return;
   S.sel = sm; S.cursor = null; resetView(); renderAll();
-  if (!sm.sens) scheduleSensitivity();
 }
 function removeSample(id) {
   S.samples = S.samples.filter(s => s.id !== id);
-  if (!S.samples.length) { S.sel = null; $("app").hidden = true; $("empty").hidden = false; $("hdrAdd").hidden = true; S.p.hi = NaN; S.p.lo = DEF.lo; return; }
+  if (!S.samples.length) { S.sel = null; $("app").hidden = true; $("empty").hidden = false; $("hdrAdd").hidden = true; S.p.hi = NaN; S.p.lo = DEF.lo; S.profToken++; return; }
   if (!S.samples.includes(S.sel)) { S.sel = S.samples[0]; resetView(); }
   renderAll();
 }
@@ -1151,31 +1587,50 @@ const dOf = (tth, lam) => lam / (2 * Math.sin(tth * Math.PI / 360));
 function renderResult() {
   const sm = S.sel; if (!sm) return;
   $("resName").textContent = sm.name + (sm.meta.sample && sm.meta.sample !== sm.name ? " · " + sm.meta.sample : "");
-  const r = sm.res;
-  if (!r) { $("resVal").textContent = "—"; $("resBand").textContent = sm.err; $("resKv").innerHTML = ""; return; }
+  const r = cur(sm), sens = curSens(sm), prof = S.method === "prof";
+  if (!r) {
+    $("resVal").textContent = prof && !sm.profErr ? "…" : "—";
+    $("resBand").textContent = prof ? (sm.profErr || "prilagodba profila u tijeku…") : sm.err;
+    $("resKv").innerHTML = ""; return;
+  }
   $("resVal").innerHTML = `${pct(r.X_am)}<small> %</small>`;
-  $("resBand").textContent = sm.sens ? `raspon osjetljivosti ${pct(sm.sens.min)}–${pct(sm.sens.max)} %` : "računam raspon osjetljivosti…";
   const lam = lambdaOf(sm);
-  const rows = [
-    ["I_c (kristalno)", r.Ic.toExponential(3) + " · °"],
-    ["I_a (amorfno)", r.Ia.toExponential(3) + " · °"],
-    ["I_a / I_c", (r.Ia / r.Ic).toFixed(3)],
-    ["Maksimum haloa", isNum(r.haloMax) ? `${r.haloMax.toFixed(2)}° (d = ${dOf(r.haloMax, lam).toFixed(3)} Å)` : "nije izražen"],
-    ["Težište haloa", isNum(r.haloCentroid) ? `${r.haloCentroid.toFixed(2)}° 2θ` : "—"],
-    ["Faktor šuma c", r.c.toFixed(2) + (Math.abs(r.c - 1) < 0.25 ? " (Poissonov)" : "")],
-    ["Član c/2θ", S.p.oneOverX ? (r.airTerm > 0 ? "uključen" : "odbačen (c < 0)") : "isključen"],
-    ["Raspon / točke", `${r.x[0].toFixed(2)}–${r.x[r.x.length - 1].toFixed(2)}° · ${r.x.length}`],
-    ["λ", lam.toFixed(5) + " Å"]
-  ];
-  $("resKv").innerHTML = rows.map(([k, v]) => `<span>${esc(k).replace(/_(\w)/g, "<sub>$1</sub>")}</span><span>${esc(v)}</span>`).join("");
+  let band = sens ? `raspon osjetljivosti ${pct(sens.min)}–${pct(sens.max)} %` : "računam raspon osjetljivosti…";
+  if (prof && isNum(r.sigX)) band = `σ<sub>stat</sub> = ${pct(r.sigX, 2)} % · ` + band;
+  $("resBand").innerHTML = band;
+  let rows;
+  if (prof) {
+    const hal = r.halos.map(h => `${h.c.toFixed(1)}° (d = ${dOf(h.c, lam).toFixed(2)} Å), FWHM ${h.W.toFixed(1)}°`);
+    rows = [
+      ["I_c (maksimumi)", r.Ic.toExponential(3) + " · °"], ["I_a (halo)", r.Ia.toExponential(3) + " · °"],
+      ["R_wp / GOF", `${pct(r.Rwp, 2)} % / ${r.gof.toFixed(2)}`],
+      ["Maksimumi", `${r.nPeaks}; medijan FWHM ${isNum(r.Hmed) ? r.Hmed.toFixed(3) : "—"}°; η = ${r.eta.toFixed(2)}`],
+      ...(hal.length ? hal.map((h, i) => [hal.length > 1 ? `Halo ${i + 1}` : "Halo", h]) : [["Halo", "nije pronađen (b = 0)"]]),
+      ["Faktor šuma c", r.c.toFixed(2) + (Math.abs(r.c - 1) < 0.25 ? " (Poissonov)" : "")],
+      ["Raspon / točke", `${r.x[0].toFixed(2)}–${r.x[r.x.length - 1].toFixed(2)}° · ${r.x.length}`],
+      ["Usporedba", `ovojnica ${sm.res ? pct(sm.res.X_am) + " %" : "—"}`]
+    ];
+  } else {
+    rows = [
+      ["I_c (kristalno)", r.Ic.toExponential(3) + " · °"], ["I_a (amorfno)", r.Ia.toExponential(3) + " · °"], ["I_a / I_c", (r.Ia / r.Ic).toFixed(3)],
+      ["Maksimum haloa", isNum(r.haloMax) ? `${r.haloMax.toFixed(2)}° (d = ${dOf(r.haloMax, lam).toFixed(3)} Å)` : "nije izražen"],
+      ["Težište haloa", isNum(r.haloCentroid) ? `${r.haloCentroid.toFixed(2)}° 2θ` : "—"],
+      ["Faktor šuma c", r.c.toFixed(2) + (Math.abs(r.c - 1) < 0.25 ? " (Poissonov)" : "")],
+      ["Član c/2θ", S.p.oneOverX ? (r.airTerm > 0 ? "uključen" : "odbačen (c < 0)") : "isključen"],
+      ["Raspon / točke", `${r.x[0].toFixed(2)}–${r.x[r.x.length - 1].toFixed(2)}° · ${r.x.length}`],
+      ["Usporedba", `prilagodba profila ${sm.prof ? pct(sm.prof.X_am) + " %" : "…"}`]
+    ];
+  }
+  $("resKv").innerHTML = rows.map(([k, v]) => `<span>${esc(k).replace(/_(\w+)/g, "<sub>$1</sub>")}</span><span>${esc(v)}</span>`).join("");
 }
 function renderTable() {
   $("tbody").innerHTML = S.samples.map(s => {
-    const r = s.res;
-    if (!r) return `<tr data-id="${s.id}" class="${s === S.sel ? "sel" : ""}"><td>${esc(s.name)}</td><td colspan="5">${esc(s.err)}</td></tr>`;
-    return `<tr data-id="${s.id}" class="${s === S.sel ? "sel" : ""}"><td>${esc(s.name)}</td><td><b>${pct(r.X_am)}</b></td>
-      <td>${s.sens ? pct(s.sens.min) + "–" + pct(s.sens.max) : "…"}</td><td>${isNum(r.haloMax) ? r.haloMax.toFixed(1) : "—"}</td>
-      <td>${r.Ic.toExponential(2)}</td><td>${r.Ia.toExponential(2)}</td></tr>`;
+    const r = s.res, p = s.prof;
+    const env = r ? `<td>${S.method === "env" ? "<b>" + pct(r.X_am) + "</b>" : pct(r.X_am)}</td><td>${s.sens ? pct(s.sens.min) + "–" + pct(s.sens.max) : "…"}</td>` : `<td colspan="2">${esc(s.err)}</td>`;
+    const pr = p ? `<td>${S.method === "prof" ? "<b>" + pct(p.X_am) + "</b>" : pct(p.X_am)}</td><td>${s.profSens ? pct(s.profSens.min) + "–" + pct(s.profSens.max) : "…"}</td><td>${pct(p.Rwp, 2)}</td>`
+                 : `<td colspan="3" class="muted">${s.profErr ? esc(s.profErr) : "računam…"}</td>`;
+    const halo = p && p.halos.length ? p.halos[0].c.toFixed(1) : (r && isNum(r.haloMax) ? r.haloMax.toFixed(1) : "—");
+    return `<tr data-id="${s.id}" class="${s === S.sel ? "sel" : ""}"><td>${esc(s.name)}</td>${env}${pr}<td>${halo}</td></tr>`;
   }).join("");
   renderSamples();
 }
@@ -1200,12 +1655,12 @@ $("mSave").addEventListener("click", async () => {
   if (!pending) return;
   await dlReady;
   if (dlNs) {
-    try { await dlNs.save({ filename: pending.name, data: "\ufeff" + pending.text }); $("mNote").textContent = "Datoteka je spremljena."; }
+    try { await dlNs.save({ filename: pending.name, data: "﻿" + pending.text }); $("mNote").textContent = "Datoteka je spremljena."; }
     catch (e) { $("mNote").textContent = e && e.code === "declined" ? "Spremanje je otkazano." : "Spremanje nije uspjelo; upotrijebite Kopiraj."; }
     return;
   }
   try {
-    const url = URL.createObjectURL(new Blob(["\ufeff" + pending.text], { type: pending.type + ";charset=utf-8" }));
+    const url = URL.createObjectURL(new Blob(["﻿" + pending.text], { type: pending.type + ";charset=utf-8" }));
     const el = document.createElement("a"); el.href = url; el.download = pending.name; document.body.appendChild(el); el.click(); el.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
     $("mNote").textContent = "Ako preuzimanje nije počelo, upotrijebite Kopiraj.";
@@ -1213,36 +1668,55 @@ $("mSave").addEventListener("click", async () => {
 });
 function paramLine() {
   const p = S.p;
-  return `2θ ${p.lo}–${p.hi}°; L = ${p.L}°; t = ${p.t}σ; predglađivanje ${p.sw}°; Čebišev ${p.deg}. stupnja${p.oneOverX ? " + c/2θ (c ≥ 0)" : ""}; K = ${p.K}`;
+  return `2θ ${p.lo}–${p.hi}°; L = ${p.L}°; t = ${p.t}σ; predglađivanje ${p.sw}°; Čebišev ${p.deg}. stupnja${p.oneOverX ? " + c/2θ (c ≥ 0)" : ""}; K = ${p.K}; ` +
+         `profil: FWHM_max = ${p.Hmax}°, haloa ${p.nHalo}, Kα2 ${p.ka2 ? "da" : "ne"}`;
 }
 $("csvAll").addEventListener("click", () => {
-  const head = "uzorak;datoteka;X_am_%;X_am_min_%;X_am_max_%;maks_haloa_2theta;tezište_haloa_2theta;I_c;I_a;faktor_suma_c";
+  const head = "uzorak;datoteka;ovojnica_X_am_%;ovojnica_min_%;ovojnica_max_%;ovojnica_maks_haloa_2theta;ovojnica_I_c;ovojnica_I_a;" +
+               "profil_X_am_%;profil_sigma_stat_%;profil_min_%;profil_max_%;profil_Rwp_%;profil_GOF;profil_broj_maksimuma;profil_halo1_2theta;profil_halo1_FWHM;profil_I_c;profil_I_a;faktor_suma_c";
   const rows = S.samples.map(s => {
-    const r = s.res; if (!r) return `${s.name};${s.file};;;;;;;;`;
-    return [s.name, s.file, pct(r.X_am, 2), s.sens ? pct(s.sens.min, 2) : "", s.sens ? pct(s.sens.max, 2) : "",
-      isNum(r.haloMax) ? r.haloMax.toFixed(3) : "", isNum(r.haloCentroid) ? r.haloCentroid.toFixed(3) : "", r.Ic.toPrecision(6), r.Ia.toPrecision(6), r.c.toFixed(3)].join(";");
+    const r = s.res, p = s.prof, f = (v, d) => isNum(v) ? v.toFixed(d) : "";
+    return [s.name, s.file,
+      r ? pct(r.X_am, 2) : "", s.sens ? pct(s.sens.min, 2) : "", s.sens ? pct(s.sens.max, 2) : "", r ? f(r.haloMax, 3) : "", r ? r.Ic.toPrecision(6) : "", r ? r.Ia.toPrecision(6) : "",
+      p ? pct(p.X_am, 2) : "", p ? pct(p.sigX, 3) : "", s.profSens ? pct(s.profSens.min, 2) : "", s.profSens ? pct(s.profSens.max, 2) : "",
+      p ? pct(p.Rwp, 3) : "", p ? f(p.gof, 3) : "", p ? p.nPeaks : "", p && p.halos[0] ? f(p.halos[0].c, 3) : "", p && p.halos[0] ? f(p.halos[0].W, 3) : "",
+      p ? p.Ic.toPrecision(6) : "", p ? p.Ia.toPrecision(6) : "", r ? r.c.toFixed(3) : ""].join(";");
   });
   download("amorfni_udio.csv", `# ${paramLine()}\n${head}\n${rows.join("\n")}\n`);
 });
 $("csvCurves").addEventListener("click", () => {
-  const sm = S.sel; if (!sm || !sm.res) return;
-  const r = sm.res, out = ["2theta;I;A_ovojnica;B_instrumentalna;I_minus_A_kristalno;A_minus_B_amorfno"];
-  for (let i = 0; i < r.x.length; i++) out.push([r.x[i].toFixed(4), r.y[i].toFixed(2), r.A[i].toFixed(2), r.B[i].toFixed(2), (r.y[i] - r.A[i]).toFixed(2), Math.max(r.A[i] - r.B[i], 0).toFixed(2)].join(";"));
-  download(sm.name + "_krivulje.csv", `# ${sm.name}; ${paramLine()}\n${out.join("\n")}\n`);
+  const sm = S.sel; if (!sm) return;
+  const f = (v, d = 2) => v.toFixed(d);
+  if (S.method === "prof") {
+    const r = sm.prof; if (!r) return;
+    const out = ["2theta;I;izracunato;pozadina;halo;maksimumi;razlika"];
+    for (let i = 0; i < r.x.length; i++) out.push([f(r.x[i], 4), f(r.y[i]), f(r.model[i]), f(r.bg[i]), f(r.amor[i]), f(r.cryst[i]), f(r.y[i] - r.model[i])].join(";"));
+    download(sm.name + "_profil.csv", `# ${sm.name}; prilagodba profila; ${paramLine()}\n${out.join("\n")}\n`);
+  } else {
+    const r = sm.res; if (!r) return;
+    const out = ["2theta;I;A_ovojnica;B_instrumentalna;I_minus_A_kristalno;A_minus_B_amorfno"];
+    for (let i = 0; i < r.x.length; i++) out.push([f(r.x[i], 4), f(r.y[i]), f(r.A[i]), f(r.B[i]), f(r.y[i] - r.A[i]), f(Math.max(r.A[i] - r.B[i], 0))].join(";"));
+    download(sm.name + "_ovojnica.csv", `# ${sm.name}; postupak ovojnice; ${paramLine()}\n${out.join("\n")}\n`);
+  }
 });
 $("report").addEventListener("click", () => {
   const L = [];
   L.push("Semikvantitativna procjena udjela amorfne faze iz difraktograma praha");
-  L.push("Metoda: dvije krivulje (ovojnica nebraggovskog intenziteta A i instrumentalna pozadina B), integracija po 2θ");
+  L.push("Postupak ovojnice: ovojnica nebraggovskog intenziteta A i instrumentalna pozadina B, integracija po 2θ; raspon osjetljivosti L × (0,75; 1; 1,25), t ± 0,5, stupanj ± 1");
+  L.push("Prilagodba profila: pseudo-Voigtovi maksimumi (Kα1/Kα2) + Gaussov halo + Čebišev (+ c/2θ), NNLS + Gauss–Newton; raspon osjetljivosti stupanj ± 1, t ± 0,5");
   L.push("Parametri: " + paramLine());
-  L.push("X_am = K·I_a/(K·I_a + I_c); raspon osjetljivosti: L × (0,75; 1; 1,25), t ± 0,5, stupanj ± 1");
+  L.push("X_am = K·I_a/(K·I_a + I_c)");
   L.push("");
   for (const s of S.samples) {
-    const r = s.res;
-    if (!r) { L.push(`${s.name}: ${s.err}`); continue; }
+    const r = s.res, p = s.prof;
     L.push(`${s.name} (${s.file})`);
-    L.push(`  X_am = ${pct(r.X_am)} %` + (s.sens ? `  (raspon osjetljivosti ${pct(s.sens.min)}–${pct(s.sens.max)} %)` : ""));
-    L.push(`  I_c = ${r.Ic.toPrecision(5)}, I_a = ${r.Ia.toPrecision(5)}; maksimum haloa ${isNum(r.haloMax) ? r.haloMax.toFixed(2) + "° 2θ (d = " + dOf(r.haloMax, lambdaOf(s)).toFixed(3) + " Å)" : "nije izražen"}; faktor šuma c = ${r.c.toFixed(2)}`);
+    if (r) L.push(`  ovojnica: X_am = ${pct(r.X_am)} %` + (s.sens ? ` (raspon ${pct(s.sens.min)}–${pct(s.sens.max)} %)` : "") +
+                  `; maksimum haloa ${isNum(r.haloMax) ? r.haloMax.toFixed(2) + "° 2θ (d = " + dOf(r.haloMax, lambdaOf(s)).toFixed(3) + " Å)" : "nije izražen"}; c = ${r.c.toFixed(2)}`);
+    else L.push(`  ovojnica: ${s.err}`);
+    if (p) L.push(`  profil:   X_am = ${pct(p.X_am)} % ± ${pct(p.sigX, 2)} % (stat.)` + (s.profSens ? `, raspon ${pct(s.profSens.min)}–${pct(s.profSens.max)} %` : "") +
+                  `; Rwp = ${pct(p.Rwp, 2)} %, GOF = ${p.gof.toFixed(2)}; ${p.nPeaks} maksimuma` +
+                  (p.halos.length ? `; halo ${p.halos.map(h => h.c.toFixed(1) + "° (FWHM " + h.W.toFixed(1) + "°)").join(", ")}` : ""));
+    else L.push(`  profil:   ${s.profErr || "nije izračunato"}`);
   }
   L.push("");
   L.push("Napomena: X_am je udio integriranog intenziteta, a ne maseni udio; jednaki su samo uz jednaku srednju raspršnu moć po jedinici mase obiju komponenti.");
@@ -1261,18 +1735,18 @@ let rafPending = false;
 function requestDraw() { if (rafPending) return; rafPending = true; requestAnimationFrame(() => { rafPending = false; draw(); }); }
 new ResizeObserver(requestDraw).observe(cv);
 function niceStep(range, count) { const raw = range / Math.max(count, 1), mag = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / mag; return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * mag; }
-function yRange(sm) {
-  const r = sm.res, { x0, x1 } = S.view;
+function yRange(sm, r) {
+  const { x0, x1 } = S.view;
   let ymax = -Infinity, ymin = Infinity, amax = -Infinity, bmin = Infinity;
   for (let i = 0; i < sm.x.length; i++) if (sm.x[i] >= x0 && sm.x[i] <= x1) { ymax = Math.max(ymax, sm.y[i]); ymin = Math.min(ymin, sm.y[i]); }
   if (r) for (let i = 0; i < r.x.length; i++) if (r.x[i] >= x0 && r.x[i] <= x1) { amax = Math.max(amax, r.A[i]); bmin = Math.min(bmin, r.B[i]); }
   if (!isFinite(ymax)) { ymax = 1; ymin = 0; }
   if (S.yMode === "bg" && isFinite(amax)) {
     const lo = Math.max(0, Math.min(bmin, ymin) - 0.3 * (amax - Math.min(bmin, ymin)));
-    return { y0: lo, y1: Math.min(ymax * 1.03, amax + 1.4 * (amax - lo)), f: v => v, inv: v => v };
+    return { y0: lo, y1: Math.min(ymax * 1.03, amax + 1.4 * (amax - lo)), f: v => v };
   }
-  if (S.yMode === "sqrt") return { y0: 0, y1: Math.sqrt(Math.max(ymax, 1)) * 1.03, f: v => Math.sqrt(Math.max(v, 0)), inv: v => v * v };
-  return { y0: 0, y1: ymax * 1.04, f: v => v, inv: v => v };
+  if (S.yMode === "sqrt") return { y0: 0, y1: Math.sqrt(Math.max(ymax, 1)) * 1.03, f: v => Math.sqrt(Math.max(v, 0)) };
+  return { y0: 0, y1: ymax * 1.04, f: v => v };
 }
 function draw() {
   const rect = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
@@ -1281,16 +1755,16 @@ function draw() {
   cv.width = Math.round(G.W * dpr); cv.height = Math.round(G.H * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, G.W, G.H);
   const sm = S.sel; if (!sm || !S.view) return;
-  const { l, r: mr, t, b } = G.m, pw = G.W - l - mr, ph = G.H - t - b;
-  const { x0, x1 } = S.view, Y = yRange(sm);
-  G.Y = Y;
+  const res = cur(sm), prof = S.method === "prof" && res;
+  const { l, r: mr, t, b } = G.m, pw = G.W - l - mr, phAll = G.H - t - b;
+  const stripH = prof ? Math.round(phAll * 0.18) : 0, gap = prof ? 8 : 0, ph = phAll - stripH - gap;
+  const { x0, x1 } = S.view, Y = yRange(sm, res);
   const X = v => l + (v - x0) / (x1 - x0) * pw, Yp = v => t + ph - (Y.f(v) - Y.y0) / (Y.y1 - Y.y0) * ph;
   ctx.font = "12px -apple-system, Segoe UI, Roboto, sans-serif";
-  // grid & ticks
   ctx.strokeStyle = col("--grid"); ctx.fillStyle = col("--muted"); ctx.lineWidth = 1;
   const xs = niceStep(x1 - x0, Math.max(3, pw / 80));
   ctx.textAlign = "center"; ctx.textBaseline = "top";
-  for (let v = Math.ceil(x0 / xs) * xs; v <= x1 + 1e-9; v += xs) { const px = X(v); ctx.beginPath(); ctx.moveTo(px, t); ctx.lineTo(px, t + ph); ctx.stroke(); ctx.fillText(+v.toFixed(6) + "", px, t + ph + 6); }
+  for (let v = Math.ceil(x0 / xs) * xs; v <= x1 + 1e-9; v += xs) { const px = X(v); ctx.beginPath(); ctx.moveTo(px, t); ctx.lineTo(px, t + phAll); ctx.stroke(); ctx.fillText(+v.toFixed(6) + "", px, t + phAll + 6); }
   const ys = niceStep(Y.y1 - Y.y0, Math.max(3, ph / 55));
   ctx.textAlign = "right"; ctx.textBaseline = "middle";
   for (let v = Math.ceil(Y.y0 / ys) * ys; v <= Y.y1 + 1e-9; v += ys) {
@@ -1300,8 +1774,6 @@ function draw() {
   ctx.save(); ctx.translate(14, t + ph / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = "center"; ctx.fillText(S.yMode === "sqrt" ? "Intenzitet (√ skala)" : "Intenzitet", 0, 0); ctx.restore();
   ctx.textAlign = "right"; ctx.textBaseline = "bottom"; ctx.fillText("2θ / °", l + pw, G.H - 1);
   ctx.save(); ctx.beginPath(); ctx.rect(l, t, pw, ph); ctx.clip();
-  const res = sm.res;
-  // excluded regions
   if (res) {
     ctx.fillStyle = col("--grid");
     const a = res.x[0], z = res.x[res.x.length - 1];
@@ -1309,46 +1781,64 @@ function draw() {
     if (z < x1) ctx.fillRect(X(z), t, l + pw - X(z), ph);
   }
   const vis = (arrX, i) => arrX[i] >= x0 - (x1 - x0) * 0.01 && arrX[i] <= x1 + (x1 - x0) * 0.01;
+  let i0 = 0, i1 = -1;
   if (res) {
-    const n = res.x.length;
-    let i0 = 0, i1 = n - 1; while (i0 < n - 1 && !vis(res.x, i0)) i0++; while (i1 > 0 && !vis(res.x, i1)) i1--;
-    // crystalline fill (I above A)
+    const n = res.x.length; i1 = n - 1;
+    while (i0 < n - 1 && !vis(res.x, i0)) i0++; while (i1 > 0 && !vis(res.x, i1)) i1--;
+    const top = prof ? i => res.model[i] : i => Math.max(res.y[i], res.A[i]);
     ctx.fillStyle = col("--cryst"); ctx.globalAlpha = 0.18; ctx.beginPath();
-    for (let i = i0; i <= i1; i++) ctx.lineTo(X(res.x[i]), Yp(Math.max(res.y[i], res.A[i])));
+    for (let i = i0; i <= i1; i++) ctx.lineTo(X(res.x[i]), Yp(Math.max(top(i), res.A[i])));
     for (let i = i1; i >= i0; i--) ctx.lineTo(X(res.x[i]), Yp(res.A[i]));
     ctx.closePath(); ctx.fill();
-    // amorphous fill (between B and A)
     ctx.fillStyle = col("--amor"); ctx.globalAlpha = 0.32; ctx.beginPath();
     for (let i = i0; i <= i1; i++) ctx.lineTo(X(res.x[i]), Yp(Math.max(res.A[i], res.B[i])));
     for (let i = i1; i >= i0; i--) ctx.lineTo(X(res.x[i]), Yp(res.B[i]));
     ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
   }
-  // data
   ctx.strokeStyle = col("--ink"); ctx.lineWidth = 0.9; ctx.beginPath();
   let started = false;
   for (let i = 0; i < sm.x.length; i++) { if (!vis(sm.x, i)) continue; const px = X(sm.x[i]), py = Yp(sm.y[i]); if (!started) { ctx.moveTo(px, py); started = true; } else ctx.lineTo(px, py); }
   ctx.stroke();
+  const line = (arr, c, w) => { ctx.strokeStyle = c; ctx.lineWidth = w; ctx.beginPath(); let s = false;
+    for (let i = i0; i <= i1; i++) { const px = X(res.x[i]), py = Yp(arr[i]); if (!s) { ctx.moveTo(px, py); s = true; } else ctx.lineTo(px, py); } ctx.stroke(); };
   if (res) {
-    const line = (arr, c, w) => { ctx.strokeStyle = c; ctx.lineWidth = w; ctx.beginPath(); let s = false;
-      for (let i = 0; i < res.x.length; i++) { if (!vis(res.x, i)) continue; const px = X(res.x[i]), py = Yp(arr[i]); if (!s) { ctx.moveTo(px, py); s = true; } else ctx.lineTo(px, py); } ctx.stroke(); };
+    if (prof) line(res.model, col("--cursor"), 1.1);
     line(res.A, col("--amor"), 2); line(res.B, col("--instr"), 2);
-    if (isNum(res.haloMax) && res.haloMax >= x0 && res.haloMax <= x1) {
-      const i = res.x.findIndex(v => v >= res.haloMax);
-      ctx.fillStyle = col("--amor"); ctx.beginPath(); ctx.arc(X(res.haloMax), Yp(res.A[i]), 4, 0, 2 * Math.PI); ctx.fill();
+    const hx = prof ? (res.halos[0] ? res.halos[0].c : NaN) : res.haloMax;
+    if (isNum(hx) && hx >= Math.max(x0, res.x[0]) && hx <= Math.min(x1, res.x[res.x.length - 1])) {
+      const i = res.x.findIndex(v => v >= hx);
+      ctx.fillStyle = col("--amor"); ctx.beginPath(); ctx.arc(X(hx), Yp(res.A[i]), 4, 0, 2 * Math.PI); ctx.fill();
     }
   }
   if (S.cursor != null && S.cursor >= x0 && S.cursor <= x1) {
-    ctx.strokeStyle = col("--cursor"); ctx.lineWidth = 1; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(X(S.cursor), t); ctx.lineTo(X(S.cursor), t + ph); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle = col("--cursor"); ctx.lineWidth = 1; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(X(S.cursor), t); ctx.lineTo(X(S.cursor), t + phAll); ctx.stroke(); ctx.setLineDash([]);
   }
   ctx.restore();
   ctx.strokeStyle = col("--axis"); ctx.lineWidth = 1; ctx.strokeRect(l + 0.5, t + 0.5, pw, ph);
+  if (prof) {   // difference strip
+    const st = t + ph + gap;
+    let m = 0; for (let i = i0; i <= i1; i++) m = Math.max(m, Math.abs(res.y[i] - res.model[i]));
+    m = m || 1;
+    const Yr = v => st + stripH / 2 - v / m * (stripH / 2 - 2);
+    ctx.save(); ctx.beginPath(); ctx.rect(l, st, pw, stripH); ctx.clip();
+    ctx.strokeStyle = col("--grid"); ctx.beginPath(); ctx.moveTo(l, Yr(0)); ctx.lineTo(l + pw, Yr(0)); ctx.stroke();
+    ctx.strokeStyle = col("--muted"); ctx.lineWidth = 0.8; ctx.beginPath();
+    for (let i = i0; i <= i1; i++) { const px = X(res.x[i]), py = Yr(res.y[i] - res.model[i]); i === i0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py); }
+    ctx.stroke(); ctx.restore();
+    ctx.strokeStyle = col("--axis"); ctx.strokeRect(l + 0.5, st + 0.5, pw, stripH);
+    ctx.fillStyle = col("--muted"); ctx.textAlign = "right"; ctx.textBaseline = "middle"; ctx.fillText("±" + (m >= 1e4 ? m.toExponential(0) : Math.round(m)), l - 6, st + stripH / 2);
+  }
 }
 function updateReadout() {
   const sm = S.sel; if (!sm || S.cursor == null) return;
   const tth = S.cursor, near = (xs, v) => { let lo = 0, hi = xs.length - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (xs[m] < v) lo = m; else hi = m; } return Math.abs(xs[lo] - v) < Math.abs(xs[hi] - v) ? lo : hi; };
-  const i = near(sm.x, tth), r = sm.res;
+  const i = near(sm.x, tth), r = cur(sm);
   let s = `2θ <b>${sm.x[i].toFixed(3)}°</b> · d <b>${dOf(sm.x[i], lambdaOf(sm)).toFixed(4)} Å</b> · I <b>${sm.y[i].toFixed(0)}</b>`;
-  if (r && tth >= r.x[0] && tth <= r.x[r.x.length - 1]) { const j = near(r.x, tth); s += ` · A <b>${r.A[j].toFixed(0)}</b> · B <b>${r.B[j].toFixed(0)}</b>`; }
+  if (r && tth >= r.x[0] && tth <= r.x[r.x.length - 1]) {
+    const j = near(r.x, tth);
+    s += S.method === "prof" ? ` · izrač. <b>${r.model[j].toFixed(0)}</b> · halo <b>${r.amor[j].toFixed(0)}</b> · pozadina <b>${r.B[j].toFixed(0)}</b>`
+                             : ` · A <b>${r.A[j].toFixed(0)}</b> · B <b>${r.B[j].toFixed(0)}</b>`;
+  }
   $("readout").innerHTML = s;
 }
 // interaction: tap = cursor, drag = pan, pinch / wheel = zoom, double tap = reset
@@ -1411,7 +1901,8 @@ for (const id of ["file", "file2"]) $(id).addEventListener("change", async () =>
 document.addEventListener("dragover", e => { e.preventDefault(); document.body.classList.add("drag"); });
 document.addEventListener("dragleave", e => { if (e.target === document.documentElement || e.clientX <= 0) document.body.classList.remove("drag"); });
 document.addEventListener("drop", async e => { e.preventDefault(); document.body.classList.remove("drag"); const fl = [...(e.dataTransfer?.files || [])]; if (fl.length) await loadFiles(fl); });
-syncInputs();
+startWorker();
+syncInputs(); renderLegend();
 
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost"))
   navigator.serviceWorker.register("sw.js").catch(() => {});

@@ -19,6 +19,14 @@ Zasebna web-aplikacija za semikvantitativnu procjenu udjela amorfne faze, bez CI
 - **instrumentalna pozadina B(2θ)** — Čebiševljev polinom (+ član c/2θ, c ≥ 0) prilagođen donjoj strani ovojnice asimetričnim najmanjim kvadratima
 - X<sub>am</sub> = K·I<sub>a</sub> / (K·I<sub>a</sub> + I<sub>c</sub>), I<sub>c</sub> = ∫(I − A) d2θ, I<sub>a</sub> = ∫max(A − B, 0) d2θ
 - raspon osjetljivosti (L × 0,75–1,25, t ± 0,5, stupanj ± 1), tablica za sve učitane uzorke, izvoz CSV/TXT
+- predlošci postavki: „Staklasti uzorak” (pepeo, staklo) i „Pretežno kristalni” (klinker, filer)
+
+Drugi postupak, **prilagodba profila** (bez strukturnog modela): pseudo-Voigtovi maksimumi s Kα1/Kα2 dubletom
+(pojedinačni položaji i širine, zajednički η), jedan ili dva Gaussova haloa i Čebiševljeva pozadina (+ c/2θ);
+linearni koeficijenti nenegativnim težinskim najmanjim kvadratima, nelinearni Gauss–Newtonovim koracima, maksimumi
+se dodaju iz ostatka. Lorentzovi repovi i preklopljene skupine refleksa time ostaju u kristalnom doprinosu, što
+je važno za klinker i filer. Uz rezultat se navode R<sub>wp</sub>, GOF, statistička nesigurnost i raspon osjetljivosti;
+izračun se odvija u pozadinskoj niti (Web Worker).
 
 Rezultat je udio integriranog intenziteta, a ne maseni udio (vidi „Metoda i ograničenja” u aplikaciji).
 Na iPhoneu: otvorite `amorfno.html` u Safariju → Dijeli → „Dodaj na početni zaslon”.
